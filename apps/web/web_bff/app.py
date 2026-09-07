@@ -8,6 +8,7 @@ Authentication in the dev/sim build [Committee; Open: IdP/MFA integration is E01
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -30,6 +31,14 @@ from web_bff.reason_codes import REASON_CODES, explain
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 log = get_logger("web_bff")
+
+# Roles that can never be asserted by a human principal: they are system/agent identities [Source: 00].
+NON_HUMAN_ROLES = frozenset({Role.STRATEGY_AGENT, Role.RUNTIME_MONITOR, Role.SYSTEM})
+
+
+def dev_header_auth_allowed() -> bool:
+    """Header-asserted principals exist only in the sim environment (RAID R-06). Any other value refuses to start."""
+    return os.environ.get("RT_ENV", "sim") == "sim"
 
 
 class KillSwitchRequest(BaseModel):
@@ -64,9 +73,17 @@ class ResolveRequest(BaseModel):
 
 
 def create_app(platform: SimPlatform | None = None) -> FastAPI:
+    if not dev_header_auth_allowed():
+        raise RuntimeError(
+            "RT_ENV is not 'sim': the BFF has no IdP/MFA session provider yet (RAID R-06, MISSING_ACTIONS). "
+            "Header-asserted principals are refused outside the simulation environment."
+        )
     p = platform or build_sim_platform()
     app = FastAPI(title="Global AI-MCP RoboTrader — Control & Execution contracts", version="0.1.0-draft")
     app.state.platform = p
+    log.warning(
+        "BFF started with DEV HEADER AUTHENTICATION (sim only): principals are client-asserted; not a control", extra={"env": "sim"}
+    )
 
     def now() -> datetime:
         return p.now if platform is not None else utc_now() if False else p.now
@@ -83,6 +100,9 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
             role = Role(x_actor_role)
         except ValueError as exc:
             raise HTTPException(403, f"unknown role {x_actor_role}") from exc
+        if role in NON_HUMAN_ROLES:
+            p.alerts.raise_alert("plane.deny", {"source": "edge", "destination": "control", "channel": f"human-path role {role.value}"})
+            raise HTTPException(403, f"role {role.value} is not a human role; agents use the signed MCP path")
         if x_mfa != "verified":
             raise HTTPException(401, "MFA required")
         return Actor(actor_id=x_actor_id, role=role, kind=ActorKind.HUMAN, tenant_id=TENANT)
@@ -371,7 +391,12 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
 
     @app.get("/healthz")
     async def healthz() -> dict[str, Any]:
-        return {"ok": True, "environment": "sim", "audit_length": len(p.audit)}
+        return {
+            "ok": True,
+            "environment": "sim",
+            "auth": "dev-headers (client-asserted; sim only; RAID R-06)",
+            "audit_length": len(p.audit),
+        }
 
     @app.get("/")
     async def index() -> FileResponse:

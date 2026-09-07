@@ -149,3 +149,28 @@ def test_j06_break_ticket_via_api(client):  # type: ignore[no-untyped-def]
         c.post(f"/v1/limits/{prop.json()['change_id']}/check", json={"reason": "reviewed"}, headers=hdr(TRADING_LEAD)).json()["status"]
         == "CHECKED"
     )
+
+
+@pytest.mark.tc("TC-E2E-AUTH")
+@pytest.mark.req("FR-01")
+@pytest.mark.quartet("abuse")
+def test_dev_header_auth_refuses_non_human_roles_and_non_sim_env(client, monkeypatch):  # type: ignore[no-untyped-def]
+    """Agent/system roles cannot be asserted through the human path; the BFF refuses to start outside RT_ENV=sim (R-06)."""
+    c, p = client
+    for role in ("strategy_agent", "runtime_monitor", "system"):
+        r = c.post(
+            "/v1/killswitch",
+            json={"level": "PLATFORM", "target_id": "*", "reason": "rogue", "actor": "x"},
+            headers={"X-Actor-Id": "agent:rogue", "X-Actor-Role": role, "X-MFA": "verified"},
+        )
+        assert r.status_code == 403, role
+        assert (
+            c.post(
+                "/v1/intents", json=p.make_intent(), headers={"X-Actor-Id": "agent:rogue", "X-Actor-Role": role, "X-MFA": "verified"}
+            ).status_code
+            == 403
+        )
+    assert p.killswitch.active() == () and p.alerts.by_name("plane.deny")
+    monkeypatch.setenv("RT_ENV", "paper")
+    with pytest.raises(RuntimeError):
+        create_app(p)
