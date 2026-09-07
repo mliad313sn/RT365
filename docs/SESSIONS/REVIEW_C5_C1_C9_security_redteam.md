@@ -1,5 +1,7 @@
 # REVIEW — C5 Security & Privacy, C1/E01 Identity, C9/E12 Observability, E11 Audit
 
+> Editorial note (Delivery Orchestrator, 2026-09-07): IDs allocated in this review are local to it; the global IDs are in docs/RAID_LOG.md §Review ID renumbering map. The reviewer's text below is unchanged.
+
 CHALLENGE and threat-model-delta session. Findings only; no code changed. Read-only PoCs run against
 the in-process `TestClient` build. `python3 -m pytest test/quartets/test_tc_id_identity.py
 test_tc_aud_audit.py test_tc_ob_observability.py -q` → all pass; `secret_scan.py` → "OK … 0 files"

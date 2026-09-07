@@ -9,7 +9,15 @@ paths:
   /v1/intents:
     post:
       summary: Submit a trade intent (write-class MCP tool target; writes to Control-plane queue only)
-      security: [{ agentIdentity: [] }]
+      description: >
+        Agent path: bearer token plus a nonce- and time-bound call signature over (token, tool, args)
+        [Committee C3; security review F-01]. A bearer without a valid signature, a replayed nonce or a stale
+        issued_at is refused (403 IDENTITY). Human path: humanSession with SUBMIT_INTENT permission.
+      security: [{ agentIdentity: [] }, { humanSession: [] }]
+      parameters:
+        - { name: X-Call-Signature, in: header, required: false, schema: { type: string }, description: HMAC over token|tool|canonical(args)|nonce|issued_at (agent path only) }
+        - { name: X-Call-Nonce, in: header, required: false, schema: { type: string }, description: Single-use nonce; replay refused }
+        - { name: X-Call-Issued-At, in: header, required: false, schema: { type: string, format: date-time }, description: Signature issue time; outside the freshness window refused }
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/TradeIntent' } } }
@@ -23,14 +31,131 @@ paths:
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRecord' } } } }
   /v1/killswitch:
+    get:
+      summary: Active Kill Switch activations
+      security: [{ humanSession: [] }]
+      responses: { '200': { description: OK } }
     post:
-      summary: Activate Kill Switch at a level (activation unilateral; deactivation two-person)
+      summary: Activate Kill Switch at a level (activation unilateral by authorised humans or runtime monitors; deactivation two-person; AI identities refused)
+      security: [{ humanSession: [] }]
       requestBody:
         content: { application/json: { schema: { $ref: '#/components/schemas/KillSwitchRequest' } } }
       responses: { '202': { description: Applied } }
+  /v1/intents/{intentId}:
+    get:
+      summary: Read the lifecycle state of an intent (monotonic OMS state machine)
+      security: [{ humanSession: [] }]
+      responses:
+        '200': { description: OK }
+        '404': { description: Unknown intent }
+  /v1/intents/{intentId}/process:
+    post:
+      summary: Dev/sim only - run the control pipeline for a queued intent (a queue consumer does this in deployment)
+      security: [{ humanSession: [] }]
+      responses:
+        '200': { description: Pipeline result (eligibility, decision, approval_id, final_state) }
+        '404': { description: Intent not queued }
+  /v1/killswitch/{activationId}/deactivate:
+    post:
+      summary: Deactivate a Kill Switch activation (two-person, different line of defense; AI identities refused)
+      security: [{ humanSession: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonedAction' } } } }
+      responses:
+        '200': { description: Deactivation recorded (pending second person or completed) }
+        '403': { description: Same person / same line / not authorised }
+  /v1/approvals:
+    get:
+      summary: Approval queue (risk before profit ordering)
+      security: [{ humanSession: [] }]
+      responses: { '200': { description: OK } }
+  /v1/approvals/{approvalId}/approve:
+    post:
+      summary: Approve a REQUIRES_HUMAN_APPROVAL decision (approver must be human, authorised, not the maker; re-decided at execution time)
+      security: [{ humanSession: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonedAction' } } } }
+      responses:
+        '200': { description: Approved and authorised for execution (or halted/rejected on re-decision) }
+        '403': { description: Not authorised / self-approval / Kill Switch engaged }
+        '409': { description: Approval expired or not pending }
+  /v1/approvals/{approvalId}/decline:
+    post:
+      summary: Decline a pending approval
+      security: [{ humanSession: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonedAction' } } } }
+      responses: { '200': { description: Declined } }
+  /v1/audit:
+    get:
+      summary: Search the hash-chained audit trail by correlation id
+      security: [{ humanSession: [] }]
+      parameters: [{ name: correlation_id, in: query, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /v1/audit/verify:
+    get:
+      summary: Verify the audit chain integrity (tamper and truncation detection against the sealed anchor)
+      security: [{ humanSession: [] }]
+      responses: { '200': { description: Verification result } }
+  /v1/audit/export:
+    get:
+      summary: Export audit records (auditor read-only)
+      security: [{ humanSession: [] }]
+      parameters: [{ name: correlation_id, in: query, required: false, schema: { type: string } }]
+      responses: { '200': { description: Export bundle with chain head } }
+  /v1/accounts/{accountId}:
+    get:
+      summary: Account mode, trading status, envelope and effective limits
+      security: [{ humanSession: [] }]
+      responses: { '200': { description: OK } }
+  /v1/reconciliation/run:
+    post:
+      summary: Run reconciliation against the broker statement (external truth)
+      security: [{ humanSession: [] }]
+      responses: { '200': { description: Result with classified breaks } }
+  /v1/reconciliation/breaks:
+    get:
+      summary: Open break tickets
+      security: [{ humanSession: [] }]
+      responses: { '200': { description: OK } }
+  /v1/reconciliation/tickets/{ticketId}/resolve:
+    post:
+      summary: Resolve a break ticket (two-person, second resolver in a different line of defense)
+      security: [{ humanSession: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ResolveRequest' } } } }
+      responses:
+        '200': { description: Ticket status (PENDING_SECOND or RESOLVED) }
+        '403': { description: Same person / same line / not authorised }
+  /v1/limits:
+    post:
+      summary: Propose a limit change (maker-checker; never applied by the proposer)
+      security: [{ humanSession: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LimitProposal' } } } }
+      responses: { '202': { description: Proposal recorded, pending checker } }
+  /v1/limits/{changeId}/check:
+    post:
+      summary: Check (approve) a limit change - checker must differ from maker and sit in a different line; cooling period applies
+      security: [{ humanSession: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonedAction' } } } }
+      responses:
+        '200': { description: Change checked and applied through the single write path }
+        '403': { description: Same person / same line / cooling period }
+  /v1/reason-codes:
+    get:
+      summary: Reason-code dictionary (plain-language explanations; docs/REASON_CODES.md is generated from the same source)
+      responses: { '200': { description: OK } }
+  /v1/status:
+    get:
+      summary: Dashboard model - risk before profit (Kill Switch, halts, approvals, breaks, freshness, then PnL)
+      security: [{ humanSession: [] }]
+      responses: { '200': { description: OK } }
 components:
   securitySchemes:
-    agentIdentity: { type: http, scheme: bearer, description: Short-lived workload identity; tool call signed }
+    agentIdentity: { type: http, scheme: bearer, description: Short-lived workload identity; every call signed with a nonce and issue time (X-Call-* headers) }
+    humanSession:
+      type: apiKey
+      in: header
+      name: X-Actor-Id
+      description: >
+        Human principal. In dev/sim the BFF accepts client-asserted X-Actor-Id / X-Actor-Role / X-MFA headers and refuses to start
+        outside RT_ENV=sim; production requires an IdP-backed session with MFA and PIM elevation [Open: R-06, MISSING_ACTIONS].
   schemas:
     TradeIntent:
       type: object
@@ -90,3 +215,24 @@ components:
         target_id: { type: string }
         reason: { type: string }
         actor: { type: string }
+    ReasonedAction:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 3, description: Recorded verbatim in the audit trail }
+    ResolveRequest:
+      type: object
+      additionalProperties: false
+      required: [resolution]
+      properties:
+        resolution: { type: string, minLength: 3 }
+    LimitProposal:
+      type: object
+      additionalProperties: false
+      required: [level, scope_id, metric, threshold]
+      properties:
+        level: { type: string, enum: [PLATFORM, TENANT, ACCOUNT, STRATEGY, INSTRUMENT] }
+        scope_id: { type: string }
+        metric: { type: string, description: One of risk_engine.policy.Metric }
+        threshold: { type: string, description: Decimal as string; applied only after a different-line checker approves }

@@ -1,5 +1,7 @@
 # REVIEW_C3 — MCP & AI Governance — CHALLENGE step (2nd line)
 
+> Editorial note (Delivery Orchestrator, 2026-09-07): IDs allocated in this review are local to it; the global IDs are in docs/RAID_LOG.md §Review ID renumbering map. The reviewer's text below is unchanged.
+
 | Component | Step | Author of component (1st line) | Challenger (2nd line) | Assurance (3rd line) | Date | Status |
 |---|---|---|---|---|---|---|
 | C3 MCP & AI governance (blueprint 04) | Challenge | Backend Lead | MCP Security Agent | Independent Validation Agent (veto) | 2026-09-07 | Findings issued — not an approval |

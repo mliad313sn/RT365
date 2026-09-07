@@ -1,5 +1,7 @@
 # REVIEW — C2 execution guarantees · P1 trade-intent lifecycle · P6 reconciliation break · E03/E07 broker adapters, OMS, execution gateway
 
+> Editorial note (Delivery Orchestrator, 2026-09-07): IDs allocated in this review are local to it; the global IDs are in docs/RAID_LOG.md §Review ID renumbering map. The reviewer's text below is unchanged.
+
 | Session | Step | Owner of artefact under review | Challengers (this packet) | Next reviewer | Approving body | Gate in scope | Status |
 |---|---|---|---|---|---|---|---|
 | C2 / P1 / P6 / E03 / E07 | CHALLENGE (1st line, different owner) | Backend Lead (builder) | Trading Domain Lead + Integration Architect | Independent Validation Agent (3rd line, veto) | ARB (C2, contracts) · Trading Risk Committee + CAB (Gate C) | C — paper readiness | Findings only; no repository artefact other than this file was modified |

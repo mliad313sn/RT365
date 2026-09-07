@@ -1,0 +1,11 @@
+# GATE_REPORTS — Independent Validation Agent reports
+
+Owner: Independent Validation Agent (3rd line) [Source: 13]. One report per gate convening. Every verdict is a recommendation to the Committee; the human approver of record is pending on each report; no report passes a gate or authorises promotion beyond the environment the evidence was produced in (dev/sim for all reports below) [Source: 00, 12].
+
+| Report | Gate | Commit | Verdict (recommendation) | Veto grounds / headline |
+|---|---|---|---|---|
+| [GATE_A_2026-09-07.md](GATE_A_2026-09-07.md) | A — Discovery | 09a6e71 | **REJECT** | Jurisdiction hypothesis absent (O-11/H-03, the gate's named veto ground); charter unapproved (H-02); outcome targets unset (O-16). Human decisions, not build defects. |
+| [GATE_B_2026-09-07.md](GATE_B_2026-09-07.md) | B — Architecture | 09a6e71 | **ACCEPT WITH CONDITIONS** (dev/sim; entry criterion Gate A not met) | No veto at role level (every critical control has a named 2nd-line role). Conditions: gateway does not enforce Kill Switch/halt (IVA-01) nor authenticate commands (IVA-02); agent can `reject()` limit changes (IVA-05); BFF header auth fail-open when RT_ENV unset (IVA-06); dev registry key not black-listed (IVA-07); ADRs all Proposed; five threat rows cite non-existent tests. |
+| [GATE_C_2026-09-07.md](GATE_C_2026-09-07.md) | C — Paper readiness | 09a6e71 | **REJECT** (veto) | Kill Switch does not supersede an already-authorised command at the gateway (V-C1); gateway accepts unauthenticated/forged commands (V-C2); no broker sandbox certification, sim only (V-C3); no approved numeric limits (V-C4). Risk determinism independently confirmed (0 non-deterministic decisions); sim reconciliation clean. |
+
+Method common to all three: full test suite (138 passed), lint, typecheck, schema drift, network-policy and registry invariants, secret scan, and ten adversarial probe scripts executed by the IVA against the head (scripts kept outside the repository). Findings are tagged [Verified: …] where the IVA executed or read the evidence, [Source: NN] for blueprint requirements, [Committee] for committee derivations and [Open] for unresolved items.

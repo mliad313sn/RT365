@@ -1,5 +1,7 @@
 # REVIEW_C4_P4 — Chief Risk Agent CHALLENGE of C4 (Deterministic Risk Engine) and P4 (Kill Switch)
 
+> Editorial note (Delivery Orchestrator, 2026-09-07): IDs allocated in this review are local to it; the global IDs are in docs/RAID_LOG.md §Review ID renumbering map. The reviewer's text below is unchanged.
+
 | Owner (this packet) | Builder under review | Assurance | Session step | Date | Status |
 |---|---|---|---|---|---|
 | Chief Risk Agent (2nd line, goals/06) | Backend Lead (1st line, E05) | Independent Validation Agent (3rd line, veto) | CHALLENGE (operating loop step 2) | 2026-09-07 | Draft v1.0 — findings only, not self-certified |

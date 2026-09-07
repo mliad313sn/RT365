@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 from killswitch_service.service import KillSwitchLevel
 from rtcore.schemas.decision import DecisionRecord, Outcome
@@ -65,3 +66,30 @@ def test_tool_registry_policy_invariants():  # type: ignore[no-untyped-def]
 def test_reason_codes_all_documented():  # type: ignore[no-untyped-def]
     out = subprocess.run([sys.executable, str(ROOT / "scripts" / "export_reason_codes.py")], capture_output=True, text=True, cwd=ROOT)
     assert out.returncode == 0, out.stdout
+
+
+@pytest.mark.tc("TC-E2E-API")
+@pytest.mark.req("FR-16")
+@pytest.mark.quartet("positive")
+def test_bff_routes_match_openapi_paths():  # type: ignore[no-untyped-def]
+    """Every BFF route is in contracts/api/API_OPENAPI.yaml and vice versa (path parameter names normalised)."""
+    import re
+
+    from web_bff.app import create_app
+    from web_bff.platform import build_sim_platform
+
+    def norm(path: str) -> str:
+        return re.sub(r"\{[^}]+\}", "{}", path)
+
+    app = create_app(build_sim_platform())
+    served: set[tuple[str, str]] = set()
+    for route in app.routes:
+        path = getattr(route, "path", "")
+        methods = getattr(route, "methods", None) or set()
+        if not path.startswith("/v1/"):
+            continue
+        for m in methods:
+            if m in ("GET", "POST", "PUT", "DELETE"):
+                served.add((m, norm(path)))
+    declared = {(m.upper(), norm(path)) for path, ops in SPEC["paths"].items() for m in ops if m in ("get", "post", "put", "delete")}
+    assert served == declared, {"undeclared": sorted(served - declared), "unserved": sorted(declared - served)}
