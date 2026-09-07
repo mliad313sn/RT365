@@ -103,7 +103,20 @@ class TradePipeline:
     def _process(self, vi: ValidatedIntent, now: datetime) -> PipelineResult:
         intent_id = str(vi.intent.intent_id)
         with enter(Plane.CONTROL):
-            ei = self.eligibility_inputs(vi, now)
+            try:
+                ei = self.eligibility_inputs(vi, now)
+            except Exception as exc:  # unknown account/customer/instrument: fail closed, never crash the consumer (IVA-24)
+                self.tracker.transition(
+                    intent_id, IntentState.HALTED, now=now, detail={"reason": f"inputs unavailable: {type(exc).__name__}"}
+                )
+                self.audit(
+                    "eligibility.inputs_unavailable",
+                    vi.correlation_id,
+                    vi.tenant_id,
+                    vi.intent.account_id,
+                    {"intent_id": intent_id, "error": type(exc).__name__},
+                )
+                raise ControlDenied(f"eligibility inputs unavailable for intent {intent_id}: {type(exc).__name__}") from exc
             elig = decide_eligibility(
                 vi, ei.customer, ei.instrument, ei.cells, ei.restricted, broker=ei.broker, feature=ei.feature, now=now
             )

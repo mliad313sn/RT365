@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from broker_adapters.base import AckStatus, BrokerAdapter, BrokerFill, BrokerUnavailable, SubmitRequest
@@ -47,6 +47,9 @@ class StaleFencingToken(RTError):
     """Submission carried a fencing token that is not the current lease (ADR-002)."""
 
 
+COMMAND_MAX_AGE = timedelta(minutes=5)  # an authorisation is a short-lived, one-shot grant (IVA-21)
+
+
 class CommandNotAuthorised(ControlDenied):
     """The command does not carry a valid control-plane authorisation (IVA V-C2)."""
 
@@ -79,6 +82,8 @@ class ExecutionGateway:
         # Both hooks fail closed when absent: a gateway without an authoriser or a permission oracle submits nothing.
         self._verify_command = verify_command
         self._execution_permitted = execution_permitted
+        self._consumed_authorisations: set[str] = set()  # one-shot: a MAC never authorises twice (IVA-21) [Open: R-05]
+        self._by_decision: dict[str, str] = {}  # decision_id -> order_id: a decision authorises at most one order, ever (IVA-21)
         self._by_intent: dict[str, list[str]] = {}
         self._audit = audit  # (action, correlation_id, tenant, account, payload)
         self._publish = publish
@@ -143,11 +148,15 @@ class ExecutionGateway:
             )
             raise ExecutionBlocked(f"execution blocked at {stage}: {reason}")
 
-    def _assert_authorised(self, command: OrderCommand) -> None:
+    def _assert_authorised(self, command: OrderCommand, now: datetime) -> None:
         if self._verify_command is None:
             reason: str | None = "no command authoriser configured (fail closed)"
         else:
             reason = self._verify_command(command)
+        if reason is None and (now - command.authorised_at) > COMMAND_MAX_AGE:
+            reason = f"authorisation older than {int(COMMAND_MAX_AGE.total_seconds())}s (stale grant)"
+        if reason is None and command.authorised_at > now + COMMAND_MAX_AGE:
+            reason = "authorisation issued in the future"
         if reason is not None:
             self._alert("execution.unauthorised_command", {"account": command.account_id, "intent_id": command.intent_id, "reason": reason})
             self._audit(
@@ -158,6 +167,42 @@ class ExecutionGateway:
                 {"intent_id": command.intent_id, "decision_id": command.decision_id, "reason": reason},
             )
             raise CommandNotAuthorised(reason)
+
+    def _cancel_if_blocked(self, rec: OrderRecord, *, fencing_token: int, now: datetime) -> None:
+        c = rec.command
+        reason = (
+            "no execution permission oracle configured (fail closed)"
+            if self._execution_permitted is None
+            else self._execution_permitted(c, now)
+        )
+        if reason is None:
+            return
+        self._audit(
+            "order.command.blocked",
+            c.correlation_id,
+            c.tenant_id,
+            c.account_id,
+            {"intent_id": c.intent_id, "decision_id": c.decision_id, "reason": reason, "stage": "retry-adopted", "order_id": rec.order_id},
+        )
+        try:
+            self.cancel(rec.order_id, fencing_token=fencing_token, now=now, reason=f"blocked after adoption: {reason}")
+        except (BrokerUnavailable, StaleFencingToken) as exc:
+            self._alert(
+                "execution.live_under_block",
+                {"account": c.account_id, "order_id": rec.order_id, "intent_id": c.intent_id, "reason": reason, "error": str(exc)},
+            )
+            return
+        if self._orders[rec.order_id].state in OPEN_STATES:
+            self._alert(
+                "execution.live_under_block",
+                {
+                    "account": c.account_id,
+                    "order_id": rec.order_id,
+                    "intent_id": c.intent_id,
+                    "reason": reason,
+                    "error": "cancel not confirmed",
+                },
+            )
 
     def _live_orders_for_intent(self, intent_id: str) -> list[OrderRecord]:
         return [
@@ -173,6 +218,8 @@ class ExecutionGateway:
     # --- submission -----------------------------------------------------------------------------------
     def submit(self, command: OrderCommand, *, executor_id: str, fencing_token: int, now: datetime) -> OrderRecord:
         self._guard.check_caller(Plane.EXECUTION, "order_command")
+        # Authentication first: nothing about an unauthenticated command is disclosed or acted on (IVA-25, V-C2)
+        self._assert_authorised(command, now)
         # Inbox: at-least-once delivery, exactly-once business effect (ADR-003, NFR-CON-01)
         existing_id = self._by_key.get(command.idempotency_key)
         if existing_id is not None:
@@ -186,8 +233,15 @@ class ExecutionGateway:
                 {"idempotency_key": command.idempotency_key, "order_id": existing_id},
             )
             return existing
-        # Authentication and permission before anything reaches a broker (IVA V-C1, V-C2)
-        self._assert_authorised(command)
+        if command.authorisation in self._consumed_authorisations:  # one-shot grant under a new key (IVA-21)
+            self._audit(
+                "order.command.unauthorised",
+                command.correlation_id,
+                command.tenant_id,
+                command.account_id,
+                {"intent_id": command.intent_id, "reason": "authorisation already consumed"},
+            )
+            raise CommandNotAuthorised("authorisation already consumed (one-shot)")
         # Per-intent invariant: one live order per intent regardless of policy version (Trading review C2)
         live = self._live_orders_for_intent(command.intent_id)
         if live:
@@ -220,6 +274,22 @@ class ExecutionGateway:
             )
             raise StaleFencingToken(f"executor {executor_id} token {fencing_token} is not the current lease for {command.account_id}")
         self._assert_executable(command, now, stage="submit")  # last gate before the broker (IVA V-C1)
+        prior = self._by_decision.get(command.decision_id)
+        if prior is not None:  # re-execution (even after a cancel) needs a fresh decision, never a replayed one (IVA-21)
+            self._audit(
+                "order.command.unauthorised",
+                command.correlation_id,
+                command.tenant_id,
+                command.account_id,
+                {
+                    "intent_id": command.intent_id,
+                    "decision_id": command.decision_id,
+                    "reason": "decision already consumed",
+                    "order_id": prior,
+                },
+            )
+            raise CommandNotAuthorised(f"decision {command.decision_id} already produced order {prior}; a fresh decision is required")
+        self._consumed_authorisations.add(command.authorisation)
         broker = self._broker_for_account(command.account_id)
         adapter = self._adapters.get(broker)
         if adapter is None:
@@ -235,6 +305,7 @@ class ExecutionGateway:
             updated_at=now,
         )
         self._by_key[command.idempotency_key] = rec.order_id
+        self._by_decision[command.decision_id] = rec.order_id
         self._by_client_id[coid] = rec.order_id
         self._by_intent.setdefault(command.intent_id, []).append(rec.order_id)
         self._save(rec, "order.created", now, publish=False)  # the Control plane already published order.command.v1
@@ -295,7 +366,12 @@ class ExecutionGateway:
                 rec = self._transition(
                     rec, OrderState.ACKNOWLEDGED, now, broker_order_ref=status.broker_order_ref, fencing_token=fencing_token
                 )
-                return self._save(rec, "order.acked.v1", now, {"retry": True, "broker_dedupe": True})
+                rec = self._save(rec, "order.acked.v1", now, {"retry": True, "broker_dedupe": True})
+                # The order is live at the broker: if execution is no longer permitted (Kill Switch / halt engaged
+                # during the outage) it must be cancelled now, not merely adopted (IVA-19).
+                if status.status != "FILLED":
+                    self._cancel_if_blocked(rec, fencing_token=fencing_token, now=now)
+                return self._orders[order_id]
             if status.status == "CANCELLED":
                 rec = self._transition(
                     rec, OrderState.CANCELLED, now, broker_order_ref=status.broker_order_ref, fencing_token=fencing_token

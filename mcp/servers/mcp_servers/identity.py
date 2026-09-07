@@ -79,7 +79,7 @@ class IdentityIssuer:
         if nonce_path is not None and nonce_path.exists():
             for line in nonce_path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
-                    rec = json.loads(line)
+                    rec = json.loads(line)  # never pruned here: the verify-time age check bounds what can replay; compaction [Open: O-55]
                     self._seen_nonces.setdefault(str(rec["agent_id"]), set()).add(str(rec["nonce"]))
 
     def adopt(self, ident: AgentIdentity) -> None:

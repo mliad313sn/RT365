@@ -40,3 +40,24 @@ class CommandAuthoriser:
         if not hmac.compare_digest(self._mac(command), command.authorisation):
             return "command authorisation invalid (forged or altered after authorisation)"
         return None
+
+    def verifier(self) -> CommandVerifier:
+        """A verify-only handle for the gateway: it cannot sign (IVA-22).
+
+        In-process Python offers no true isolation (the key is still in memory); the deployment
+        boundary is a separate gateway process holding only the verification material [Open: O-53].
+        """
+        return CommandVerifier(self._key)
+
+
+class CommandVerifier:
+    def __init__(self, key: bytes) -> None:
+        self._key = key
+
+    def verify(self, command: OrderCommand) -> str | None:
+        if not command.authorisation:
+            return "command carries no control-plane authorisation"
+        expected = hmac.new(self._key, command.authorised_digest().encode(), sha256).hexdigest()
+        if not hmac.compare_digest(expected, command.authorisation):
+            return "command authorisation invalid (forged or altered after authorisation)"
+        return None

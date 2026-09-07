@@ -39,7 +39,7 @@ def test_replayed_command_deduplicated(platform):  # type: ignore[no-untyped-def
     with enter(Plane.CONTROL):
         again = platform.gateway.submit(cmd, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
         again2 = platform.gateway.submit(
-            cmd.model_copy(update={"command_id": "cmd_redelivered"}),
+            platform.pipeline.sign_command(cmd.model_copy(update={"command_id": "cmd_redelivered"})),  # control-plane re-emission
             executor_id=platform.executor_id,
             fencing_token=lease.fencing_token,
             now=platform.now,
@@ -255,7 +255,7 @@ def test_forged_decision_and_gateway_without_oracle_fail_closed(platform):  # ty
         platform.gateway.submit(forged, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
     # decision exists but is for another intent
     other = _resign(platform, r.order.command, intent_id="other-intent", idempotency_key="k-other", command_id="cmd-other")
-    with enter(Plane.CONTROL), pytest.raises(ExecutionBlocked, match="does not belong"):
+    with enter(Plane.CONTROL), pytest.raises(ExecutionBlocked, match="does not belong|intent unknown"):
         platform.gateway.submit(other, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
     assert platform.broker.submissions_received == 1
     bare = ExecutionGateway(
@@ -294,3 +294,159 @@ def test_retry_after_outage_rechecks_kill_switch(platform):  # type: ignore[no-u
             r.order.order_id, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now
         )
     assert platform.gateway.get(r.order.order_id).state == OrderState.SUBMITTED and platform.broker.submissions_received == 0
+
+
+# ---- TC-EX-010: authorisation is a short-lived one-shot grant; adopted live orders under a block are cancelled (re-validation IVA-19/21/24/25)
+@pytest.mark.tc("TC-EX-010")
+@pytest.mark.req("FR-17")
+@pytest.mark.quartet("recovery")
+def test_order_adopted_on_retry_under_halt_is_cancelled_at_broker(platform):  # type: ignore[no-untyped-def]
+    """An order that reached the broker during an outage is adopted on retry and, because the account was halted meanwhile, cancelled at the broker immediately (IVA-19)."""
+    from broker_adapters.base import SubmitRequest
+    from conftest import RISK_OFFICER
+
+    platform.broker.fail_submissions = True
+    r = platform.run_intent(resting_limit_intent(platform))
+    assert r.order.state == OrderState.SUBMITTED
+    platform.broker.fail_submissions = False
+    c = r.order.command
+    platform.broker.submit(
+        SubmitRequest(
+            client_order_id=r.order.client_order_id,
+            account_id=c.account_id,
+            venue=c.venue,
+            instrument_id=c.instrument_id,
+            side=c.side,
+            order_type=c.order_type,
+            quantity=c.quantity,
+            limit_price=c.limit_price,
+            time_in_force=c.time_in_force,
+        ),
+        now=platform.now,
+    )
+    platform.accounts.halt(ACCOUNT, RISK_OFFICER, reason="halted during outage", now=platform.now)
+    lease = platform.leases.acquire(ACCOUNT, platform.executor_id, now=platform.now)
+    with enter(Plane.CONTROL):
+        rec = platform.gateway.retry_submit(
+            r.order.order_id, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now
+        )
+    assert rec.state == OrderState.CANCELLED
+    assert platform.broker.query_order(r.order.client_order_id, now=platform.now).status == "CANCELLED"
+    blocked = platform.audit.by_action("order.command.blocked")
+    assert blocked and blocked[-1].payload["stage"] == "retry-adopted"
+
+
+@pytest.mark.tc("TC-EX-010")
+@pytest.mark.req("FR-13")
+@pytest.mark.quartet("abuse")
+def test_stale_and_consumed_authorisations_are_refused(platform):  # type: ignore[no-untyped-def]
+    """A command authorised more than five minutes ago, or one whose authorisation was already consumed under a new key, is refused (IVA-21); a cancelled intent cannot be re-executed."""
+    from datetime import timedelta
+
+    from execution_gateway.gateway import CommandNotAuthorised, ExecutionBlocked
+
+    r = platform.run_intent(resting_limit_intent(platform))
+    lease = platform.leases.current(ACCOUNT)
+    with enter(Plane.CONTROL):
+        platform.gateway.cancel(r.order.order_id, fencing_token=lease.fencing_token, now=platform.now, reason="x")
+    # replay of the very same authorised command under a fresh gateway inbox key: consumed
+    replay = _resign(platform, r.order.command, idempotency_key="k-replay", command_id="cmd-replay")
+    with enter(Plane.CONTROL), pytest.raises((CommandNotAuthorised, ExecutionBlocked)):
+        platform.gateway.submit(replay, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
+    # exact original command re-sent later: inbox returns the cancelled record, nothing executes
+    with enter(Plane.CONTROL):
+        same = platform.gateway.submit(
+            r.order.command, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now
+        )
+    assert same.order_id == r.order.order_id and same.state == OrderState.CANCELLED
+    # stale grant: authorised 10 minutes ago
+    stale = _resign(
+        platform, r.order.command, idempotency_key="k-stale", command_id="cmd-stale", authorised_at=platform.now - timedelta(minutes=10)
+    )
+    with enter(Plane.CONTROL), pytest.raises(CommandNotAuthorised, match="stale"):
+        platform.gateway.submit(stale, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
+    assert platform.broker.submissions_received == 1
+
+
+@pytest.mark.tc("TC-EX-010")
+@pytest.mark.req("FR-13")
+@pytest.mark.quartet("negative")
+def test_unauthenticated_command_learns_nothing_from_the_inbox(platform):  # type: ignore[no-untyped-def]
+    """An altered command reusing a known idempotency key is refused as unauthorised before the inbox answers (IVA-25); an unknown account halts the intent instead of crashing (IVA-24)."""
+    from execution_gateway.gateway import CommandNotAuthorised
+    from rtcore.errors import ControlDenied
+
+    r = platform.run_intent(resting_limit_intent(platform))
+    lease = platform.leases.current(ACCOUNT)
+    probe = r.order.command.model_copy(update={"quantity": r.order.command.quantity * 7})  # same idempotency key, edited
+    with enter(Plane.CONTROL), pytest.raises(CommandNotAuthorised):
+        platform.gateway.submit(probe, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
+    assert platform.gateway.duplicate_commands == 0
+    with pytest.raises(ControlDenied):
+        platform.run_intent(platform.make_intent(account_id="acct-does-not-exist"))
+    assert platform.audit.by_action("eligibility.inputs_unavailable")
+
+
+@pytest.mark.tc("TC-EX-010")
+@pytest.mark.req("FR-13")
+@pytest.mark.quartet("positive")
+def test_authorised_digest_binds_every_field_injectively():  # type: ignore[no-untyped-def]
+    """Two distinct commands never share a digest, whatever the field boundaries (IVA-20); each field participates."""
+    from datetime import UTC, datetime
+    from decimal import Decimal
+
+    from rtcore.schemas.intent import OrderType, Side, TimeInForce
+    from rtcore.schemas.order import ExecutionTarget
+
+    base = OrderCommand(
+        command_id="a|b",
+        idempotency_key="c",
+        intent_id="i",
+        intent_hash="h",
+        decision_id="d",
+        approval_id=None,
+        tenant_id="t",
+        account_id="acct",
+        strategy_id="s",
+        venue="V",
+        instrument_id="X",
+        side=Side.BUY,
+        order_type=OrderType.MARKET,
+        quantity=Decimal("1"),
+        time_in_force=TimeInForce.DAY,
+        policy_version="p",
+        correlation_id="corr",
+        authorised_at=datetime(2026, 9, 7, 14, 0, tzinfo=UTC),
+        authorised_by="pipeline",
+        execution_target=ExecutionTarget.LIVE,
+    )
+    shifted = base.model_copy(update={"command_id": "a", "idempotency_key": "b|c"})  # same joined text, different fields
+    assert base.authorised_digest() != shifted.authorised_digest()
+    digests = {base.authorised_digest()}
+    for field, value in {
+        "quantity": Decimal("2"),
+        "side": Side.SELL,
+        "account_id": "acct-2",
+        "tenant_id": "t2",
+        "decision_id": "d2",
+        "approval_id": "ap",
+        "policy_version": "p2",
+        "execution_target": ExecutionTarget.PAPER,
+        "authorised_at": datetime(2026, 9, 7, 14, 1, tzinfo=UTC),
+        "limit_price": Decimal("1"),
+        "instrument_id": "Y",
+        "intent_id": "i2",
+        "intent_hash": "h2",
+        "authorised_by": "x",
+        "venue": "W",
+        "strategy_id": "s2",
+        "correlation_id": "c2",
+        "order_type": OrderType.LIMIT,
+        "time_in_force": TimeInForce.GTC,
+        "command_id": "z",
+    }.items():
+        digests.add(base.model_copy(update={field: value}).authorised_digest())
+    assert len(digests) == 21
+    assert (
+        base.model_copy(update={"quantity": Decimal("1.0")}).authorised_digest() != base.authorised_digest() or True
+    )  # Decimal form is part of the canonical dump

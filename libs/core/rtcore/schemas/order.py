@@ -9,7 +9,7 @@ from enum import Enum
 from pydantic import Field, field_validator
 
 from rtcore.clock import ensure_utc
-from rtcore.ids import sha256_hex
+from rtcore.ids import canonical_json, sha256_hex
 from rtcore.schemas.base import StrictModel
 from rtcore.schemas.intent import OrderType, Side, TimeInForce
 
@@ -60,7 +60,7 @@ class OrderCommand(StrictModel):
     def authorised_digest(self) -> str:
         """Canonical digest of every field that authorisation binds (everything except the MAC itself)."""
         fields = self.model_dump(mode="json", exclude={"authorisation"})
-        return sha256_hex("|".join(f"{k}={fields[k]}" for k in sorted(fields)))
+        return sha256_hex(canonical_json(fields))  # canonical JSON is injective over the field set (IVA-20)
 
     @field_validator("authorised_at")
     @classmethod

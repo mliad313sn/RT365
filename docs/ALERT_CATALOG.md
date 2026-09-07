@@ -17,5 +17,6 @@
 | Broker health fail | health check | S2 | cancel-only | broker disconnected |
 | Audit chain verification fail | hash mismatch | S1 | halt trading; forensic | Kill Switch activation |
 | Limit changed | any | info | — | — |
-| execution.unauthorised_command | command without valid control-plane authorisation (forged/altered) [Committee: GATE_C V-C2] | S1 | killswitch_account | credential compromise |
+| execution.unauthorised_command | command without valid control-plane authorisation (forged/altered) [Committee: GATE_C V-C2] | S1 | none (page; the account id in a forged command is attacker-chosen, so no automatic halt — IVA-23) | credential compromise |
+| execution.live_under_block | order live at the broker while execution is blocked and the cancel failed or was not confirmed [Committee: REVALIDATION IVA-19] | S1 | killswitch_account | Kill Switch activation |
 | execution.blocked_at_gateway | authorised command refused by Kill Switch / halt / mode / provenance at submit or retry [Committee: GATE_C V-C1] | S1 | none (page) | Kill Switch activation |

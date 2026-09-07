@@ -47,7 +47,7 @@ from mcp_servers.revocation import RevocationList
 from mcp_servers.runtime import ToolRuntime, current_principal
 from mcp_servers.tools import build_tools
 from oms.intent_queue import IntentQueue
-from oms.lifecycle import IntentTracker
+from oms.lifecycle import IntentState, IntentTracker
 from oms.outbox import Inbox, Outbox
 from oms.pipeline import TARGET_FOR_MODE, EligibilityInputs, PipelineResult, TradePipeline
 from portfolio_service.ledger import Ledger, PositionState
@@ -502,6 +502,7 @@ def build_sim_platform(
     cash: Decimal = Decimal("1000000"),
     enable_cell: bool = True,
     revocations_path: Path | None = None,
+    nonce_path: Path | None = None,
 ) -> SimPlatform:
     audit = AuditStore()
     outbox = Outbox()
@@ -645,6 +646,12 @@ def build_sim_platform(
             return "tenant mismatch"
         if TARGET_FOR_MODE.get(acct.mode) != command.execution_target:
             return f"execution target {command.execution_target.value} does not match account mode {acct.mode.value}"
+        try:
+            st = tracker.get(command.intent_id).state
+        except KeyError:
+            return "intent unknown to the control plane"
+        if st not in (IntentState.AUTHORISED, IntentState.SUBMITTED, IntentState.ACKNOWLEDGED, IntentState.PARTIALLY_FILLED):
+            return f"intent is {st.value}; a superseded or terminal intent cannot be (re)executed"
         dec = decisions.get(command.decision_id)
         if dec is None:
             return "decision unknown to the control plane"
@@ -667,7 +674,7 @@ def build_sim_platform(
         alert=lambda n, p: alerts.raise_alert(n, p),
         broker_for_account=lambda a: accounts.get(a).broker,
         guard=guard,
-        verify_command=authoriser.verify,
+        verify_command=authoriser.verifier().verify,
         execution_permitted=execution_permitted,
     )
     approvals = ApprovalQueue(audit_hook=audit3)
@@ -703,7 +710,7 @@ def build_sim_platform(
         )
         jurisdictions.activate_flag(cell, actor=comp, now=now)
     revocations = RevocationList(revocations_path)
-    issuer = IdentityIssuer(revocations=revocations, audit=audit2)
+    issuer = IdentityIssuer(revocations=revocations, audit=audit2, nonce_path=nonce_path)
     registry = load_registry(registry_path or REPO_ROOT / "mcp" / "policies" / "tool_registry.signed.json")
     allowlists = {TENANT: TenantAllowlist.load(REPO_ROOT / "mcp" / "policies" / "allowlist.tenant-sim.yaml", revocations)}
     egress = EgressPolicy.load(REPO_ROOT / "mcp" / "policies" / "egress.yaml")

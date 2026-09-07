@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-07T18:41:56.053654+00:00 at base commit `2070d9318506064c7e3a1339cb8d6966b6aca8dc` (the working tree at generation time; CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-07T21:28:56.176553+00:00 at base commit `c0bb1fb6eed5065bcc84d0c54aa52c5af773cf3b` (the working tree at generation time; CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
@@ -15,7 +15,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-BT | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-CP | 1 | 2 | 1 | 2 | yes | 6 | 0 |
 | TC-E2E | 2 | 1 | 2 | 1 | yes | 6 | 0 |
-| TC-EX | 2 | 4 | 3 | 3 | yes | 12 | 0 |
+| TC-EX | 3 | 5 | 4 | 4 | yes | 16 | 0 |
 | TC-ID | 1 | 1 | 2 | 1 | yes | 5 | 0 |
 | TC-KS | 7 | 2 | 1 | 2 | yes | 12 | 0 |
 | TC-MD | 1 | 1 | 1 | 1 | yes | 4 | 0 |
@@ -82,6 +82,10 @@ Areas with a full quartet: 15/15.
 | TC-EX-009 | FR-13 | positive | dev | A command signed by the pipeline for a known APPROVED decision is accepted; the same command with one field altered is not. | passed | `test/quartets/test_tc_ex_execution.py::test_gateway_accepts_only_control_plane_signed_commands` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-EX-009 | FR-17 | negative | dev | An authorised command that arrives after an ACCOUNT Kill Switch or a halt is refused at the gateway, whatever the decision said (IVA V-C1). | passed | `test/quartets/test_tc_ex_execution.py::test_gateway_blocks_kill_switch_and_halted_account_at_submission` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-EX-009 | FR-17 | recovery | dev | An order left SUBMITTED by a broker outage is not re-sent once the account was halted during the outage. | passed | `test/quartets/test_tc_ex_execution.py::test_retry_after_outage_rechecks_kill_switch` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-EX-010 | FR-13 | positive | dev | Two distinct commands never share a digest, whatever the field boundaries (IVA-20); each field participates. | passed | `test/quartets/test_tc_ex_execution.py::test_authorised_digest_binds_every_field_injectively` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-EX-010 | FR-17 | recovery | dev | An order that reached the broker during an outage is adopted on retry and, because the account was halted meanwhile, cancelled at the broker immediately (IVA-19). | passed | `test/quartets/test_tc_ex_execution.py::test_order_adopted_on_retry_under_halt_is_cancelled_at_broker` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-EX-010 | FR-13 | abuse | dev | A command authorised more than five minutes ago, or one whose authorisation was already consumed under a new key, is refused (IVA-21); a cancelled intent cannot be re-executed. | passed | `test/quartets/test_tc_ex_execution.py::test_stale_and_consumed_authorisations_are_refused` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-EX-010 | FR-13 | negative | dev | An altered command reusing a known idempotency key is refused as unauthorised before the inbox answers (IVA-25); an unknown account halts the intent instead of crashing (IVA-24). | passed | `test/quartets/test_tc_ex_execution.py::test_unauthenticated_command_learns_nothing_from_the_inbox` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-ID-001 | FR-01 | positive | dev | A limit change proposed by one person stays pending until a different person from another line checks it; cooling period applies. | passed | `test/quartets/test_tc_id_identity.py::test_privileged_change_needs_second_approver_from_different_line` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-ID-002 | FR-01 | negative | dev | RBAC denies missing permissions; MFA is required; privileged permissions need an active elevation window. | passed | `test/quartets/test_tc_id_identity.py::test_rbac_mfa_and_pim` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-ID-003 | FR-01 | abuse | dev | Agents cannot promote modes; promotion is one step with gate evidence; out-of-scope capabilities have no permission flag. | passed | `test/quartets/test_tc_id_identity.py::test_agent_cannot_change_mode_or_skip_steps_and_out_of_scope_flags_absent` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
