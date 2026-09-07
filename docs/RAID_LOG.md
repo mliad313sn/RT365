@@ -29,3 +29,13 @@
 | R-02 | Risk | Duplicate orders during executor failover | Integration Architect | Gate C | Open |
 | R-03 | Risk | Look-ahead/leakage inflating backtests | Model Risk Lead | Gate D | Open |
 | R-04 | Risk | Marketing/UI language implying guaranteed returns | GTM Lead, Compliance Agent | Gate F | Open |
+| O-20 | Gap | CODEOWNERS team handles map to real reviewers; branch protection enabled | Program Orchestrator | Gate B | Open |
+| O-21 | Gap | Surveillance detector parameters (wash/spoof/close windows) approved by Compliance & Legal | Compliance Agent | Gate D | Open |
+| O-22 | Decision | Asymmetric (Ed25519/KMS) signing of the tool registry and artefacts; dev HMAC key retired | Security Architect, MCP Security Agent | Gate B | Open |
+| O-23 | Gap | SAST/DAST/SCA scanners and artefact signing wired into CI (currently lint, typecheck, secret scan, SBOM only) | Cloud Architect | Gate B | Open |
+| O-24 | Gap | Accessibility (WCAG 2.2 AA) pass on the operator console; PWA build (E10) | Frontend Lead, Accessibility Lead | Gate F | Open |
+| O-25 | Decision | Trailing-stop and conditional order semantics per broker (schema accepts; sim broker rejects) | Trading Domain Lead | Gate C | Open |
+| R-05 | Risk | Dev/sim stores are in-memory: durability, exactly-once under real redelivery and lease consistency are unproven on the deployed topology | Enterprise Architect | Gate C | Open |
+| R-06 | Risk | BFF dev authentication (client-asserted headers) must be replaced by IdP/MFA sessions before any shared environment | Backend Lead, Security Architect | Gate B | Open |
+| R-07 | Risk | Sim risk-policy fixture values could be mistaken for approved thresholds; `approved_for_production=false` guards it | Chief Risk Agent | Gate C | Open |
+| R-08 | Risk | Set/dict ordering non-determinism in engine code (one instance found and fixed by the replica test TC-RK-001) | Backend Lead | continuous | Mitigated (replica test in CI) |

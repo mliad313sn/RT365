@@ -2,21 +2,38 @@
 
 | Owner | Reviewer (different line) | Approving body | First gate | Status |
 |---|---|---|---|---|
-| Program Orchestrator | Independent Validation Agent | CAB | A | Draft v1.0 |
+| Program Orchestrator | Independent Validation Agent | CAB | A | v1.1 — dev/sim build rows; IVA verification pending |
 
-Every requirement maps to architecture, owner, control, test, evidence and gate [Source: 00]. Seed rows below; extend per story.
+Every requirement maps to architecture, owner, control, test, evidence and gate [Source: 00]. Test IDs are the pytest markers in `test/`; evidence paths are generated (`docs/TEST_CASES/TC-*.md`, `docs/TEST_CASES/EVIDENCE_REPORT.md`). "Gate" is the first gate at which the row must be complete; the dev/sim build evidences rows only up to the environment the ladder currently authorises (dev/sim).
 
-| Req | Architecture element | Implementation owner | Control | Test IDs (quartet) | Evidence | Gate |
-|---|---|---|---|---|---|---|
-| FR-01 | Identity service, PIM | Backend Lead | Maker-checker, MFA | TC-ID-001..004 | AUDIT_EVIDENCE_INDEX #… | B |
-| FR-02 | Broker Adapter framework | Broker-Connector Lead | Capability discovery, vault credentials | TC-BR-001..004 | BROKER_CERTIFICATIONS/ | C |
-| FR-03 | Market Data, bitemporal store | Data Engineering Lead | Provenance, freshness SLA | TC-MD-001..004 | quality reports | C |
-| FR-09 | AI/MCP context, signed registry | Backend Lead | Allowlisted tools, schema validation | TC-AI-001..004 | MCP_TOOL_CATALOG.md | D |
-| FR-11 | Risk service | Backend Lead | Deterministic decision, fail closed | TC-RK-001..004 | determinism report | C |
-| FR-12 | Approval service | Backend Lead | Maker ≠ checker | TC-AP-001..004 | approval logs | D |
-| FR-13 | OMS/Execution Gateway | Backend Lead | Executor lease + fencing, idempotency key | TC-EX-001..004 | duplicate-delivery report | C |
-| FR-14 | Reconciliation service | Backend Lead | Break → Supervised | TC-RC-001..004 | reconciliation reports | C |
-| FR-15 | Compliance service, WORM | Backend Lead | Eligibility, dual-key flag, retention | TC-CP-001..004 | COMPLIANCE_MATRIX.md | D |
-| FR-17 | Kill Switch service | Backend Lead | Six levels, two-person restore | TC-KS-001..004 | drill evidence | C |
-| NFR-SEC-01 | Network policy | Cloud Architect | No analytics→execution route | TC-NET-001..004 | policy test | B |
-| NFR-OBS-01 | Telemetry | SRE Lead | Correlation ID end to end | TC-OB-001..004 | trace completeness | C |
+| Req | Architecture element | Implementation owner | Control | Test IDs (quartet) | Evidence | Gate | Status |
+|---|---|---|---|---|---|---|---|
+| FR-01 | Identity service: RBAC/PIM/MFA (`identity_service.rbac`), maker-checker (`identity_service.makerchecker`), mode ladder (`identity_service.accounts`) | Backend Lead | Maker ≠ checker, different lines, cooling period; MFA; PIM elevation; two-person exit from HALTED; absent out-of-scope permissions | TC-ID-001..004 | TEST_CASES/TC-ID.md | B | dev/sim evidenced; IdP/MFA integration [Open: MISSING_ACTIONS] |
+| FR-02 | Broker adapter framework (`broker_adapters.base`), simulated sandbox, certification harness | Broker-Connector Lead | Capability discovery (unsupported types rejected), vault-only credentials, rotation, health | TC-BR-001..004, TC-EX-006 | BROKER_CERTIFICATIONS/sim-broker.md (reviewer pending) | C | sim adapter only; live adapters [Open: H-07] |
+| FR-03 | Market Data: bitemporal store, instrument master, calendar, provider entitlement (`market_data`, `data_providers`) | Data Engineering Lead | Provenance stamp, freshness budget, outlier quality flag, look-ahead impossible, point-in-time universe | TC-MD-001..004 | TEST_CASES/TC-MD.md | C | simulated feed; licences [Open: O-12, H-08] |
+| FR-04 | BFF `/v1/status` (freshness/provenance panel), depth masking by entitlement | Frontend Lead | Depth hidden without entitlement | TC-AI-001 (bid/ask None) | TEST_CASES/TC-AI.md | C | partial (watchlists/charts/news not built) |
+| FR-05 | Portfolio ledger (`portfolio_service.ledger`) | Backend Lead | Positions/cash from fills; NAV; PnL; snapshot builder | TC-RC-001, TC-EX-001 | TEST_CASES/TC-RC.md | C | dev/sim |
+| FR-06 | Strategy registry + P2 lifecycle (`strategy_service.registry`) | Quant Research Lead | Owner ≠ validator ≠ reproducer; gate-bound promotion; rollback; manipulation screen | TC-BT-004, TC-CP-005 | TEST_CASES/TC-BT.md | C | dev/sim |
+| FR-07 | Plane guard + MCP runtime constraints (`rtcore.planes`, `mcp/policies/runtime.yaml`) | Security Architect | Sandbox has no vault route | TC-NET-003, TC-AI-005 | TEST_CASES/TC-NET.md | B | dev/sim; notebooks not provisioned |
+| FR-08 | Backtest engine (`backtest_engine`) on the production pipeline (ADR-008) | Quant Research Lead | Same snapshot → identical fills; cost sensitivity; latency bar; leakage guard | TC-BT-001..003 | TEST_CASES/TC-BT.md | C | dev/sim |
+| FR-09 | MCP sandbox: signed registry, identity, allowlist, quotas, schema validation, canary, revocation (`mcp_servers`) | Backend Lead | Allowlisted tools only; injection/unknown-field/hallucinated-symbol rejection; revocation | TC-AI-001..005 | TEST_CASES/TC-AI.md | D | dev/sim; dev signing key [Open: O-22] |
+| FR-10 | Order types in schema (`rtcore.schemas.intent`) + adapter capability check | Backend Lead | Type/price validators; unsupported type → BROKER_REJECTED | TC-EX-006, TC-BR-003 | TEST_CASES/TC-EX.md | C | MARKET/LIMIT/STOP/STOP_LIMIT on sim broker; TRAILING/CONDITIONAL per broker |
+| FR-11 | Risk engine `decide()` (`risk_engine.engine`), policy hierarchy, runtime monitors | Backend Lead | Deterministic, fail closed, 16 controls with reason/value/threshold, effective=min | TC-RK-001..016, property tests | TEST_CASES/TC-RK.md, EVIDENCE_REPORT.md | C | dev/sim; thresholds [Open: O-07] |
+| FR-12 | Approval queue (`approval_service.queue`) | Backend Lead | Approver human, role-authorised, ≠ maker/strategy owner; expiry; Kill Switch at execution | TC-AP-001..004 | TEST_CASES/TC-AP.md | D | dev/sim |
+| FR-13 | Execution gateway + lease store (`execution_gateway`) | Backend Lead | Idempotency key inbox, fencing token, monotonic states, retry with same client_order_id | TC-EX-001..005 | TEST_CASES/TC-EX.md | C | dev/sim; durable lease/outbox [Open: R-05] |
+| FR-14 | Reconciliation + tickets (`reconciliation_service`) | Backend Lead | Break classification, S1→Kill Switch, S2→Supervised, two-person resolution | TC-RC-001..004 | TEST_CASES/TC-RC.md | C | dev/sim |
+| FR-15 | Eligibility engine, jurisdiction registry, restricted lists, surveillance, retention (`compliance_engine`) | Backend Lead | Deterministic eligibility; dual key; legal hold suppresses deletion | TC-CP-001..006 | TEST_CASES/TC-CP.md | D | dev/sim; no real cell enabled [Open: O-11] |
+| FR-16 | BFF + dashboard + audit explorer endpoints (`web_bff.app`) | Frontend Lead | Auditor read-only export; risk-before-profit ordering; reason dictionary | TC-E2E-J03/J05/J06, TC-AUD-004 | TEST_CASES/TC-E2E.md | C | dev header auth [Open: R-06]; PWA [Open: ADR-012] |
+| FR-17 | Kill Switch service (`killswitch_service`) + runtime monitors | Backend Lead | Six levels; unilateral activation by authorised humans/monitors; two-person deactivation; evidence hash | TC-KS-001..006 | TEST_CASES/TC-KS.md | C | dev/sim; drill on real infra [Open: H-19] |
+| NFR-DET-01 | Pure decision functions | Backend Lead | Replica test in separate interpreter; property tests | TC-RK-001, test/property | EVIDENCE_REPORT.md | C | evidenced |
+| NFR-CON-01 | Inbox dedupe by idempotency key; outbox replay | Integration Architect | Exactly-once business effect | TC-EX-002 | TEST_CASES/TC-EX.md | C | in-memory [Open: R-05] |
+| NFR-CON-02 | Monotonic state machines | Backend Lead | Illegal transitions raise | TC-EX-005 | TEST_CASES/TC-EX.md | C | evidenced |
+| NFR-SEC-01 | Plane guard + Kubernetes network policies + MCP egress | Cloud Architect | No analytics→execution/vault route | TC-NET-001..004, TC-AI-005 | scripts/check_network_policies.py output | B | manifests + in-process; cluster [Open: H-05] |
+| NFR-SEC-02 | CI gates (lint, typecheck, secret scan, SBOM) | Cloud Architect | unsigned deploy refused | .github/workflows/ci.yml | security/sbom/sbom.cdx.json | B | SAST/DAST/SCA/signing [Open: O-23] |
+| NFR-AUD-01 | Hash-chained append-only audit (`audit_service`) | SRE Lead | No delete API; tamper detection; export/reload | TC-AUD-001..004 | TEST_CASES/TC-AUD.md | C | WORM object store anchoring [Open: R-05] |
+| NFR-TEN-01 | Allowlist per tenant; identity scoped to tenant/account/strategy | Backend Lead | Cross-scope intent denied | TC-AI-002 (SCOPE), TC-AP-002 (tenant) | TEST_CASES/TC-AI.md | B | partial; tenant-escape red-team [Open: RT-03] |
+| NFR-OBS-01 | Correlation ID, tracer, probe, alert router (`rtobs`) | SRE Lead | Trace completeness; alert delivery to all channels | TC-OB-001..004 | TEST_CASES/TC-OB.md | C | dev/sim |
+| NFR-PRV-01 | Redaction at emission (`rtobs.logging.redact`); retention/legal hold | Privacy Lead | PII/secret patterns redacted; deletion suppressed under hold | TC-OB-002, TC-CP-006 | TEST_CASES/TC-OB.md | D | DPIA [Open: O-10] |
+| NFR-RES-01 | Executor lease + failover | Enterprise Architect | Standby with new token; single broker order | TC-EX-004 | TEST_CASES/TC-EX.md | C | dev/sim |
+| NFR-A11Y-01 | Dashboard semantics (labels, aria-live, focus) | Frontend Lead | Accessibility Lead verification | — | — | F | **GAP** [Open: ADR-012] |
+| NFR-LAT-01/02, NFR-FRS-01, NFR-AVL-01, NFR-SCL-01, NFR-DR-01 | SLI catalogue (observability/slis.yaml), capacity model skeleton | SRE Lead / Cloud Architect | targets after baselines | — | CAPACITY_MODEL.md | E | **targets unset** [Open: O-03, O-18] |

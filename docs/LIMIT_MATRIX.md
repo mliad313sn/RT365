@@ -22,3 +22,5 @@ Hierarchy platform > tenant > account > strategy > instrument; effective limit =
 | Freshness budget | | | | | | ms/s | RK-FRESH |
 | Capital envelope (bounded autonomy) | | | | | | ccy | envelope |
 Change log: maker, checker, cooling period end, policy_version.
+
+Dev/sim fixture [Committee]: `services/risk/policies/sim-policy-v0.1.yaml` carries placeholder values for every metric so the control quartet can exercise each check; `approved_for_production: false`. They are not proposed thresholds (O-07). Effective-limit semantics (minimum across levels) are implemented in `risk_engine.policy.effective_limit` and evidenced by TC-RK-012 and the property test.

@@ -19,6 +19,7 @@ test:
 
 evidence: test
 	$(PY) scripts/evidence_report.py
+	$(PY) scripts/export_test_cases.py
 
 schemas:
 	$(PY) scripts/export_event_schemas.py --check

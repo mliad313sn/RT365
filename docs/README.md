@@ -30,3 +30,16 @@ Every artefact of blueprint §15 [Source: 15], its owner and the gate at which i
 | VENDOR_ASSESSMENTS/ | Finance & Vendor Lead | B |
 | BROKER_CERTIFICATIONS/ | Broker-Connector Lead | C |
 | POST_LAUNCH_REVIEW.md | Product Director | post-F |
+
+## Added by the dev/sim build [Committee]
+| Artefact | Owner | Gate |
+|---|---|---|
+| SESSIONS/C01..C12, P1..P6 (session packets); SESSIONS/REVIEW_* (independent challenges) | Program Orchestrator; challengers per packet | A–D |
+| GATE_REPORTS/ (IVA validation reports) | Independent Validation Agent | A–F |
+| REASON_CODES.md (generated) | Frontend Lead / Support & Training Lead | C |
+| CAPACITY_MODEL.md (skeleton) | Enterprise/Cloud Architect | B |
+| TEST_CASES/TC-*.md, TEST_CASES/EVIDENCE_REPORT.md (generated) | QA Lead | C |
+| BROKER_CERTIFICATIONS/sim-broker.md (generated) | Broker-Connector Lead | C |
+| STRATEGY_CARDS/strat-sma-xover.md, MODEL_CARDS/rule-sma.md | Quant Research Lead / Model Risk Lead | D |
+| ADRs/ADR-009..012 | Enterprise Architect | B |
+| REPORTS/WEEKLY_*.md | Program Orchestrator | weekly |

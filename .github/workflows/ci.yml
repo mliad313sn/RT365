@@ -27,7 +27,7 @@ jobs:
       - name: Determinism gate (TC-RK-001..004 must pass; fail on any divergence)
         run: python -m pytest test/quartets/test_tc_rk_determinism.py test/property -q
       - name: Evidence report
-        run: python scripts/evidence_report.py
+        run: python scripts/evidence_report.py && python scripts/export_test_cases.py
       - name: Broker sandbox certification harness (sim)
         run: make certify-broker
       - name: SBOM (CycloneDX)
