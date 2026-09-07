@@ -53,6 +53,7 @@ class Metric(str, Enum):
 class Limit(StrictModel):
     level: LimitLevel
     scope_id: str  # "*" for platform; tenant/account/strategy/instrument id otherwise
+    tenant_id: str | None = None  # STRATEGY/INSTRUMENT limits are tenant-qualified so they never leak across tenants (review P20)
     metric: Metric
     threshold: Decimal
     unit: str = ""
@@ -83,6 +84,10 @@ class RiskPolicy(StrictModel):
     protective_stop_required: bool = True
     protective_stop_action: FailAction = FailAction.REJECT
     allow_pre_open_limit_orders: bool = False
+    risk_reducing_orders_exempt_exposure_caps: bool = True  # [Committee] proposal to the Trading Risk Committee (review P4)
+    max_protective_stop_distance_pct: Decimal = Decimal("10")  # [Open: O-07]
+    account_snapshot_max_age_s: Decimal = Decimal("5")  # [Open: O-03]
+    approved_liquidation_policies: tuple[str, ...] = ()  # [Open: O-08] empty = reduce/flatten fall back to CANCEL_ONLY
     complex_asset_classes: tuple[str, ...] = ("OPTION", "FUTURE", "CRYPTO")
     maker: str = ""
     checker: str = ""
@@ -126,6 +131,11 @@ def effective_limit(policy: RiskPolicy, metric: Metric, scope: LimitScope, as_of
     for limit in policy.limits_for(metric):
         if limit.scope_id != scope.id_for(limit.level):
             continue
+        if limit.tenant_id is not None and limit.tenant_id != scope.tenant_id:
+            continue
+        if limit.level in (LimitLevel.STRATEGY, LimitLevel.INSTRUMENT) and limit.tenant_id is None and scope.tenant_id != "*":
+            # tenant-qualification is mandatory below the tenant level; unqualified strategy/instrument limits are ignored
+            continue
         if as_of is not None and limit.effective_from is not None and limit.effective_from > as_of:
             continue
         applicable.append(limit)
@@ -143,6 +153,7 @@ def _coerce(raw: dict[str, Any]) -> dict[str, Any]:
             scope_id=str(item.get("scope_id", "*")),
             metric=Metric(item["metric"]),
             threshold=Decimal(str(item["threshold"])),
+            tenant_id=item.get("tenant_id"),
             unit=str(item.get("unit", "")),
             version=str(item.get("version", "0")),
             maker=str(item.get("maker", "")),
@@ -162,3 +173,52 @@ def load_policy(path: Path) -> RiskPolicy:
 
 def policy_from_dict(raw: dict[str, Any]) -> RiskPolicy:
     return RiskPolicy.model_validate(_coerce(raw))
+
+
+def apply_limit_change(
+    policy: RiskPolicy,
+    *,
+    level: str,
+    scope_id: str,
+    metric: str,
+    threshold: Decimal,
+    tenant_id: str | None,
+    maker: str,
+    checker: str,
+    change_id: str,
+    effective_from: datetime,
+) -> RiskPolicy:
+    """Produce the successor policy version from an EFFECTIVE maker-checker change (identity_service.makerchecker).
+
+    This is the only supported write path to limits: no agent, MCP server or strategy can call it with an
+    effective change, because effective changes exist only after a human maker and a different-line checker.
+    """
+    new_limit = Limit(
+        level=LimitLevel(level),
+        scope_id=scope_id,
+        metric=Metric(metric),
+        threshold=threshold,
+        tenant_id=tenant_id,
+        version=change_id,
+        maker=maker,
+        checker=checker,
+        effective_from=effective_from,
+    )
+    remaining = tuple(
+        lim
+        for lim in policy.limits
+        if not (
+            lim.level == new_limit.level
+            and lim.scope_id == new_limit.scope_id
+            and lim.metric == new_limit.metric
+            and lim.tenant_id == new_limit.tenant_id
+        )
+    )
+    return policy.model_copy(
+        update={
+            "limits": (*remaining, new_limit),
+            "policy_version": f"{policy.policy_version.split('+')[0]}+{change_id[-8:]}",
+            "maker": maker,
+            "checker": checker,
+        }
+    )

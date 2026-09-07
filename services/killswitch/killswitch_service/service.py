@@ -35,6 +35,7 @@ class Activation(StrictModel):
     cancelled_orders: tuple[str, ...]
     revoked_identities: tuple[str, ...]
     active: bool = True
+    hook_failures: tuple[str, ...] = ()  # a failed side effect never un-engages the switch (review OBJ-1)
     deactivation_first_by: str | None = None
     deactivation_first_line: str | None = None
     deactivated_at: datetime | None = None
@@ -62,6 +63,7 @@ class KillSwitchHooks:
 @dataclass
 class KillSwitchService:
     hooks: KillSwitchHooks = field(default_factory=KillSwitchHooks)
+    approved_liquidation_policies: tuple[str, ...] = ()  # [Open: O-08] registry of Trading-Risk-Committee-approved policies
     _activations: dict[str, Activation] = field(default_factory=dict)
 
     # --- activation -------------------------------------------------------------------------
@@ -76,23 +78,8 @@ class KillSwitchService:
         if actor.role not in KILL_SWITCH_ACTIVATORS:
             self.hooks.audit("killswitch.denied", corr, {"actor": actor.actor_id, "role": actor.role.value})
             raise ControlDenied(f"role {actor.role.value} holds no emergency authority")
-        # 1. block new risk: the activation itself is the flag consulted by the risk engine.
-        # 2. cancel open orders
-        cancelled = tuple(self.hooks.cancel_open_orders(level, target_id))
-        # 3. apply emergency policy (CANCEL_ONLY default; reduce/flatten only with approved liquidation policy [Open: O-08])
-        policy, liq_ref = self.hooks.emergency_policy_for(level, target_id)
-        applied = EmergencyPolicy.CANCEL_ONLY.value
-        if policy != EmergencyPolicy.CANCEL_ONLY:
-            if liq_ref:
-                self.hooks.apply_liquidation(level, target_id, policy, liq_ref)
-                applied = f"{policy.value}:{liq_ref}"
-            else:
-                applied = f"CANCEL_ONLY (fallback: {policy.value} requested without approved liquidation policy)"
-        # 4. revoke agent tool tokens
-        revoked = tuple(self.hooks.revoke_agent_identities(level, target_id))
-        # 5. preserve evidence snapshot
-        snapshot = self.hooks.evidence_snapshot(level, target_id)
-        evidence = hash_of({"snapshot": snapshot, "cancelled": cancelled, "revoked": revoked, "at": now.isoformat()})
+        # 1. Engage first (fail closed): the stored activation is the flag the risk engine consults; every side
+        #    effect below is best-effort, recorded, alerted — a failing hook can never leave the switch disengaged.
         activation = Activation(
             activation_id=new_id("ksa"),
             level=level,
@@ -101,18 +88,70 @@ class KillSwitchService:
             actor_id=actor.actor_id,
             actor_role=actor.role.value,
             activated_at=now,
-            evidence_hash=evidence,
-            emergency_policy_applied=applied,
-            cancelled_orders=cancelled,
-            revoked_identities=revoked,
+            evidence_hash="pending",
+            emergency_policy_applied="pending",
+            cancelled_orders=(),
+            revoked_identities=(),
+        )
+        self._activations[activation.activation_id] = activation
+        self.hooks.audit(
+            "killswitch.engaged",
+            corr,
+            {"activation_id": activation.activation_id, "level": level.value, "target": target_id, "by": actor.actor_id, "reason": reason},
+        )
+        failures: list[str] = []
+
+        def attempt(name: str, fn: Callable[[], Any], default: Any) -> Any:
+            try:
+                return fn()
+            except Exception as exc:  # noqa: BLE001 - hook failures are evidence, not exits
+                failures.append(f"{name}: {type(exc).__name__}: {exc}"[:200])
+                self.hooks.alert(
+                    "killswitch.hook_failed", {"activation_id": activation.activation_id, "hook": name, "error": type(exc).__name__}
+                )
+                return default
+
+        # 2. cancel open orders
+        cancelled = tuple(attempt("cancel_open_orders", lambda: self.hooks.cancel_open_orders(level, target_id), []))
+        # 3. apply emergency policy (CANCEL_ONLY default; reduce/flatten only with an approved liquidation policy [Open: O-08])
+        policy, liq_ref = attempt(
+            "emergency_policy_for", lambda: self.hooks.emergency_policy_for(level, target_id), (EmergencyPolicy.CANCEL_ONLY, None)
+        )
+        applied = EmergencyPolicy.CANCEL_ONLY.value
+        if policy != EmergencyPolicy.CANCEL_ONLY:
+            if liq_ref and liq_ref in self.approved_liquidation_policies:
+                attempt("apply_liquidation", lambda: self.hooks.apply_liquidation(level, target_id, policy, liq_ref), None)
+                applied = f"{policy.value}:{liq_ref}"
+            else:
+                applied = f"CANCEL_ONLY (fallback: {policy.value} requested; liquidation policy {liq_ref!r} not approved)"
+        # 4. revoke agent tool tokens
+        revoked = tuple(attempt("revoke_agent_identities", lambda: self.hooks.revoke_agent_identities(level, target_id), []))
+        # 5. preserve evidence snapshot
+        snapshot = attempt("evidence_snapshot", lambda: self.hooks.evidence_snapshot(level, target_id), {})
+        evidence = hash_of({"snapshot": snapshot, "cancelled": cancelled, "revoked": revoked, "at": now.isoformat()})
+        activation = activation.model_copy(
+            update={
+                "evidence_hash": evidence,
+                "emergency_policy_applied": applied,
+                "cancelled_orders": cancelled,
+                "revoked_identities": revoked,
+                "hook_failures": tuple(failures),
+            }
         )
         self._activations[activation.activation_id] = activation
         if level == KillSwitchLevel.ACCOUNT:
-            self.hooks.halt_account(target_id, reason)
+            attempt("halt_account", lambda: self.hooks.halt_account(target_id, reason), None)
         self.hooks.audit("killswitch.activated", corr, {**activation.model_dump(mode="json"), "evidence_snapshot": snapshot})
         # 6. notify
-        self.hooks.notify("killswitch.activated", {"level": level.value, "target": target_id, "reason": reason, "by": actor.actor_id})
-        return activation
+        attempt(
+            "notify",
+            lambda: self.hooks.notify(
+                "killswitch.activated",
+                {"level": level.value, "target": target_id, "reason": reason, "by": actor.actor_id, "hook_failures": failures},
+            ),
+            None,
+        )
+        return self._activations[activation.activation_id]
 
     # --- deactivation (two-person, different lines) --------------------------------------------
     def deactivate(self, activation_id: str, *, actor: Actor, reason: str, now: datetime) -> Activation:

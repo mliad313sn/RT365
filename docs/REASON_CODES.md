@@ -32,6 +32,7 @@ Every risk, eligibility and runtime reason code has an explanation and a 'what y
 | RK-AUTH-MODE | Authorisation | The account mode does not allow orders (Observe). | Promote the account mode through the gates; Observe mode is analytics only. |
 | RK-AUTH-STATUS | Authorisation | The account is not active for trading. | Contact your tenant administrator; trading resumes only after the account status is restored. |
 | RK-AUTH-STRATEGY | Authorisation | This strategy is not authorised for this account. | Ask the Model Risk Committee to enable the strategy for the account. |
+| RK-AUTH-TENANT | Authorisation | The intent's tenant does not match the account's tenant. | Check the identity scope; cross-tenant submission is never allowed. |
 | RK-AUTONOMY-SUSPENDED | Autonomy | Autonomy is suspended (SLO safety semantics or break); orders need approval. | Await approval; an operator restores autonomy. |
 | RK-BP | Sizing | Insufficient buying power. | Reduce the order size. |
 | RK-CAP | Sizing | Order notional exceeds the effective per-order cap (minimum across platform, tenant, account, strategy, instrument). | Reduce the order size or request a limit change via maker-checker. |
@@ -69,7 +70,10 @@ Every risk, eligibility and runtime reason code has an explanation and a 'what y
 | RK-LIQ | Liquidity | Order is too large relative to average daily volume. | Reduce size or work the order. |
 | RK-LIQ-APPROVAL | Liquidity | Order is large relative to average daily volume; a human must approve. | Await approval. |
 | RK-LIST-TRADABLE | Lists | The instrument is not tradable in the instrument master. | Choose a tradable instrument. |
+| RK-LOSS | Loss limit | The daily loss limit is already breached; no new risk is taken. | Await the runtime halt review; risk-reducing orders may still be allowed per policy. |
+| RK-LOSS-UNDEFINED | Policy | No daily loss limit is defined at any level. | Trading Risk Committee sets it (O-07). |
 | RK-MODE-SUPERVISED | Mode | The account is in Supervised mode: every order needs human approval. | Await approval in the queue. |
+| RK-NAV | Sizing | Net asset value is zero or negative; no exposure ratio can be computed safely. | Nothing to change on the order; operations investigate the account. |
 | RK-PROT | Protective | A protective stop is required by policy and is missing or on the wrong side. | Add a protective stop below entry (long) or above entry (short). |
 | RK-PROT-APPROVAL | Protective | Protective stop missing; a human must approve. | Await approval or add a stop. |
 | RK-RATE | Rate | Orders per minute would exceed the limit. | Slow down. |
@@ -79,12 +83,17 @@ Every risk, eligibility and runtime reason code has an explanation and a 'what y
 | RK-VOL-APPROVAL | Volatility | Realised volatility is above the regime threshold; a human must approve. | Await approval. |
 | RT-CONNECTIVITY | Runtime halt | Broker connectivity lost. | Cancel-only; reconcile on reconnect. |
 | RT-DRAWDOWN | Runtime halt | Peak-to-trough drawdown limit reached. | Kill Switch applied; two-person restore after review. |
+| RT-DRAWDOWN-UNDEFINED | Runtime halt | No drawdown limit defined: the monitor fails closed. | Trading Risk Committee sets it (O-07). |
 | RT-DRIFT | Runtime halt | Model drift threshold breached. | Signals suspended; Model Risk review. |
 | RT-FREQ | Runtime halt | Abnormal order frequency. | Kill Switch applied; investigate the strategy. |
 | RT-LATENCY | Runtime halt | Risk-decision latency above threshold. | Autonomy suspended until restored. |
 | RT-LOSS-DAILY | Runtime halt | Daily loss limit reached. | Kill Switch applied; two-person restore after review. |
+| RT-LOSS-DAILY-UNDEFINED | Runtime halt | No daily loss limit defined: the monitor fails closed. | Trading Risk Committee sets it (O-07). |
 | RT-LOSS-MONTHLY | Runtime halt | Monthly loss limit reached. | Kill Switch applied; two-person restore after review. |
+| RT-LOSS-MONTHLY-UNDEFINED | Runtime halt | No monthly loss limit defined: the monitor fails closed. | Trading Risk Committee sets it (O-07). |
 | RT-LOSS-WEEKLY | Runtime halt | Weekly loss limit reached. | Kill Switch applied; two-person restore after review. |
+| RT-LOSS-WEEKLY-UNDEFINED | Runtime halt | No weekly loss limit defined: the monitor fails closed. | Trading Risk Committee sets it (O-07). |
+| RT-NAV | Runtime halt | Net asset value is zero or negative. | Kill Switch applied; operations investigate. |
 | RT-RECON | Runtime halt | Open reconciliation break. | Account in Supervised until resolved with two-person confirmation. |
 | RT-REJECTS | Runtime halt | Broker rejection rate above threshold. | Cancel-only review. |
 | RT-SLIPPAGE | Runtime halt | Slippage above threshold. | Cancel-only review. |

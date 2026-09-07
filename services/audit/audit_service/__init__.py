@@ -3,6 +3,6 @@
 There is no update or delete API. Tampering with stored bytes is detected by ``verify``.
 """
 
-from audit_service.store import AuditEvent, AuditStore, ChainVerification
+from audit_service.store import AuditEvent, AuditStore, ChainHead, ChainVerification
 
-__all__ = ["AuditEvent", "AuditStore", "ChainVerification"]
+__all__ = ["AuditEvent", "AuditStore", "ChainHead", "ChainVerification"]

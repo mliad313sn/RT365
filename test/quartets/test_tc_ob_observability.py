@@ -69,3 +69,13 @@ def test_alert_delivery_and_slo_safety_semantics(platform):  # type: ignore[no-u
         (Sli(name="risk_decision_latency_ms_p99", definition="d", measurement_point="m", target=500, safety_semantic="suspend_autonomy"),)
     )
     assert strict.evaluate("risk_decision_latency_ms_p99", 900) == SafetyAction.SUSPEND_AUTONOMY
+
+
+@pytest.mark.tc("TC-OB-005")
+@pytest.mark.req("NFR-OBS-01")
+@pytest.mark.quartet("abuse")
+def test_auto_action_without_required_payload_raises_s1(platform):  # type: ignore[no-untyped-def]
+    """An auto-action whose payload lacks its required key never no-ops silently: an S1 alert.autoaction_failed fires (MCP review OBJ-3b)."""
+    platform.alerts.raise_alert("plane.deny", {"source": "analytics", "destination": "execution", "channel": "x"})
+    failed = platform.alerts.by_name("alert.autoaction_failed")
+    assert failed and failed[-1].payload["missing"] == ["agent"]

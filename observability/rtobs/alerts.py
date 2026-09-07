@@ -20,6 +20,7 @@ class Alert:
 class AlertRouter:
     catalog: dict[str, dict[str, str]]
     actions: dict[str, Callable[[Alert], object]] = field(default_factory=dict)
+    required_keys: dict[str, tuple[str, ...]] = field(default_factory=dict)
     fired: list[Alert] = field(default_factory=list)
     delivered: list[tuple[str, Alert]] = field(default_factory=list)
     channels: list[str] = field(default_factory=lambda: ["pager", "email"])
@@ -29,8 +30,10 @@ class AlertRouter:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         return cls(catalog={a["name"]: a for a in data["alerts"]})
 
-    def on(self, auto_action: str, fn: Callable[[Alert], object]) -> None:
+    def on(self, auto_action: str, fn: Callable[[Alert], object], *, required: tuple[str, ...] = ()) -> None:
+        """Bind an auto-action; ``required`` payload keys make a silent no-op impossible (MCP review OBJ-3b)."""
         self.actions[auto_action] = fn
+        self.required_keys[auto_action] = required
 
     def raise_alert(self, name: str, payload: dict[str, Any]) -> Alert:
         spec = self.catalog.get(name, {"severity": "S2", "auto_action": "none"})
@@ -41,7 +44,19 @@ class AlertRouter:
         for ch in self.channels:
             self.delivered.append((ch, alert))
         fn = self.actions.get(alert.auto_action)
-        if fn is not None:
+        if alert.auto_action != "none":
+            missing = [k for k in self.required_keys.get(alert.auto_action, ()) if payload.get(k) in (None, "")]
+            if fn is None or missing:
+                failed = Alert(
+                    name="alert.autoaction_failed",
+                    severity="S1",
+                    auto_action="none",
+                    payload={"alert": name, "auto_action": alert.auto_action, "missing": missing, "unbound": fn is None},
+                )
+                self.fired.append(failed)
+                for ch in self.channels:
+                    self.delivered.append((ch, failed))
+                return alert
             fn(alert)
         return alert
 

@@ -11,7 +11,9 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
       - name: Install
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev]" bandit pip-audit
+      - name: Environment tag (dev registry key accepted only here)
+        run: echo "RT_ENV=sim" >> "$GITHUB_ENV"
       - name: Lint and format
         run: make lint
       - name: Typecheck
@@ -22,6 +24,11 @@ jobs:
         run: make policy-check
       - name: Secret scan (T-05)
         run: make secret-scan
+      - name: SAST (bandit) and SCA (pip-audit) — advisory until O-23 wires the gating scanners
+        run: make lock && make security-scan
+      - name: Registry must NOT be deployable to production as signed (dev key / fixture refused)
+        run: |
+          if python scripts/verify_tool_registry.py --production; then echo "fixture registry accepted for production"; exit 1; fi
       - name: Unit, property, contract, integration, e2e tests with evidence index
         run: make test
       - name: Determinism gate (TC-RK-001..004 must pass; fail on any divergence)

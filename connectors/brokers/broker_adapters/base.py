@@ -79,7 +79,18 @@ class BrokerFill(StrictModel):
     broker_order_ref: str
     quantity: Decimal = Field(gt=0)
     price: Decimal = Field(gt=0)
+    fee: Decimal = Decimal("0")
     ts: datetime
+
+
+class OrderStatus(StrictModel):
+    """Broker-side view of one order; ``known=False`` means the broker never received it."""
+
+    client_order_id: str
+    known: bool
+    broker_order_ref: str | None = None
+    status: str | None = None  # OPEN | PARTIAL | FILLED | CANCELLED | REJECTED
+    filled_quantity: Decimal = Decimal("0")
 
 
 class StatementPosition(StrictModel):
@@ -136,6 +147,9 @@ class BrokerAdapter(ABC):
 
     @abstractmethod
     def poll_fills(self, *, now: datetime) -> tuple[BrokerFill, ...]: ...
+
+    @abstractmethod
+    def query_order(self, client_order_id: str, *, now: datetime) -> OrderStatus: ...
 
     @abstractmethod
     def statement(self, account_id: str, *, as_of: datetime) -> BrokerStatement: ...

@@ -224,12 +224,15 @@ def test_retention_deletion_suppressed_under_legal_hold(platform):  # type: igno
     ret.add_schedule(
         RetentionSchedule(record_class="trading_record", jurisdiction="ZZ", retain_for=timedelta(days=365 * 5), source_ref="SIM-FIXTURE")
     )
+    ret.add_schedule(
+        RetentionSchedule(record_class="session_log", jurisdiction="ZZ", retain_for=timedelta(days=7), source_ref="SIM-FIXTURE")
+    )
     created = platform.now - timedelta(days=30)
     assert (
         ret.request_deletion(
             record_class="trading_record",
             jurisdiction="ZZ",
-            scope="cust-sim-001",
+            scopes=("cust-sim-001", "acct-sim-001"),
             record_created_at=created,
             now=platform.now,
             requested_by="cust",
@@ -241,19 +244,19 @@ def test_retention_deletion_suppressed_under_legal_hold(platform):  # type: igno
         ret.request_deletion(
             record_class="session_log",
             jurisdiction="ZZ",
-            scope="cust-sim-001",
+            scopes=("cust-sim-001", "acct-sim-001"),
             record_created_at=created,
             now=platform.now,
             requested_by="cust",
         )
         == DeletionOutcome.SUPPRESSED_LEGAL_HOLD
     )
-    ret.release_hold("h1", released_by="legal.agent")
+    ret.release_hold("h1", LEGAL)
     assert (
         ret.request_deletion(
             record_class="session_log",
             jurisdiction="ZZ",
-            scope="cust-sim-001",
+            scopes=("cust-sim-001", "acct-sim-001"),
             record_created_at=created,
             now=platform.now,
             requested_by="cust",

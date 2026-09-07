@@ -12,7 +12,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from rtcore.errors import ControlDenied, TransitionError
-from rtcore.lines import Actor, Role
+from rtcore.lines import Actor, ActorKind, Role
 from rtcore.schemas.account import MODE_LADDER, AccountMode, EmergencyPolicy, TradingStatus
 from rtcore.schemas.base import StrictModel
 
@@ -128,6 +128,8 @@ class AccountRegistry:
 
     def halt(self, account_id: str, actor: Actor, *, reason: str, now: datetime) -> Account:
         acct = self._accounts[account_id]
+        if actor.kind == ActorKind.AGENT:
+            raise ControlDenied("agents cannot halt accounts (only humans, runtime monitors or the Kill Switch)")
         if actor.role not in MODE_CHANGERS and actor.role not in (Role.RUNTIME_MONITOR, Role.SYSTEM):
             raise ControlDenied("halt requires an authorised role")
         return self._save(
@@ -138,17 +140,23 @@ class AccountRegistry:
             {"by": actor.actor_id, "reason": reason},
         )
 
-    def restore_from_halt(
-        self, account_id: str, actor: Actor, *, reason: str, now: datetime, target: AccountMode = AccountMode.SUPERVISED
-    ) -> Account:
-        """Two-person rule from different lines. First call records the request; second completes it."""
+    def restore_from_halt(self, account_id: str, actor: Actor, *, reason: str, now: datetime, target: AccountMode | None = None) -> Account:
+        """Two-person rule from different lines. First call records the request; second completes it.
+
+        The restore target can never exceed the feature the account was enabled for (Risk review F-02) and never
+        re-enables autonomy: that needs the post-incident review and a normal gate-bound promotion.
+        """
         acct = self._accounts[account_id]
         if acct.mode != AccountMode.HALTED:
             raise TransitionError("account is not HALTED")
         if not actor.is_human or actor.role not in MODE_CHANGERS:
             raise ControlDenied("restore requires an authorised human")
-        if target in (AccountMode.HALTED, AccountMode.BOUNDED_AUTONOMOUS):
-            raise ControlDenied("restore target must be a non-autonomous mode; autonomy re-enable needs post-incident review")
+        enabled = acct.enabled_feature or AccountMode.OBSERVE
+        ceiling = enabled if MODE_LADDER.index(enabled) <= MODE_LADDER.index(AccountMode.SUPERVISED) else AccountMode.SUPERVISED
+        if target is None:
+            target = ceiling
+        if target in (AccountMode.HALTED, AccountMode.BOUNDED_AUTONOMOUS) or MODE_LADDER.index(target) > MODE_LADDER.index(ceiling):
+            raise ControlDenied(f"restore target {target.value} exceeds the enabled feature {enabled.value} or re-enables autonomy")
         if acct.pending_unhalt_by is None:
             return self._save(
                 acct.model_copy(update={"pending_unhalt_by": actor.actor_id, "pending_unhalt_line": actor.line.value}),
@@ -173,6 +181,8 @@ class AccountRegistry:
         return self._save(updated, "account.autonomy.suspended", {"reason": reason, "by": by})
 
     def set_trading_status(self, account_id: str, status: TradingStatus, actor: Actor, *, reason: str) -> Account:
+        if not actor.is_human or actor.role not in (Role.RISK_OFFICER, Role.CHIEF_RISK_AGENT, Role.COMPLIANCE_AGENT, Role.TENANT_ADMIN):
+            raise ControlDenied("trading status changes require an authorised human")
         acct = self._accounts[account_id]
         return self._save(
             acct.model_copy(update={"trading_status": status}),

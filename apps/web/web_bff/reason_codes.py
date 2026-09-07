@@ -44,6 +44,22 @@ REASON_CODES: dict[str, tuple[str, str, str]] = {
         "The intent changed after validation (hash mismatch); an S1 alert is raised.",
         "Resubmit as a new intent; intents are immutable after validation.",
     ),
+    "RK-AUTH-TENANT": (
+        "Authorisation",
+        "The intent's tenant does not match the account's tenant.",
+        "Check the identity scope; cross-tenant submission is never allowed.",
+    ),
+    "RK-NAV": (
+        "Sizing",
+        "Net asset value is zero or negative; no exposure ratio can be computed safely.",
+        "Nothing to change on the order; operations investigate the account.",
+    ),
+    "RK-LOSS": (
+        "Loss limit",
+        "The daily loss limit is already breached; no new risk is taken.",
+        "Await the runtime halt review; risk-reducing orders may still be allowed per policy.",
+    ),
+    "RK-LOSS-UNDEFINED": ("Policy", "No daily loss limit is defined at any level.", "Trading Risk Committee sets it (O-07)."),
     "RK-EXPIRED": ("Validity", "The intent expired before it was decided.", "Resubmit with a later expiry."),
     "RK-LIST-TRADABLE": ("Lists", "The instrument is not tradable in the instrument master.", "Choose a tradable instrument."),
     "RK-SESS": (
@@ -156,6 +172,27 @@ REASON_CODES: dict[str, tuple[str, str, str]] = {
     "RT-LOSS-DAILY": ("Runtime halt", "Daily loss limit reached.", "Kill Switch applied; two-person restore after review."),
     "RT-LOSS-WEEKLY": ("Runtime halt", "Weekly loss limit reached.", "Kill Switch applied; two-person restore after review."),
     "RT-LOSS-MONTHLY": ("Runtime halt", "Monthly loss limit reached.", "Kill Switch applied; two-person restore after review."),
+    "RT-NAV": ("Runtime halt", "Net asset value is zero or negative.", "Kill Switch applied; operations investigate."),
+    "RT-LOSS-DAILY-UNDEFINED": (
+        "Runtime halt",
+        "No daily loss limit defined: the monitor fails closed.",
+        "Trading Risk Committee sets it (O-07).",
+    ),
+    "RT-LOSS-WEEKLY-UNDEFINED": (
+        "Runtime halt",
+        "No weekly loss limit defined: the monitor fails closed.",
+        "Trading Risk Committee sets it (O-07).",
+    ),
+    "RT-LOSS-MONTHLY-UNDEFINED": (
+        "Runtime halt",
+        "No monthly loss limit defined: the monitor fails closed.",
+        "Trading Risk Committee sets it (O-07).",
+    ),
+    "RT-DRAWDOWN-UNDEFINED": (
+        "Runtime halt",
+        "No drawdown limit defined: the monitor fails closed.",
+        "Trading Risk Committee sets it (O-07).",
+    ),
     "RT-DRAWDOWN": ("Runtime halt", "Peak-to-trough drawdown limit reached.", "Kill Switch applied; two-person restore after review."),
     "RT-FREQ": ("Runtime halt", "Abnormal order frequency.", "Kill Switch applied; investigate the strategy."),
     "RT-SLIPPAGE": ("Runtime halt", "Slippage above threshold.", "Cancel-only review."),

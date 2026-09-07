@@ -39,6 +39,7 @@ class OrderCommand(StrictModel):
     approval_id: str | None
     tenant_id: str
     account_id: str
+    strategy_id: str
     venue: str
     instrument_id: str
     side: Side
@@ -76,6 +77,7 @@ class Fill(StrictModel):
     client_order_id: str
     quantity: Decimal = Field(gt=0)
     price: Decimal = Field(gt=0)
+    fee: Decimal = Decimal("0")  # broker-reported fee: costs live inside the single code path (ADR-008)
     fill_ts: datetime
     broker_ref: str
 

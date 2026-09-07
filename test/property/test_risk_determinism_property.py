@@ -85,7 +85,9 @@ def test_effective_limit_is_minimum_of_applicable(levels):  # type: ignore[no-un
     from risk_engine.policy import Limit
 
     scope = LimitScope(tenant_id="t", account_id="a", strategy_id="s", instrument_id="i")
-    limits = tuple(Limit(level=lvl, scope_id=scope.id_for(lvl), metric=Metric.LEVERAGE_X, threshold=Decimal(v)) for lvl, v in levels)
+    limits = tuple(
+        Limit(level=lvl, scope_id=scope.id_for(lvl), tenant_id="t", metric=Metric.LEVERAGE_X, threshold=Decimal(v)) for lvl, v in levels
+    )
     policy = P.policy.model_copy(update={"limits": limits})
     eff = effective_limit(policy, Metric.LEVERAGE_X, scope, P.now)
     assert eff.threshold == min(Decimal(v) for _, v in levels)

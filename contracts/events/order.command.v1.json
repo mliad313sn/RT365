@@ -156,6 +156,10 @@
       "default": null,
       "title": "Stop Price"
     },
+    "strategy_id": {
+      "title": "Strategy Id",
+      "type": "string"
+    },
     "tenant_id": {
       "title": "Tenant Id",
       "type": "string"
@@ -177,6 +181,7 @@
     "approval_id",
     "tenant_id",
     "account_id",
+    "strategy_id",
     "venue",
     "instrument_id",
     "side",

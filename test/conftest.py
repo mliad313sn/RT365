@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import os
+
+os.environ.setdefault("RT_ENV", "sim")  # the dev registry key is accepted only in an explicit dev/sim environment
+
 from datetime import datetime, timedelta
 from decimal import Decimal
 

@@ -15,13 +15,22 @@ from mcp_servers.registry import RegistryUnsigned, load_registry  # noqa: E402
 
 production = "--production" in sys.argv
 problems: list[str] = []
+if production:
+    import os
+
+    os.environ["RT_ENV"] = os.environ.get("RT_ENV_PRODUCTION_LABEL", "production")
+    os.environ.pop("RT_ALLOW_DEV_REGISTRY_KEY", None)
 try:
     reg = load_registry(ROOT / "mcp" / "policies" / "tool_registry.signed.json")
 except RegistryUnsigned as exc:
-    print(f"FAIL: {exc}")
+    print(f"FAIL: {'dev signing key / fixture registry refused for production: ' if production else ''}{exc}")
     sys.exit(1)
-if production and reg.dev_key_in_use:
-    problems.append("dev signing key in use; production requires the KMS-managed key (MISSING_ACTIONS)")
+if production and (reg.dev_key_in_use or reg.fixture):
+    problems.append(
+        "dev signing key or fixture registry in use; production requires the KMS-managed key and approved records (MISSING_ACTIONS)"
+    )
+if reg.fixture:
+    print("NOTE: registry is a sim FIXTURE (approvals pending); it embodies no approval and is refused outside dev/sim")
 src = json.loads((ROOT / "mcp" / "policies" / "tool_registry.json").read_text())
 signed = json.loads((ROOT / "mcp" / "policies" / "tool_registry.signed.json").read_text())["registry"]
 if src != signed:

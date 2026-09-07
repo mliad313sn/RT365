@@ -59,7 +59,7 @@ class SmaCrossoverStrategy:
         model_version: str = "0.1",
         fast: int = 3,
         slow: int = 8,
-        target_pct_nav: Decimal = Decimal("5"),
+        target_pct_nav: Decimal = Decimal("4"),
     ) -> None:
         self.strategy_id = strategy_id
         self.version = version

@@ -31,7 +31,9 @@ class AccountBook:
     peak_nav: Decimal
     positions: dict[str, PositionState] = field(default_factory=dict)
     recent_intent_hashes: list[str] = field(default_factory=list)
+    order_signatures: list[tuple[datetime, str]] = field(default_factory=list)
     order_timestamps: list[datetime] = field(default_factory=list)
+    fees_paid: Decimal = ZERO
     capital_in_use: Decimal = ZERO
 
 
@@ -85,6 +87,7 @@ class Ledger:
         if pos.quantity == ZERO:
             pos.average_price = ZERO
         book.cash -= signed * price + fee
+        book.fees_paid += fee
         return pos
 
     def record_intent_hash(self, account_id: str, intent_hash: str, keep: int = 500) -> None:
@@ -92,8 +95,11 @@ class Ledger:
         book.recent_intent_hashes.append(intent_hash)
         del book.recent_intent_hashes[:-keep]
 
-    def record_order_ts(self, account_id: str, ts: datetime) -> None:
-        self._books[account_id].order_timestamps.append(ts)
+    def record_order_ts(self, account_id: str, ts: datetime, signature: str | None = None) -> None:
+        book = self._books[account_id]
+        book.order_timestamps.append(ts)
+        if signature is not None:
+            book.order_signatures.append((ts, signature))
 
     def nav(self, account_id: str) -> Decimal:
         book = self._books[account_id]
@@ -148,6 +154,7 @@ class Ledger:
         positions = self.positions(account_id)
         gross = sum((abs(p.market_value) for p in positions), ZERO)
         recent = [t for t in book.order_timestamps if (now - t).total_seconds() <= 60]
+        signatures = tuple(sig for t, sig in book.order_signatures if (now - t).total_seconds() <= 60)
         snapshot_id = deterministic_id(
             "acs", account_id, now.isoformat(), str(nav), len(positions), len(open_orders), kill_switch.canonical_hash()
         )
@@ -173,6 +180,7 @@ class Ledger:
             open_orders=open_orders,
             orders_last_minute=len(recent),
             recent_intent_hashes=tuple(book.recent_intent_hashes),
+            recent_order_signatures=signatures,
             kill_switch=kill_switch,
             emergency_policy=emergency_policy,
             capital_envelope=capital_envelope,

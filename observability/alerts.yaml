@@ -3,9 +3,9 @@ alerts:
   - {name: execution.duplicate_order, condition: ">0", severity: S1, auto_action: killswitch_account, runbook: duplicate order}
   - {name: risk.fail_open_attempt, condition: "any APPROVED without decision record", severity: S1, auto_action: killswitch_platform, runbook: risk engine unavailable}
   - {name: plane.deny, condition: "network deny event", severity: S1, auto_action: revoke_agent_identity, runbook: credential compromise}
-  - {name: mcp.non_allowlisted_tool, condition: "deny event", severity: S2, auto_action: revoke_tool_for_tenant, runbook: "-"}
+  - {name: mcp.non_allowlisted_tool, condition: "deny event", severity: S2, auto_action: revoke_tool_for_scope, runbook: "-"}
   - {name: mcp.canary_in_output, condition: "canary token in output", severity: S1, auto_action: revoke_agent_identity, runbook: credential compromise}
-  - {name: mcp.canary_in_input, condition: "canary token in input", severity: S2, auto_action: revoke_tool_for_tenant, runbook: "-"}
+  - {name: mcp.canary_in_input, condition: "canary token in input", severity: S2, auto_action: revoke_tool_for_scope, runbook: "-"}
   - {name: killswitch.agent_attempt, condition: "agent attempted Kill Switch", severity: S1, auto_action: revoke_agent_identity, runbook: credential compromise}
   - {name: slo.freshness_breach, condition: "per SLO", severity: S2, auto_action: autonomy_to_supervised, runbook: data stale}
   - {name: slo.decision_latency_breach, condition: "per SLO", severity: S2, auto_action: autonomy_to_supervised, runbook: "-"}
@@ -16,4 +16,9 @@ alerts:
   - {name: execution.stale_fencing_token, condition: "stale token submission", severity: S1, auto_action: none, runbook: duplicate order}
   - {name: execution.unknown_fill, condition: "fill without internal order", severity: S1, auto_action: none, runbook: duplicate order}
   - {name: risk.integrity_violation, condition: "RK-INTEG decision", severity: S1, auto_action: revoke_agent_identity, runbook: credential compromise}
+  - {name: alert.autoaction_failed, condition: "auto-action unbound or payload incomplete", severity: S1, auto_action: none, runbook: Kill Switch activation}
+  - {name: killswitch.hook_failed, condition: "Kill Switch side effect failed", severity: S1, auto_action: none, runbook: Kill Switch activation}
+  - {name: mcp.handler_timeout, condition: "handler exceeded deadline", severity: S2, auto_action: none, runbook: "-"}
+  - {name: mcp.handler_error, condition: "handler raised", severity: S2, auto_action: none, runbook: "-"}
+  - {name: execution.unexpected_fill, condition: "over-fill or fill after terminal state", severity: S1, auto_action: killswitch_account, runbook: duplicate order}
   - {name: limit.changed, condition: "any", severity: info, auto_action: none, runbook: "-"}

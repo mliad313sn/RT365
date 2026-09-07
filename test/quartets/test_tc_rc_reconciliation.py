@@ -10,6 +10,7 @@ from reconciliation_service.reconcile import BreakSeverity, BreakType
 from rtcore.errors import ControlDenied
 from rtcore.schemas.account import AccountMode
 from rtcore.schemas.intent import Side
+from rtcore.schemas.order import OrderState
 
 
 @pytest.mark.tc("TC-RC-001")
@@ -70,6 +71,31 @@ def test_two_person_resolution(autonomous):  # type: ignore[no-untyped-def]
     assert first.status.value == "PENDING_SECOND"
     with pytest.raises(ControlDenied):
         p.tickets.resolve(ticket.ticket_id, OPS, resolution="again", now=p.now)
-    done = p.tickets.resolve(ticket.ticket_id, TRADING_LEAD, resolution="confirmed", now=p.now)
+    with pytest.raises(ControlDenied):  # same (1st) line as the first resolver
+        p.tickets.resolve(ticket.ticket_id, TRADING_LEAD, resolution="same line", now=p.now)
+    from conftest import RISK_OFFICER
+
+    done = p.tickets.resolve(ticket.ticket_id, RISK_OFFICER, resolution="confirmed", now=p.now)
     assert done.status.value == "RESOLVED" and not p.tickets.open_tickets(ACCOUNT)
     assert len(res.breaks) == 1 and p.audit.by_action("reconciliation.ticket.updated")
+
+
+@pytest.mark.tc("TC-RC-005")
+@pytest.mark.req("FR-14")
+@pytest.mark.quartet("negative")
+def test_status_disagreement_is_a_break_and_broker_cancel_is_adopted(platform):  # type: ignore[no-untyped-def]
+    """IOC cancelled at the broker is adopted into the internal state; internal CANCELLED vs broker OPEN is an S1 STATUS break (Trading review OBJ-3)."""
+    from conftest import resting_limit_intent
+
+    snap = platform.market_snapshot(INSTRUMENT)
+    assert snap is not None
+    px = (snap.reference_price * Decimal("0.97")).quantize(Decimal("0.01"))
+    stop = (px * Decimal("0.98")).quantize(Decimal("0.01"))
+    ioc = platform.run_intent(
+        platform.make_intent(order_type="LIMIT", limit_price=str(px), time_in_force="IOC", protective_stop=str(stop), quantity="10")
+    )
+    assert ioc.order.state == OrderState.CANCELLED  # broker-side IOC cancel adopted by sync_statuses
+    r = platform.run_intent(resting_limit_intent(platform))
+    platform.gateway._orders[r.order.order_id] = r.order.model_copy(update={"state": OrderState.CANCELLED})  # internal drift
+    res = platform.reconcile()
+    assert any(b.break_type == BreakType.STATUS and b.severity == BreakSeverity.S1 for b in res.breaks)

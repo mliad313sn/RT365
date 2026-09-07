@@ -49,6 +49,14 @@ class LeaseStore:
         self._leases[account_id] = lease
         return lease
 
+    def renew(self, account_id: str, executor_id: str, *, now: datetime, ttl: timedelta = timedelta(seconds=30)) -> Lease | None:
+        cur = self._leases.get(account_id)
+        if cur is None or cur.executor_id != executor_id or cur.expires_at <= now:
+            return None
+        renewed = cur.model_copy(update={"expires_at": now + ttl})
+        self._leases[account_id] = renewed
+        return renewed
+
     def release(self, account_id: str, executor_id: str) -> None:
         cur = self._leases.get(account_id)
         if cur is not None and cur.executor_id == executor_id:

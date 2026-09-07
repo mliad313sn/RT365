@@ -28,7 +28,9 @@ spec:
           podSelector: {matchLabels: {app: vault}}
       ports: [{protocol: TCP, port: 8200}]
     - to:
-        - ipBlock: {cidr: 0.0.0.0/0, except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16]}   # broker endpoints via egress gateway; allowlisted per adapter [Committee]
+        # Broker endpoints ONLY: one ipBlock per certified adapter, filled from BROKER_CERTIFICATIONS at deployment.
+        # 203.0.113.0/24 is the RFC 5737 documentation range used as the sim placeholder; 0.0.0.0/0 is refused by the checker (review F-12).
+        - ipBlock: {cidr: 203.0.113.0/24}
       ports: [{protocol: TCP, port: 443}]
     - to:
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}

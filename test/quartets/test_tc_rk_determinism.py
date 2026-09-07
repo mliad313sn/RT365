@@ -14,9 +14,10 @@ from conftest import ACCOUNT, INSTRUMENT, INSTRUMENT_2, STRATEGY, TENANT, VENUE
 from risk_engine.engine import ENGINE_BUILD_HASH, decide
 from risk_engine.monitors import RuntimeMetrics, evaluate_runtime
 from risk_engine.policy import LimitLevel, LimitScope, Metric, effective_limit
+from rtcore.errors import SchemaViolation
 from rtcore.schemas.account import AccountMode, KillSwitchFlags, OpenOrder, TradingStatus
 from rtcore.schemas.decision import CheckResult, Outcome
-from rtcore.schemas.intent import Side
+from rtcore.schemas.intent import Side, TradeIntent, ValidatedIntent
 from rtcore.schemas.market import DataQuality, SessionState
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -286,7 +287,7 @@ def test_mode_semantics_supervised_and_envelope(supervised, autonomous):  # type
     assert ok.decision.outcome == Outcome.APPROVED
     acct = autonomous.accounts.get(ACCOUNT)
     autonomous.accounts._accounts[ACCOUNT] = acct.model_copy(update={"capital_envelope": Decimal("15000")})
-    beyond = autonomous.run_intent(autonomous.make_intent(quantity="100"))
+    beyond = autonomous.run_intent(autonomous.make_intent(quantity="120"))  # not an economic duplicate of the first order
     assert beyond.decision.outcome == Outcome.REQUIRES_HUMAN_APPROVAL and "RK-ENVELOPE" in beyond.decision.reason_codes
 
 
@@ -298,9 +299,13 @@ def test_duplicate_and_correlated_group(platform):  # type: ignore[no-untyped-de
     raw = platform.make_intent()
     first = platform.run_intent(raw)
     assert first.decision.outcome == Outcome.APPROVED
-    replay = platform.submit_intent(raw)
+    with pytest.raises(SchemaViolation):  # the queue refuses a replayed intent_id outright
+        platform.submit_intent(raw)
+    replay = ValidatedIntent.seal(
+        TradeIntent.model_validate(raw), correlation_id="corr-replay", tenant_id=TENANT, submitted_by="agent:sim", validated_at=platform.now
+    )
     d = decide(replay, platform.account_snapshot(ACCOUNT), platform.market_snapshot(INSTRUMENT), platform.policy, platform.now)
-    assert "RK-DUP" in d.reason_codes
+    assert "RK-DUP" in d.reason_codes  # economic duplicate of a recent order even if the queue were bypassed
     acct = platform.account_snapshot(ACCOUNT).model_copy(
         update={"nav": Decimal("20000"), "peak_nav": Decimal("20000"), "buying_power": Decimal("20000")}
     )
@@ -372,3 +377,117 @@ def test_evaluated_checks_cover_all_sixteen_families(platform):  # type: ignore[
     }
     assert expected <= names
     assert all(e.result in (CheckResult.PASS, CheckResult.FAIL, CheckResult.NOT_EVALUATED) for e in d.evaluated)
+
+
+@pytest.mark.tc("TC-RK-017")
+@pytest.mark.req("FR-11")
+@pytest.mark.quartet("abuse")
+def test_open_orders_count_towards_exposure_and_risk_reducing_orders_pass(platform):  # type: ignore[no-untyped-def]
+    """Open buys are projected into gross exposure (no evasion via resting orders); a SELL that shrinks an over-limit book is allowed (Risk review OBJ-3/P4)."""
+    p = platform
+    acct = p.account_snapshot(ACCOUNT)
+    heavy = acct.model_copy(
+        update={
+            "nav": Decimal("100000"),
+            "peak_nav": Decimal("100000"),
+            "buying_power": Decimal("500000"),
+            "open_orders": tuple(
+                OpenOrder(
+                    order_id=f"o{i}",
+                    instrument_id=INSTRUMENT_2,
+                    side=Side.BUY,
+                    quantity=Decimal("2000"),
+                    notional=Decimal("100000"),
+                    submitted_at=p.now,
+                )
+                for i in range(2)
+            ),
+        }
+    )
+    vi = p.submit_intent(p.make_intent(quantity="10"))
+    d = decide(vi, heavy, p.market_snapshot(INSTRUMENT), p.policy, p.now)
+    assert "RK-EXP" in d.reason_codes  # 200k of open buys on 100k NAV already breaches gross exposure
+    from rtcore.schemas.account import Position
+
+    over = acct.model_copy(
+        update={
+            "nav": Decimal("100000"),
+            "peak_nav": Decimal("100000"),
+            "positions": (
+                Position(
+                    instrument_id=INSTRUMENT,
+                    quantity=Decimal("3000"),
+                    average_price=Decimal("100"),
+                    market_value=Decimal("300000"),
+                    sector="SIM-TECH",
+                    country="ZZ",
+                    currency="USD",
+                ),
+            ),
+        }
+    )
+    sell = p.submit_intent(p.make_intent(side="SELL", quantity="100", protective_stop=None))
+    d2 = decide(sell, over, p.market_snapshot(INSTRUMENT), p.policy, p.now)
+    assert d2.outcome == Outcome.APPROVED, d2.reason_codes
+    buy_more = p.submit_intent(p.make_intent(quantity="100"))
+    assert decide(buy_more, over, p.market_snapshot(INSTRUMENT), p.policy, p.now).outcome == Outcome.REJECTED
+
+
+@pytest.mark.tc("TC-RK-018")
+@pytest.mark.req("FR-11")
+@pytest.mark.quartet("negative")
+def test_stale_snapshot_tenant_mismatch_and_breached_loss(platform):  # type: ignore[no-untyped-def]
+    """Stale account snapshot -> HALTED; tenant mismatch -> REJECTED; already-breached daily loss -> REJECTED; NAV <= 0 -> REJECTED (Risk review OBJ-2)."""
+    p = platform
+    vi = p.submit_intent(p.make_intent())
+    acct, mkt = p.account_snapshot(ACCOUNT), p.market_snapshot(INSTRUMENT)
+    stale = decide(vi, acct.model_copy(update={"as_of": p.now - timedelta(days=1)}), mkt, p.policy, p.now)
+    assert stale.outcome == Outcome.HALTED and "RK-HALT-INPUT" in stale.reason_codes
+    wrong_tenant = decide(vi.model_copy(update={"tenant_id": "tenant-other"}), acct, mkt, p.policy, p.now)
+    assert "RK-AUTH-TENANT" in wrong_tenant.reason_codes
+    breached = decide(vi, acct.model_copy(update={"daily_pnl": Decimal("-40000")}), mkt, p.policy, p.now)
+    assert "RK-LOSS" in breached.reason_codes and breached.outcome == Outcome.REJECTED
+    negative = decide(vi, acct.model_copy(update={"nav": Decimal("-1"), "peak_nav": Decimal("1")}), mkt, p.policy, p.now)
+    assert "RK-NAV" in negative.reason_codes
+
+
+@pytest.mark.tc("TC-RK-019")
+@pytest.mark.req("FR-12")
+@pytest.mark.quartet("recovery")
+def test_approval_re_decides_on_current_snapshots(supervised):  # type: ignore[no-untyped-def]
+    """An approved intent is re-decided at execution time; a limit breached meanwhile blocks execution (Risk review OBJ-2)."""
+    from conftest import PM
+    from rtcore.errors import ControlDenied
+
+    r = supervised.run_intent(supervised.make_intent())
+    supervised.policy = supervised.policy.model_copy(
+        update={"limits": tuple(lim for lim in supervised.policy.limits if lim.metric.value != "max_notional_per_order")}
+    )
+    with pytest.raises(ControlDenied):
+        supervised.approve(r.approval_id, PM)
+    assert supervised.broker.submissions_received == 0 and supervised.audit.by_action("risk.redecided.v1")
+    assert supervised.tracker.get(r.decision.intent_id).state.value == "REJECTED"
+
+
+@pytest.mark.tc("TC-RK-020")
+@pytest.mark.req("FR-11")
+@pytest.mark.quartet("positive")
+def test_limit_change_only_via_maker_checker(platform):  # type: ignore[no-untyped-def]
+    """A checked, cooled-down limit change becomes a new policy version; nothing else writes limits (Risk review F-04)."""
+    from conftest import RISK_OFFICER, SRE
+    from risk_engine.policy import LimitScope, Metric, effective_limit
+
+    scope = LimitScope(tenant_id=TENANT, account_id=ACCOUNT, strategy_id="*", instrument_id="*")
+    before = effective_limit(platform.policy, Metric.LEVERAGE_X, scope, platform.now).threshold
+    change = platform.limits_mc.propose(
+        "limit.changed",
+        {"level": "ACCOUNT", "scope_id": ACCOUNT, "metric": "leverage_x", "threshold": "1.5"},
+        RISK_OFFICER,
+        now=platform.now,
+    )
+    platform.limits_mc.check(change.change_id, SRE, now=platform.now, reason="reviewed")
+    assert platform.apply_effective_limits(platform.now).policy_version == platform.policy.policy_version  # cooling period not over
+    assert effective_limit(platform.policy, Metric.LEVERAGE_X, scope, platform.now).threshold == before
+    platform.apply_effective_limits(platform.now + timedelta(hours=1, seconds=1))
+    assert effective_limit(platform.policy, Metric.LEVERAGE_X, scope, platform.now + timedelta(hours=2)).threshold == Decimal("1.5")
+    assert platform.policy.policy_version != "sim-policy-v0.1" and platform.audit.by_action("limit.changed.v1")

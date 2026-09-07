@@ -9,6 +9,8 @@ from collections.abc import Callable
 from datetime import datetime, timedelta
 from enum import Enum
 
+from rtcore.errors import ControlDenied
+from rtcore.lines import Actor, Role
 from rtcore.schemas.base import StrictModel
 
 
@@ -31,6 +33,7 @@ class DeletionOutcome(str, Enum):
     DELETED = "DELETED"
     SUPPRESSED_LEGAL_HOLD = "SUPPRESSED_LEGAL_HOLD"
     SUPPRESSED_RETENTION = "SUPPRESSED_RETENTION"
+    SUPPRESSED_NO_SCHEDULE = "SUPPRESSED_NO_SCHEDULE"  # fail closed: no schedule means we do not know the duty (review F-18)
 
 
 class RetentionService:
@@ -46,21 +49,33 @@ class RetentionService:
         self._holds[hold.hold_id] = hold
         self._audit("retention.hold.placed", hold.model_dump(mode="json"))
 
-    def release_hold(self, hold_id: str, released_by: str) -> None:
+    def release_hold(self, hold_id: str, actor: Actor) -> None:
+        if not actor.is_human or actor.role not in (Role.LEGAL_AGENT, Role.COMPLIANCE_AGENT):
+            raise ControlDenied("only a human Legal or Compliance Agent may release a legal hold")
         hold = self._holds.pop(hold_id)
-        self._audit("retention.hold.released", {**hold.model_dump(mode="json"), "released_by": released_by})
+        self._audit("retention.hold.released", {**hold.model_dump(mode="json"), "released_by": actor.actor_id})
 
-    def holds_for(self, scope: str) -> tuple[LegalHold, ...]:
-        return tuple(h for h in self._holds.values() if h.scope == scope)
+    def holds_for(self, *scopes: str) -> tuple[LegalHold, ...]:
+        """A hold on any enclosing scope (tenant, account, customer) covers the record (Security review F-18)."""
+        return tuple(h for h in self._holds.values() if h.scope in scopes)
 
     def request_deletion(
-        self, *, record_class: str, jurisdiction: str, scope: str, record_created_at: datetime, now: datetime, requested_by: str
+        self,
+        *,
+        record_class: str,
+        jurisdiction: str,
+        scopes: tuple[str, ...],
+        record_created_at: datetime,
+        now: datetime,
+        requested_by: str,
     ) -> DeletionOutcome:
-        if self.holds_for(scope):
+        if self.holds_for(*scopes):
             outcome = DeletionOutcome.SUPPRESSED_LEGAL_HOLD
         else:
             schedule = self._schedules.get((record_class, jurisdiction))
-            if schedule is not None and record_created_at + schedule.retain_for > now:
+            if schedule is None:
+                outcome = DeletionOutcome.SUPPRESSED_NO_SCHEDULE
+            elif record_created_at + schedule.retain_for > now:
                 outcome = DeletionOutcome.SUPPRESSED_RETENTION
             else:
                 outcome = DeletionOutcome.DELETED
@@ -69,7 +84,7 @@ class RetentionService:
             {
                 "record_class": record_class,
                 "jurisdiction": jurisdiction,
-                "scope": scope,
+                "scopes": list(scopes),
                 "requested_by": requested_by,
                 "outcome": outcome.value,
             },

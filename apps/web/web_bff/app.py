@@ -8,8 +8,10 @@ Authentication in the dev/sim build [Committee; Open: IdP/MFA integration is E01
 
 from __future__ import annotations
 
+import asyncio
 import os
 from datetime import datetime
+from datetime import datetime as _dt
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from identity_service.rbac import Permission, User, authorize
 from killswitch_service.service import KillSwitchLevel
+from mcp_servers.identity import CallSignature
 from pydantic import BaseModel, Field
 from rtcore.clock import utc_now
 from rtcore.errors import ControlDenied, PlaneViolation, RTError, SchemaViolation, TransitionError
@@ -139,16 +142,27 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
         body: dict[str, Any],
         authorization: str | None = Header(default=None),
         x_call_signature: str | None = Header(default=None),
+        x_call_nonce: str | None = Header(default=None),
+        x_call_issued_at: str | None = Header(default=None),
         x_actor_id: str | None = Header(default=None),
         x_actor_role: str | None = Header(default=None),
         x_mfa: str | None = Header(default=None),
     ) -> dict[str, Any]:
         if authorization and authorization.lower().startswith("bearer "):
             token = authorization.split(" ", 1)[1]
-            with enter(Plane.ANALYTICS):
-                res = p.runtime.call(
-                    token_id=token, signature=x_call_signature or "", tool="submit_trade_intent", args={"intent": body}, now=p.now
-                )
+            # Agent path: the request must carry a nonce-bound, time-bound signature over (token, tool, args)
+            # (security review F-01: bearer alone is never authentication). Malformed headers fail closed as IDENTITY.
+            try:
+                issued = _dt.fromisoformat(x_call_issued_at) if x_call_issued_at else p.now
+                sig = CallSignature(nonce=x_call_nonce or "", issued_at=issued, signature=x_call_signature or "")
+            except (ValueError, TypeError) as exc:
+                raise HTTPException(403, {"error": "IDENTITY"}) from exc
+
+            def _call() -> Any:
+                with enter(Plane.ANALYTICS):
+                    return p.runtime.call(token_id=token, signature=sig, tool="submit_trade_intent", args={"intent": body}, now=p.now)
+
+            res = await asyncio.get_running_loop().run_in_executor(None, _call)
             if not res.ok:
                 code = res.error_code or "DENIED"
                 status = 400 if code in ("INTENT_SCHEMA", "INPUT_SCHEMA") else 403

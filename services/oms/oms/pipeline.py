@@ -19,6 +19,7 @@ from execution_gateway.lease import LeaseStore
 from risk_engine.engine import decide
 from risk_engine.policy import RiskPolicy
 from rtcore.envelope import make_event
+from rtcore.errors import ControlDenied
 from rtcore.ids import new_id
 from rtcore.planes import Plane, enter
 from rtcore.schemas.account import AccountMode, AccountSnapshot
@@ -51,7 +52,13 @@ class PipelineResult(StrictModel):
     final_state: IntentState
 
 
-TARGET_FOR_MODE = {AccountMode.BACKTEST: ExecutionTarget.SIM, AccountMode.PAPER: ExecutionTarget.PAPER}
+# Explicit map; an unknown mode is refused, never defaulted to LIVE (review P13).
+TARGET_FOR_MODE = {
+    AccountMode.BACKTEST: ExecutionTarget.SIM,
+    AccountMode.PAPER: ExecutionTarget.PAPER,
+    AccountMode.SUPERVISED: ExecutionTarget.LIVE,
+    AccountMode.BOUNDED_AUTONOMOUS: ExecutionTarget.LIVE,
+}
 
 
 @dataclass
@@ -145,7 +152,8 @@ class TradePipeline:
                     order=None,
                     final_state=IntentState.PENDING_APPROVAL,
                 )
-            assert acct is not None
+            if acct is None:  # decide() already returns HALTED for a missing snapshot; this guards the type, not the logic
+                raise ControlDenied("account snapshot unavailable after an APPROVED decision (impossible by construction)")
             order = self._authorise_and_execute(vi, decision, approval_id=None, authorised_by="RISK_ENGINE", mode=acct.mode, now=now)
             return PipelineResult(
                 validated_intent=vi,
@@ -157,19 +165,40 @@ class TradePipeline:
             )
 
     def on_approval(self, record: ApprovalRecord, *, now: datetime) -> OrderRecord:
+        """Human approval authorises execution only if a fresh decision on current snapshots still allows it (Risk review OBJ-2)."""
         item = self.approvals.get(record.approval_id)
         vi, decision = item.validated_intent, item.decision
+        intent_id = str(vi.intent.intent_id)
         with enter(Plane.CONTROL):
             self._emit("approval.recorded.v1", vi, record, now)
             acct = self.account_snapshot(vi, now)
-            mode = acct.mode if acct else AccountMode.SUPERVISED
-            if acct is not None and (acct.kill_switch.any_active() or acct.mode == AccountMode.HALTED):
+            mkt = self.market_snapshot(vi, now)
+            fresh = decide(vi, acct, mkt, self.policy(), now)
+            self.audit(
+                "risk.redecided.v1",
+                vi.correlation_id,
+                vi.tenant_id,
+                vi.intent.account_id,
+                {**fresh.model_dump(mode="json"), "approval_id": record.approval_id},
+            )
+            if acct is None or fresh.outcome == Outcome.HALTED:
                 self.tracker.transition(
-                    str(vi.intent.intent_id), IntentState.HALTED, now=now, detail={"reason": "kill switch active at execution time"}
+                    intent_id,
+                    IntentState.HALTED,
+                    now=now,
+                    detail={"reason": "inputs unavailable or halted at execution time", "reason_codes": list(fresh.reason_codes)},
                 )
-                raise RuntimeError("Kill Switch active; approved intent halted")
+                raise ControlDenied(f"approved intent halted at execution time: {fresh.reason_codes}")
+            if fresh.outcome == Outcome.REJECTED:
+                self.tracker.transition(
+                    intent_id,
+                    IntentState.REJECTED,
+                    now=now,
+                    detail={"reason": "re-decision rejected", "reason_codes": list(fresh.reason_codes)},
+                )
+                raise ControlDenied(f"approved intent rejected on re-decision: {fresh.reason_codes}")
             return self._authorise_and_execute(
-                vi, decision, approval_id=record.approval_id, authorised_by=f"APPROVAL:{record.approver_id}", mode=mode, now=now
+                vi, decision, approval_id=record.approval_id, authorised_by=f"APPROVAL:{record.approver_id}", mode=acct.mode, now=now
             )
 
     def _authorise_and_execute(
@@ -184,8 +213,12 @@ class TradePipeline:
     ) -> OrderRecord:
         intent_id = str(vi.intent.intent_id)
         i = vi.intent
+        if mode not in TARGET_FOR_MODE:
+            self.tracker.transition(intent_id, IntentState.HALTED, now=now, detail={"reason": f"no execution target for mode {mode.value}"})
+            raise ControlDenied(f"mode {mode.value} has no execution target (fail closed)")
         command = OrderCommand(
             command_id=new_id("cmd"),
+            strategy_id=i.strategy_id,
             idempotency_key=idempotency_key(intent_id, i.account_id, decision.policy_version),
             intent_id=intent_id,
             intent_hash=vi.intent_hash,
@@ -205,7 +238,7 @@ class TradePipeline:
             correlation_id=vi.correlation_id,
             authorised_at=now,
             authorised_by=authorised_by,
-            execution_target=TARGET_FOR_MODE.get(mode, ExecutionTarget.LIVE),
+            execution_target=TARGET_FOR_MODE[mode],
         )
         self.tracker.transition(
             intent_id,
@@ -215,6 +248,22 @@ class TradePipeline:
         )
         self.on_authorised(vi, decision)
         self._emit("order.command.v1", vi, command, now)
+        self.audit(
+            "order.command.v1",
+            vi.correlation_id,
+            vi.tenant_id,
+            i.account_id,
+            {
+                "command_id": command.command_id,
+                "intent_id": intent_id,
+                "decision_id": decision.decision_id,
+                "approval_id": approval_id,
+                "authorised_by": authorised_by,
+                "idempotency_key": command.idempotency_key,
+                "policy_version": decision.policy_version,
+                "target": command.execution_target.value,
+            },
+        )
         with enter(Plane.CONTROL):
             lease = self.leases.acquire(i.account_id, self.executor_id, now=now)
             order = self.gateway.submit(command, executor_id=self.executor_id, fencing_token=lease.fencing_token, now=now)

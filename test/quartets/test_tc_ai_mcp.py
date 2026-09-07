@@ -8,7 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
-from conftest import ACCOUNT, INSTRUMENT, STRATEGY
+from conftest import ACCOUNT, INSTRUMENT, STRATEGY, TENANT
 from mcp_servers.registry import RegistryUnsigned, load_registry
 from rtcore.errors import ControlDenied, PlaneViolation
 from rtcore.provenance import Provenance, delimit_untrusted
@@ -70,8 +70,14 @@ def test_non_allowlisted_tool_denied_and_alerted(platform):  # type: ignore[no-u
     canary = platform.tool_call(ident, "get_strategy_docs", {"strategy_id": platform.registry.canary_tokens[0]})
     assert canary.error_code == "CANARY_DETECTED" and platform.alerts.by_name("mcp.canary_in_input")
     with __import__("rtcore.planes", fromlist=["enter"]).enter(__import__("rtcore.planes", fromlist=["Plane"]).Plane.ANALYTICS):
+        from mcp_servers.identity import CallSignature
+
         forged = platform.runtime.call(
-            token_id=ident.token_id, signature="deadbeef", tool="read_market_snapshot", args={"instrument_id": INSTRUMENT}, now=platform.now
+            token_id=ident.token_id,
+            signature=CallSignature(nonce="n-forged", issued_at=platform.now, signature="deadbeef"),
+            tool="read_market_snapshot",
+            args={"instrument_id": INSTRUMENT},
+            now=platform.now,
         )
     assert forged.error_code == "IDENTITY"
     for _ in range(10):
@@ -80,12 +86,18 @@ def test_non_allowlisted_tool_denied_and_alerted(platform):  # type: ignore[no-u
     research = platform.issue_agent(agent_id="agent-research", strategy_id="strat-research-only")
     denied = platform.tool_call(research, "submit_trade_intent", {"intent": platform.make_intent(strategy_id="strat-research-only")})
     assert denied.error_code == "NOT_ALLOWLISTED"
-    # ALERT_CATALOG auto-action: a non-allowlisted call revokes the tool for the tenant until re-attested
+    # ALERT_CATALOG auto-action: a non-allowlisted call revokes the grant for the offending scope until re-attested,
+    # and never as tenant-wide collateral damage against other strategies (MCP security review C3)
+    grant = platform.allowlists[TENANT].grant_key(TENANT, research.account_id, "strat-research-only", "submit_trade_intent")
+    assert platform.revocations.is_revoked("grant", grant)
+    assert not platform.revocations.is_revoked(
+        "grant", platform.allowlists[TENANT].grant_key(TENANT, ident.account_id, STRATEGY, "submit_trade_intent")
+    )
     assert (
         platform.tool_call(
             ident, "submit_trade_intent", {"intent": platform.make_intent(quantity="1")}, now=platform.now + timedelta(minutes=2)
         ).error_code
-        == "NOT_ALLOWLISTED"
+        != "NOT_ALLOWLISTED"
     )
     assert platform.audit.by_action("mcp.tool.denied")
 
@@ -105,7 +117,9 @@ def test_revocation_mid_session_and_registry_revocation(platform):  # type: igno
         platform.tool_call(ident, "calculate_indicator", {"indicator": "sma", "instrument_id": INSTRUMENT, "window": 3}).error_code
         == "REGISTRY_REVOKED"
     )
-    platform.runtime.restore_registry(platform.registry, by="mcp-security-agent")
+    with pytest.raises(ControlDenied):
+        platform.runtime.restore_registry(platform.registry, approvers=("mcp-security-agent", "mcp-security-agent"))
+    platform.runtime.restore_registry(platform.registry, approvers=("mcp-security-agent", "security-architect"))
     assert platform.tool_call(ident, "calculate_indicator", {"indicator": "sma", "instrument_id": INSTRUMENT, "window": 3}).ok
     assert (
         platform.tool_call(ident, "get_strategy_docs", {"strategy_id": STRATEGY}, now=platform.now + timedelta(seconds=31)).error_code
@@ -151,7 +165,9 @@ def test_forbidden_capabilities_are_structurally_impossible():  # type: ignore[n
     assert egress.allows("intent-queue.control.svc.cluster.local")
     signed = json.loads((ROOT / "mcp" / "policies" / "tool_registry.signed.json").read_text())
     tampered = ROOT / "test" / "evidence" / "tampered_registry.json"
-    signed["registry"]["tools"].append({**signed["registry"]["tools"][0], "name": "cancel_order", "class": "write"})
+    signed["registry"]["tools"].append(
+        {**signed["registry"]["tools"][0], "name": "cancel_order", "class": "write"}
+    )  # rejected by schema AND signature
     tampered.write_text(json.dumps(signed))
     with pytest.raises(RegistryUnsigned):
         load_registry(tampered)
@@ -166,3 +182,106 @@ def test_forbidden_capabilities_are_structurally_impossible():  # type: ignore[n
 def test_handlers_cannot_be_added_outside_registry(platform):  # type: ignore[no-untyped-def]
     with pytest.raises(ControlDenied):
         platform.runtime.register_handler("cancel_order", lambda i, a, n: {})
+
+
+@pytest.mark.tc("TC-AI-006")
+@pytest.mark.req("FR-09")
+@pytest.mark.quartet("abuse")
+def test_run_simulation_cannot_touch_live_monitoring(platform):  # type: ignore[no-untyped-def]
+    """After an allowed run_simulation call, a plane crossing on the live platform still raises the S1 plane.deny alert (MCP review OBJ-1)."""
+    from rtcore.errors import PlaneViolation
+    from rtcore.planes import Plane, enter
+
+    ident = platform.issue_agent()
+    sim = platform.tool_call(
+        ident,
+        "run_simulation",
+        {"template": "sma_crossover_replay", "strategy_id": STRATEGY, "strategy_version": "0.1", "instrument_id": INSTRUMENT},
+    )
+    assert sim.ok and "do not prove future profitability" in sim.output["disclaimer"]
+    r = platform.run_intent(platform.make_intent())
+    with enter(Plane.ANALYTICS), pytest.raises(PlaneViolation):
+        platform.gateway.submit(
+            r.order.command.model_copy(update={"idempotency_key": "k-after-sim", "intent_id": "other"}),
+            executor_id="rogue",
+            fencing_token=1,
+            now=platform.now,
+        )
+    assert platform.guard.denies and platform.alerts.by_name("plane.deny")
+    bad = platform.tool_call(
+        ident,
+        "run_simulation",
+        {"template": "not_approved", "strategy_id": STRATEGY, "strategy_version": "0.1", "instrument_id": INSTRUMENT},
+    )
+    assert bad.error_code in ("INPUT_SCHEMA", "SCOPE")  # closed schema enum rejects first; SCOPE is the defence-in-depth check
+    other = platform.tool_call(
+        ident,
+        "run_simulation",
+        {"template": "sma_crossover_replay", "strategy_id": STRATEGY, "strategy_version": "9.9", "instrument_id": INSTRUMENT},
+    )
+    assert other.error_code == "SCOPE"
+
+
+@pytest.mark.tc("TC-AI-008")
+@pytest.mark.req("FR-09")
+@pytest.mark.quartet("recovery")
+def test_revocation_survives_runtime_restart(tmp_path):  # type: ignore[no-untyped-def]
+    """Tool and agent revocations are persisted; a rebuilt runtime (restart) still refuses them (MCP review OBJ-3d)."""
+    from web_bff.platform import build_sim_platform
+
+    path = tmp_path / "revocations.jsonl"
+    p1 = build_sim_platform(revocations_path=path)
+    ident = p1.issue_agent()
+    p1.runtime.revoke_tool("calculate_indicator", by="mcp-security-agent")
+    p1.issuer.revoke_agent("agent-sim-1", by="mcp-security-agent")
+    p2 = build_sim_platform(revocations_path=path)
+    fresh = p2.issue_agent(agent_id="agent-sim-2")
+    assert (
+        p2.tool_call(fresh, "calculate_indicator", {"indicator": "sma", "instrument_id": INSTRUMENT, "window": 3}).error_code
+        == "TOOL_REVOKED"
+    )
+    assert p2.tool_call(p2.issue_agent(), "read_market_snapshot", {"instrument_id": INSTRUMENT}).error_code == "IDENTITY"
+    assert ident.agent_id == "agent-sim-1" and p2.revocations.active("tool")
+
+
+@pytest.mark.tc("TC-AI-009")
+@pytest.mark.req("FR-09")
+@pytest.mark.quartet("abuse")
+def test_signed_call_replay_rejected(platform):  # type: ignore[no-untyped-def]
+    """The same signed call (nonce) is accepted once; a replay is refused and a duplicate intent never enters the queue (T-08)."""
+    ident = platform.issue_agent()
+    body = platform.make_intent(quantity="1")
+    first = platform.tool_call(ident, "submit_trade_intent", {"intent": body}, nonce="nonce-1")
+    assert first.ok and len(platform.intent_queue) == 1
+    replay = platform.tool_call(ident, "submit_trade_intent", {"intent": body}, nonce="nonce-1")
+    assert replay.error_code == "IDENTITY" and len(platform.intent_queue) == 1
+    again = platform.tool_call(ident, "submit_trade_intent", {"intent": body}, nonce="nonce-2")
+    assert again.error_code == "INTENT_SCHEMA" and len(platform.intent_queue) == 1  # duplicate intent_id refused by the queue
+    stale = platform.tool_call(ident, "read_market_snapshot", {"instrument_id": INSTRUMENT}, now=platform.now + timedelta(minutes=3))
+    assert stale.ok  # a fresh signature at that time works; replaying an old one would not
+
+
+@pytest.mark.tc("TC-AI-010")
+@pytest.mark.req("FR-09")
+@pytest.mark.quartet("negative")
+def test_registry_key_and_environment_fail_closed(monkeypatch):  # type: ignore[no-untyped-def]
+    """No key outside dev/sim -> refused; fixture registry outside sim -> refused; strategy_version pinned; handler errors audited."""
+    from mcp_servers.registry import load_registry
+
+    monkeypatch.setenv("RT_ENV", "production")
+    monkeypatch.delenv("RT_MCP_REGISTRY_KEY", raising=False)
+    with pytest.raises(RegistryUnsigned):
+        load_registry(ROOT / "mcp" / "policies" / "tool_registry.signed.json")
+    monkeypatch.setenv("RT_MCP_REGISTRY_KEY", "some-kms-key")
+    with pytest.raises(RegistryUnsigned):  # signed with the dev key, and a fixture: refused twice over
+        load_registry(ROOT / "mcp" / "policies" / "tool_registry.signed.json")
+    monkeypatch.setenv("RT_ENV", "sim")
+    monkeypatch.delenv("RT_MCP_REGISTRY_KEY", raising=False)
+    from web_bff.platform import build_sim_platform
+
+    p = build_sim_platform()
+    wrong_version = p.issue_agent(strategy_version="retired-0.0")
+    assert p.tool_call(wrong_version, "submit_trade_intent", {"intent": p.make_intent()}).error_code == "SCOPE"
+    p.runtime.register_handler("get_strategy_docs", lambda principal, args, now: {}["boom"])  # handler defect
+    res = p.tool_call(p.issue_agent(), "get_strategy_docs", {"strategy_id": STRATEGY})
+    assert res.error_code == "HANDLER_ERROR" and p.audit.by_action("mcp.tool.denied") and p.alerts.by_name("mcp.handler_error")

@@ -131,6 +131,10 @@ def test_return_from_halted_requires_two_persons_different_lines(platform):  # t
         p.accounts.restore_from_halt(ACCOUNT, CHIEF_RISK, reason="same line", now=p.now)
     with pytest.raises(ControlDenied):
         p.accounts.restore_from_halt(ACCOUNT, PM, reason="to autonomy", now=p.now, target=AccountMode.BOUNDED_AUTONOMOUS)
-    done = p.accounts.restore_from_halt(ACCOUNT, PM, reason="confirmed", now=p.now, target=AccountMode.PAPER)
+    with pytest.raises(ControlDenied):  # enabled feature is PAPER: a restore cannot promote past it (Risk review F-02)
+        p.accounts.restore_from_halt(ACCOUNT, PM, reason="to supervised", now=p.now, target=AccountMode.SUPERVISED)
+    done = p.accounts.restore_from_halt(ACCOUNT, PM, reason="confirmed", now=p.now)
     assert done.mode == AccountMode.PAPER and done.pending_unhalt_by is None
+    with pytest.raises(ControlDenied):
+        p.accounts.halt(ACCOUNT, agent(), reason="rogue", now=p.now)
     assert p.audit.by_action("account.restored")

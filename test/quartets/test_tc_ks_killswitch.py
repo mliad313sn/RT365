@@ -86,9 +86,9 @@ def test_two_person_deactivation_restores_with_audit(platform):  # type: ignore[
     assert not done.active and platform.killswitch.active() == ()
     assert platform.accounts.get(ACCOUNT).mode == AccountMode.HALTED
     platform.accounts.restore_from_halt(ACCOUNT, RISK_OFFICER, reason="post-incident review done", now=platform.now)
-    platform.accounts.restore_from_halt(ACCOUNT, SRE, reason="confirmed", now=platform.now, target=AccountMode.PAPER)
+    platform.accounts.restore_from_halt(ACCOUNT, SRE, reason="confirmed", now=platform.now)  # default target = enabled feature (PAPER)
     assert platform.accounts.get(ACCOUNT).mode == AccountMode.PAPER
-    platform.issuer.restore_scope("ACCOUNT", ACCOUNT)
+    platform.issuer.restore_scope("ACCOUNT", ACCOUNT, by="risk.officer.1+sre.lead", now=platform.now)
     r = platform.run_intent(platform.make_intent())
     assert r.decision.outcome == Outcome.APPROVED
     actions = [e.action for e in platform.audit.all()]
@@ -135,3 +135,31 @@ def test_emergency_policy_reduce_without_liquidation_policy_falls_back(platform)
     platform.accounts._accounts[ACCOUNT] = acct.model_copy(update={"emergency_policy": EmergencyPolicy.CANCEL_AND_FLATTEN})
     act = platform.killswitch.activate(KillSwitchLevel.ACCOUNT, ACCOUNT, reason="drill", actor=SRE, now=platform.now)
     assert act.emergency_policy_applied.startswith("CANCEL_ONLY (fallback")  # [Open: O-08]
+
+
+@pytest.mark.tc("TC-KS-007")
+@pytest.mark.req("FR-17")
+@pytest.mark.quartet("recovery")
+def test_kill_switch_engages_even_when_a_hook_fails(platform):  # type: ignore[no-untyped-def]
+    """Broker down during activation: the switch is engaged first; the failed hook is recorded and alerted (Risk review OBJ-1)."""
+    platform.run_intent(resting_limit_intent(platform))
+    platform.broker.fail_submissions = True
+    act = platform.killswitch.activate(KillSwitchLevel.ACCOUNT, ACCOUNT, reason="drill: broker down", actor=RISK_OFFICER, now=platform.now)
+    assert act.active and platform.killswitch.flags_for(tenant_id=TENANT, account_id=ACCOUNT).account
+    assert any("cancel_open_orders" in f for f in act.hook_failures) and platform.alerts.by_name("killswitch.hook_failed")
+    assert platform.audit.by_action("killswitch.engaged") and platform.run_intent(platform.make_intent()).decision.outcome == Outcome.HALTED
+
+
+@pytest.mark.tc("TC-KS-008")
+@pytest.mark.req("FR-17")
+@pytest.mark.quartet("negative")
+def test_strategy_level_switch_cancels_only_that_strategy(platform):  # type: ignore[no-untyped-def]
+    """A STRATEGY-level switch cancels the strategy's open orders only and leaves other strategies' orders alone (Trading review)."""
+    acct = platform.accounts.get(ACCOUNT)
+    platform.accounts._accounts[ACCOUNT] = acct.model_copy(update={"authorised_strategies": (STRATEGY, "strat-other")})
+    a = platform.run_intent(resting_limit_intent(platform))
+    b = platform.run_intent(resting_limit_intent(platform, strategy_id="strat-other", quantity="11"))
+    assert a.order.state == OrderState.ACKNOWLEDGED and b.order.state == OrderState.ACKNOWLEDGED
+    act = platform.killswitch.activate(KillSwitchLevel.STRATEGY, "strat-other", reason="drill", actor=SRE, now=platform.now)
+    assert act.cancelled_orders == (b.order.order_id,)
+    assert platform.gateway.get(a.order.order_id).state == OrderState.ACKNOWLEDGED

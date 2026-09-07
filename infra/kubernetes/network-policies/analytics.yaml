@@ -1,4 +1,6 @@
 # Analytics plane: default deny; egress only to the Control-plane intent queue (and DNS). No route to execution, brokers or vault.
+# MCP server pods are EXCLUDED from the namespace-wide egress rule (NetworkPolicies are additive): their egress is
+# defined exclusively in mcp-servers.yaml (review F-19).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: {name: analytics-default-deny, namespace: analytics}
@@ -10,7 +12,8 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: {name: analytics-allow-intent-queue, namespace: analytics}
 spec:
-  podSelector: {}
+  podSelector:
+    matchExpressions: [{key: component, operator: NotIn, values: [mcp-server]}]
   policyTypes: [Egress]
   egress:
     - to:
@@ -19,6 +22,8 @@ spec:
       ports: [{protocol: TCP, port: 8443}]
     - to:
         - namespaceSelector: {matchLabels: {plane: analytics}}
+          podSelector: {matchExpressions: [{key: app, operator: In, values: [market-data, instrument-master, strategy, backtest, feature-signal]}]}
+      ports: [{protocol: TCP, port: 8443}]
     - to:
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
           podSelector: {matchLabels: {k8s-app: kube-dns}}
@@ -26,12 +31,17 @@ spec:
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
-metadata: {name: analytics-allow-ingress-edge, namespace: analytics}
+metadata: {name: analytics-allow-ingress, namespace: analytics}
 spec:
   podSelector: {}
   policyTypes: [Ingress]
   ingress:
     - from:
         - namespaceSelector: {matchLabels: {plane: edge}}
+      ports: [{protocol: TCP, port: 8443}]
+    - from:
         - namespaceSelector: {matchLabels: {plane: analytics}}
-        - namespaceSelector: {matchLabels: {plane: control}}   # revocation / events
+      ports: [{protocol: TCP, port: 8443}]
+    - from:
+        - namespaceSelector: {matchLabels: {plane: control}}   # revocation / events push
+      ports: [{protocol: TCP, port: 8444}]

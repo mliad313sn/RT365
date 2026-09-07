@@ -7,6 +7,9 @@ Invariants [Source: 00, 03, 04; ADR-001]:
  3. Only the execution namespace has an ipBlock egress (broker route).
  4. Vault ingress admits only control and execution planes.
  5. MCP server egress targets only analytics pods and the control intent-queue.
+ 6. Effective-union check (policies are additive): for a pod labelled component=mcp-server, the union of every
+    policy whose podSelector matches it must not reach any namespace-wide analytics rule, execution, security or ipBlock.
+ 7. No egress rule anywhere uses 0.0.0.0/0 or ::/0 (broker routes are explicit CIDRs per certified adapter).
 """
 
 from __future__ import annotations
@@ -31,9 +34,67 @@ def peers(rule: dict, key: str) -> list[dict]:
     return rule.get(key, []) or []
 
 
+def selector_matches(selector: dict | None, labels: dict[str, str]) -> bool:
+    """Minimal Kubernetes label-selector semantics: empty selects all; matchLabels; matchExpressions In/NotIn/Exists."""
+    if not selector:
+        return True
+    for k, v in (selector.get("matchLabels") or {}).items():
+        if labels.get(k) != v:
+            return False
+    for expr in selector.get("matchExpressions") or []:
+        key, op, values = expr.get("key"), expr.get("operator"), expr.get("values") or []
+        if op == "In" and labels.get(key) not in values:
+            return False
+        if op == "NotIn" and labels.get(key) in values:
+            return False
+        if op == "Exists" and key not in labels:
+            return False
+        if op == "DoesNotExist" and key in labels:
+            return False
+    return True
+
+
+def effective_egress(docs: list[dict], namespace: str, labels: dict[str, str]) -> list[tuple[str, dict]]:
+    """Union of egress rules from every policy in ``namespace`` whose podSelector matches ``labels``."""
+    out = []
+    for d in docs:
+        if d["metadata"]["namespace"] != namespace or "Egress" not in d["spec"].get("policyTypes", []):
+            continue
+        if not selector_matches(d["spec"].get("podSelector"), labels):
+            continue
+        for rule in d["spec"].get("egress", []) or []:
+            out.append((d["metadata"]["name"], rule))
+    return out
+
+
 def check() -> list[str]:
     problems: list[str] = []
     docs = load_all()
+    # 6. effective union for MCP pods
+    for name, rule in effective_egress(docs, "analytics", {"component": "mcp-server", "app": "mcp-market"}):
+        for peer in peers(rule, "to"):
+            if "ipBlock" in peer:
+                problems.append(f"mcp-server effective egress via {name}: ipBlock forbidden")
+            ns = (peer.get("namespaceSelector") or {}).get("matchLabels", {})
+            plane = ns.get("plane")
+            pod = peer.get("podSelector")
+            if plane in ("execution", "security", "edge"):
+                problems.append(f"mcp-server effective egress via {name}: plane={plane} forbidden")
+            if plane == "analytics" and not pod:
+                problems.append(f"mcp-server effective egress via {name}: namespace-wide analytics egress (must name pods)")
+            if plane == "control" and (pod or {}).get("matchLabels", {}).get("app") != "intent-queue":
+                problems.append(f"mcp-server effective egress via {name}: control egress must be intent-queue only")
+            if plane in ("analytics", "control") and not rule.get("ports"):
+                problems.append(f"mcp-server effective egress via {name}: rule without ports")
+    # 7. no 0.0.0.0/0 anywhere
+    for d in docs:
+        for rule in d["spec"].get("egress", []) or []:
+            for peer in peers(rule, "to"):
+                cidr = (peer.get("ipBlock") or {}).get("cidr")
+                if cidr in ("0.0.0.0/0", "::/0"):
+                    problems.append(
+                        f"{d['metadata']['namespace']}/{d['metadata']['name']}: egress to {cidr} forbidden; list broker CIDRs per certified adapter"
+                    )
     by_ns: dict[str, list[dict]] = {}
     for d in docs:
         by_ns.setdefault(d["metadata"]["namespace"], []).append(d)

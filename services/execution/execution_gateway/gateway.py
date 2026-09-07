@@ -9,7 +9,7 @@ from rtcore.envelope import make_event
 from rtcore.errors import ControlDenied, RTError
 from rtcore.ids import new_id
 from rtcore.money import ZERO
-from rtcore.planes import GUARD, Plane
+from rtcore.planes import GUARD, Plane, PlaneGuard
 from rtcore.schemas.events import OrderEvent
 from rtcore.schemas.order import Fill, OrderCommand, OrderRecord, OrderState, client_order_id
 from rtcore.statemachine import MonotonicStateMachine
@@ -18,7 +18,14 @@ from execution_gateway.lease import LeaseStore
 
 _T = {
     OrderState.CREATED: {OrderState.SUBMITTED, OrderState.EXPIRED},
-    OrderState.SUBMITTED: {OrderState.ACKNOWLEDGED, OrderState.BROKER_REJECTED, OrderState.PARTIALLY_FILLED, OrderState.FILLED},
+    OrderState.SUBMITTED: {
+        OrderState.ACKNOWLEDGED,
+        OrderState.BROKER_REJECTED,
+        OrderState.PARTIALLY_FILLED,
+        OrderState.FILLED,
+        OrderState.CANCELLED,
+        OrderState.EXPIRED,
+    },
     OrderState.ACKNOWLEDGED: {
         OrderState.PARTIALLY_FILLED,
         OrderState.FILLED,
@@ -40,6 +47,10 @@ class StaleFencingToken(RTError):
     """Submission carried a fencing token that is not the current lease (ADR-002)."""
 
 
+class DuplicateIntentOrder(ControlDenied):
+    """A live order already exists for this intent: at most one live broker order per intent (review OBJ-1)."""
+
+
 class ExecutionGateway:
     def __init__(
         self,
@@ -50,9 +61,12 @@ class ExecutionGateway:
         publish: Callable[[Any], object],
         alert: Callable[[str, dict[str, Any]], object] | None = None,
         broker_for_account: Callable[[str], str],
+        guard: PlaneGuard = GUARD,
     ) -> None:
         self._adapters = adapters
         self._leases = lease_store
+        self._guard = guard
+        self._by_intent: dict[str, list[str]] = {}
         self._audit = audit  # (action, correlation_id, tenant, account, payload)
         self._publish = publish
         self._alert = alert or (lambda name, payload: None)
@@ -63,34 +77,45 @@ class ExecutionGateway:
         self.duplicate_commands: int = 0
 
     # --- helpers ------------------------------------------------------------------------------------
-    def _save(self, rec: OrderRecord, event: str, now: datetime, extra: dict[str, Any] | None = None) -> OrderRecord:
+    def _save(
+        self, rec: OrderRecord, event: str, now: datetime, extra: dict[str, Any] | None = None, *, publish: bool = True
+    ) -> OrderRecord:
         self._orders[rec.order_id] = rec
         cmd = rec.command
-        payload = OrderEvent(
-            order_id=rec.order_id,
-            client_order_id=rec.client_order_id,
-            state=rec.state.value,
-            fencing_token=rec.fencing_token,
-            idempotency_key=cmd.idempotency_key,
-            intent_id=cmd.intent_id,
-            decision_id=cmd.decision_id,
-            broker_order_ref=rec.broker_order_ref,
-            reason=rec.reject_reason,
-            **(extra or {}),
-        )
+        fields: dict[str, Any] = {
+            "order_id": rec.order_id,
+            "client_order_id": rec.client_order_id,
+            "state": rec.state.value,
+            "fencing_token": rec.fencing_token,
+            "idempotency_key": cmd.idempotency_key,
+            "intent_id": cmd.intent_id,
+            "decision_id": cmd.decision_id,
+            "broker_order_ref": rec.broker_order_ref,
+            "reason": rec.reject_reason,
+        }
+        fields.update(extra or {})
+        payload = OrderEvent(**fields)
         self._audit(event, cmd.correlation_id, cmd.tenant_id, cmd.account_id, payload.model_dump(mode="json"))
-        self._publish(
-            make_event(
-                event,
-                correlation_id=cmd.correlation_id,
-                tenant=cmd.tenant_id,
-                account=cmd.account_id,
-                producer="execution_gateway",
-                payload=payload,
-                emitted_ts=now,
+        if publish:
+            self._publish(
+                make_event(
+                    event,
+                    correlation_id=cmd.correlation_id,
+                    tenant=cmd.tenant_id,
+                    account=cmd.account_id,
+                    producer="execution_gateway",
+                    payload=payload,
+                    emitted_ts=now,
+                )
             )
-        )
         return rec
+
+    def _live_orders_for_intent(self, intent_id: str) -> list[OrderRecord]:
+        return [
+            self._orders[o]
+            for o in self._by_intent.get(intent_id, [])
+            if self._orders[o].state in OPEN_STATES or self._orders[o].filled_quantity > ZERO
+        ]
 
     def _transition(self, rec: OrderRecord, nxt: OrderState, now: datetime, **updates: Any) -> OrderRecord:
         ORDER_MACHINE.assert_transition(rec.state, nxt)
@@ -98,7 +123,7 @@ class ExecutionGateway:
 
     # --- submission -----------------------------------------------------------------------------------
     def submit(self, command: OrderCommand, *, executor_id: str, fencing_token: int, now: datetime) -> OrderRecord:
-        GUARD.check_caller(Plane.EXECUTION, "order_command")
+        self._guard.check_caller(Plane.EXECUTION, "order_command")
         # Inbox: at-least-once delivery, exactly-once business effect (ADR-003, NFR-CON-01)
         existing_id = self._by_key.get(command.idempotency_key)
         if existing_id is not None:
@@ -112,6 +137,26 @@ class ExecutionGateway:
                 {"idempotency_key": command.idempotency_key, "order_id": existing_id},
             )
             return existing
+        # Per-intent invariant: one live order per intent regardless of policy version (Trading review C2)
+        live = self._live_orders_for_intent(command.intent_id)
+        if live:
+            self._audit(
+                "order.command.duplicate_intent_rejected",
+                command.correlation_id,
+                command.tenant_id,
+                command.account_id,
+                {"intent_id": command.intent_id, "live_orders": [o.order_id for o in live]},
+            )
+            self._alert(
+                "execution.duplicate_order",
+                {
+                    "account": command.account_id,
+                    "intent_id": command.intent_id,
+                    "strategy": command.strategy_id,
+                    "order_id": live[0].order_id,
+                },
+            )
+            raise DuplicateIntentOrder(f"intent {command.intent_id} already has a live order {live[0].order_id}")
         # Fencing: only the current lease holder may submit (ADR-002)
         if not self._leases.is_valid(command.account_id, fencing_token, now=now):
             self._alert("execution.stale_fencing_token", {"account": command.account_id, "executor": executor_id, "token": fencing_token})
@@ -139,7 +184,8 @@ class ExecutionGateway:
         )
         self._by_key[command.idempotency_key] = rec.order_id
         self._by_client_id[coid] = rec.order_id
-        self._save(rec, "order.command.v1", now)
+        self._by_intent.setdefault(command.intent_id, []).append(rec.order_id)
+        self._save(rec, "order.created", now, publish=False)  # the Control plane already published order.command.v1
         req = SubmitRequest(
             client_order_id=coid,
             account_id=command.account_id,
@@ -176,7 +222,11 @@ class ExecutionGateway:
         return rec
 
     def retry_submit(self, order_id: str, *, executor_id: str, fencing_token: int, now: datetime) -> OrderRecord:
-        """Re-send a SUBMITTED-but-unacked order after a broker outage; same client_order_id, so the broker dedupes."""
+        """Re-send a SUBMITTED-but-unacked order after a broker outage.
+
+        The broker is queried first (review OBJ-2): if it already knows the client_order_id the order is adopted
+        instead of re-sent, so brokers that do not dedupe never receive a second live order.
+        """
         rec = self._orders[order_id]
         if rec.state != OrderState.SUBMITTED:
             return rec
@@ -184,6 +234,23 @@ class ExecutionGateway:
             raise StaleFencingToken("retry with stale token")
         adapter = self._adapters[self._broker_for_account(rec.command.account_id)]
         c = rec.command
+        try:
+            status = adapter.query_order(rec.client_order_id, now=now)
+        except BrokerUnavailable:
+            return rec
+        if status.known:
+            if status.status in ("OPEN", "PARTIAL", "FILLED"):
+                rec = self._transition(
+                    rec, OrderState.ACKNOWLEDGED, now, broker_order_ref=status.broker_order_ref, fencing_token=fencing_token
+                )
+                return self._save(rec, "order.acked.v1", now, {"retry": True, "broker_dedupe": True})
+            if status.status == "CANCELLED":
+                rec = self._transition(
+                    rec, OrderState.CANCELLED, now, broker_order_ref=status.broker_order_ref, fencing_token=fencing_token
+                )
+                return self._save(rec, "order.cancelled.v1", now, {"retry": True})
+            rec = self._transition(rec, OrderState.BROKER_REJECTED, now, reject_reason="rejected at broker", fencing_token=fencing_token)
+            return self._save(rec, "order.rejected.v1", now, {"retry": True})
         req = SubmitRequest(
             client_order_id=rec.client_order_id,
             account_id=c.account_id,
@@ -218,10 +285,36 @@ class ExecutionGateway:
             client_order_id=bf.client_order_id,
             quantity=bf.quantity,
             price=bf.price,
+            fee=bf.fee,
             fill_ts=bf.ts,
             broker_ref=bf.fill_ref,
         )
         filled = rec.filled_quantity + bf.quantity
+        if filled > rec.command.quantity or rec.state in (
+            OrderState.CANCELLED,
+            OrderState.BROKER_REJECTED,
+            OrderState.EXPIRED,
+            OrderState.FILLED,
+        ):
+            # Over-fill or fill after a terminal state: the broker is the truth, but this is a break, not a crash.
+            self._alert(
+                "execution.unexpected_fill",
+                {
+                    "account": rec.command.account_id,
+                    "order_id": order_id,
+                    "state": rec.state.value,
+                    "filled": str(filled),
+                    "ordered": str(rec.command.quantity),
+                },
+            )
+            self._audit(
+                "order.fill.unexpected",
+                rec.command.correlation_id,
+                rec.command.tenant_id,
+                rec.command.account_id,
+                {"order_id": order_id, "fill_ref": bf.fill_ref, "state": rec.state.value},
+            )
+            return rec
         nxt = OrderState.FILLED if filled >= rec.command.quantity else OrderState.PARTIALLY_FILLED
         rec = self._transition(
             rec, nxt, now, filled_quantity=filled, fills=(*rec.fills, fill), broker_order_ref=rec.broker_order_ref or bf.broker_order_ref
@@ -243,6 +336,43 @@ class ExecutionGateway:
                     touched.append(rec)
         return tuple(touched)
 
+    def sync_statuses(self, *, now: datetime) -> tuple[OrderRecord, ...]:
+        """Adopt broker-side terminal states (IOC cancelled, rejected after ack) into internal orders (review OBJ-3)."""
+        touched: list[OrderRecord] = []
+        for rec in list(self._orders.values()):
+            if rec.state not in OPEN_STATES:
+                continue
+            adapter = self._adapters.get(self._broker_for_account(rec.command.account_id))
+            if adapter is None:
+                continue
+            try:
+                st = adapter.query_order(rec.client_order_id, now=now)
+            except BrokerUnavailable:
+                continue
+            if st.known and st.status == "CANCELLED" and rec.state != OrderState.CANCELLED:
+                rec = self._transition(rec, OrderState.CANCELLED, now)
+                touched.append(self._save(rec, "order.cancelled.v1", now, {"reason": "broker-side cancel adopted"}))
+            elif st.known and st.status == "REJECTED" and rec.state == OrderState.ACKNOWLEDGED:
+                rec = self._transition(rec, OrderState.BROKER_REJECTED, now, reject_reason="rejected after ack")
+                touched.append(self._save(rec, "order.rejected.v1", now))
+        return tuple(touched)
+
+    def expire(self, *, now: datetime) -> tuple[OrderRecord, ...]:
+        """SUBMITTED orders whose intent expiry passed without an ack are EXPIRED after the broker confirms it never saw them."""
+        touched: list[OrderRecord] = []
+        for rec in list(self._orders.values()):
+            if rec.state != OrderState.SUBMITTED:
+                continue
+            adapter = self._adapters.get(self._broker_for_account(rec.command.account_id))
+            try:
+                st = adapter.query_order(rec.client_order_id, now=now) if adapter else None
+            except BrokerUnavailable:
+                continue
+            if st is not None and not st.known:
+                rec = self._transition(rec, OrderState.EXPIRED, now)
+                touched.append(self._save(rec, "order.cancelled.v1", now, {"reason": "expired: never reached the broker"}))
+        return tuple(touched)
+
     # --- cancellation ---------------------------------------------------------------------------------
     def cancel(self, order_id: str, *, fencing_token: int, now: datetime, reason: str) -> OrderRecord:
         rec = self._orders[order_id]
@@ -251,11 +381,44 @@ class ExecutionGateway:
         if not self._leases.is_valid(rec.command.account_id, fencing_token, now=now):
             raise StaleFencingToken("cancel with stale token")
         adapter = self._adapters[self._broker_for_account(rec.command.account_id)]
+        if rec.state == OrderState.SUBMITTED:
+            st = adapter.query_order(rec.client_order_id, now=now)
+            if not st.known:
+                rec = self._transition(rec, OrderState.CANCELLED, now)
+                return self._save(rec, "order.cancelled.v1", now, {"reason": "never reached broker"})
         ack = adapter.cancel(rec.client_order_id, now=now)
         if ack.status == AckStatus.CANCELLED:
             rec = self._transition(rec, OrderState.CANCELLED, now)
             return self._save(rec, "order.cancelled.v1", now)
-        return rec
+        if ack.status == AckStatus.REJECTED and ack.reason == "ALREADY_FILLED":
+            self.poll_fills(now=now)
+        return self._orders[order_id]
+
+    def affected_accounts(
+        self,
+        *,
+        account_id: str | None = None,
+        tenant_id: str | None = None,
+        strategy_id: str | None = None,
+        instrument_id: str | None = None,
+        venue: str | None = None,
+    ) -> tuple[str, ...]:
+        """Accounts holding open orders inside a Kill Switch scope (only their leases are preempted)."""
+        out: set[str] = set()
+        for rec in self._orders.values():
+            c = rec.command
+            if rec.state not in OPEN_STATES:
+                continue
+            if (account_id and c.account_id != account_id) or (tenant_id and c.tenant_id != tenant_id):
+                continue
+            if (
+                (strategy_id and c.strategy_id != strategy_id)
+                or (instrument_id and c.instrument_id != instrument_id)
+                or (venue and c.venue != venue)
+            ):
+                continue
+            out.add(c.account_id)
+        return tuple(sorted(out))
 
     def cancel_all(
         self,
@@ -278,6 +441,8 @@ class ExecutionGateway:
             if account_id and c.account_id != account_id:
                 continue
             if tenant_id and c.tenant_id != tenant_id:
+                continue
+            if strategy_id and c.strategy_id != strategy_id:
                 continue
             if instrument_id and c.instrument_id != instrument_id:
                 continue

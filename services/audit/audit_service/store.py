@@ -60,8 +60,17 @@ class AuditEvent(StrictModel):
 class ChainVerification(StrictModel):
     ok: bool
     length: int
+    head_hash: str = ""
     first_bad_seq: int | None = None
     detail: str = ""
+
+
+class ChainHead(StrictModel):
+    """Sealed anchor published out of band (WORM object store / replica) so truncation is detectable (review OBJ-3)."""
+
+    length: int
+    head_hash: str
+    sealed_at: datetime
 
 
 class AuditStore:
@@ -100,6 +109,9 @@ class AuditStore:
             prev_hash = self._events[-1].hash if self._events else GENESIS_HASH
             event_id = new_id("aud")
             when = ts or self._clock()
+            if self._events and when < self._events[-1].ts:
+                # Backdating is refused: chain time is monotonic; the caller's clock is evidence, not authority.
+                when = self._events[-1].ts
             payload_hash = hash_of(body)
             digest = AuditEvent.compute_hash(seq, event_id, when, correlation_id, tenant, account, actor, action, payload_hash, prev_hash)
             event = AuditEvent(
@@ -143,10 +155,32 @@ class AuditStore:
     def head_hash(self) -> str:
         return self._events[-1].hash if self._events else GENESIS_HASH
 
-    def verify(self, events: Iterable[AuditEvent] | None = None) -> ChainVerification:
+    def seal(self) -> ChainHead:
+        """Anchor to publish outside the store (replica, WORM bucket, printed in the gate dossier)."""
+        return ChainHead(length=len(self._events), head_hash=self.head_hash(), sealed_at=self._clock())
+
+    def verify(self, events: Iterable[AuditEvent] | None = None, *, anchor: ChainHead | None = None) -> ChainVerification:
+        """Verify hashes and sequence; with an ``anchor`` also detect truncation/replacement of the tail."""
         prev = GENESIS_HASH
         seq_expected = 0
         items = list(events) if events is not None else list(self._events)
+        if anchor is not None:
+            if len(items) < anchor.length:
+                return ChainVerification(
+                    ok=False,
+                    length=len(items),
+                    head_hash=items[-1].hash if items else GENESIS_HASH,
+                    first_bad_seq=len(items),
+                    detail=f"chain truncated: {len(items)} < sealed {anchor.length}",
+                )
+            if items[anchor.length - 1].hash != anchor.head_hash if anchor.length else GENESIS_HASH != anchor.head_hash:
+                return ChainVerification(
+                    ok=False,
+                    length=len(items),
+                    head_hash=items[-1].hash if items else GENESIS_HASH,
+                    first_bad_seq=anchor.length - 1,
+                    detail="sealed head does not match",
+                )
         for e in items:
             if e.seq != seq_expected:
                 return ChainVerification(ok=False, length=len(items), first_bad_seq=e.seq, detail="sequence gap")
@@ -161,7 +195,7 @@ class AuditStore:
                 return ChainVerification(ok=False, length=len(items), first_bad_seq=e.seq, detail="hash mismatch")
             prev = e.hash
             seq_expected += 1
-        return ChainVerification(ok=True, length=len(items))
+        return ChainVerification(ok=True, length=len(items), head_hash=prev)
 
     def export(self, correlation_id: str | None = None) -> str:
         items = self.by_correlation(correlation_id) if correlation_id else self.all()

@@ -13,6 +13,10 @@ liquidity_action: REQUIRE_APPROVAL
 protective_stop_required: true
 protective_stop_action: REJECT
 allow_pre_open_limit_orders: false
+risk_reducing_orders_exempt_exposure_caps: true   # [Committee] pending Trading Risk Committee
+max_protective_stop_distance_pct: 10               # [Open: O-07]
+account_snapshot_max_age_s: 5                       # [Open: O-03]
+approved_liquidation_policies: []                   # [Open: O-08]
 freshness_budget_s_by_asset_class:
   EQUITY: 5
   ETF: 5
@@ -44,6 +48,6 @@ limits:
   # Tenant / account / strategy / instrument overrides used by tests to prove effective = min
   - {level: TENANT, scope_id: tenant-sim, metric: max_notional_per_order, threshold: 250000, unit: ccy}
   - {level: ACCOUNT, scope_id: acct-sim-001, metric: max_notional_per_order, threshold: 100000, unit: ccy}
-  - {level: STRATEGY, scope_id: strat-sma-xover, metric: max_notional_per_order, threshold: 50000, unit: ccy}
+  - {level: STRATEGY, scope_id: strat-sma-xover, tenant_id: tenant-sim, metric: max_notional_per_order, threshold: 50000, unit: ccy}
   - {level: ACCOUNT, scope_id: acct-sim-001, metric: orders_per_minute, threshold: 10, unit: n}
   - {level: ACCOUNT, scope_id: acct-sim-001, metric: open_order_count, threshold: 5, unit: n}

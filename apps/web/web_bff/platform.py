@@ -4,6 +4,11 @@ Wires every bounded context in one process with in-memory stores. It exists so t
 control envelope can be exercised end to end (tests, BFF, backtests, synthetic probes)
 before any external dependency exists. Nothing here enables a market, a strategy or autonomy:
 the fixture tenant/account/jurisdiction are explicitly simulated.
+
+Review remediations wired here: private PlaneGuard per platform (MCP OBJ-1), persisted revocations
+and alert payload contracts (MCP OBJ-3), scoped Kill Switch cancels and lease preemption (Trading
+review), fees charged by the broker inside the pipeline (ADR-008), maker-checker as the only limit
+write path (Risk review F-04), RT-RECON fed from open tickets and two-person autonomy restore (P6).
 """
 
 from __future__ import annotations
@@ -18,6 +23,7 @@ from approval_service.queue import ApprovalQueue, ApprovalRecord
 from audit_service.store import AuditStore
 from backtest_engine.costs import CostModel
 from backtest_engine.runner import BacktestReport, BacktestRunner
+from broker_adapters.base import VaultRef
 from broker_adapters.simulated import SimulatedBroker
 from compliance_engine.jurisdiction import JurisdictionRegistry
 from compliance_engine.retention import RetentionService
@@ -34,32 +40,35 @@ from market_data.service import MarketDataService
 from market_data.store import BitemporalStore
 from mcp_servers.allowlist import TenantAllowlist
 from mcp_servers.egress import EgressPolicy
-from mcp_servers.identity import AgentIdentity, IdentityIssuer
+from mcp_servers.identity import AgentIdentity, IdentityIssuer, Principal
 from mcp_servers.registry import ToolRegistry, load_registry
-from mcp_servers.runtime import ToolRuntime
+from mcp_servers.revocation import RevocationList
+from mcp_servers.runtime import ToolRuntime, current_principal
 from mcp_servers.tools import build_tools
 from oms.intent_queue import IntentQueue
 from oms.lifecycle import IntentTracker
 from oms.outbox import Inbox, Outbox
 from oms.pipeline import EligibilityInputs, PipelineResult, TradePipeline
-from portfolio_service.ledger import Ledger
+from portfolio_service.ledger import Ledger, PositionState
 from reconciliation_service.reconcile import BreakSeverity, ReconciliationResult, reconcile
 from reconciliation_service.tickets import BreakTicketService
 from risk_engine.monitors import RuntimeMetrics, evaluate_runtime
-from risk_engine.policy import RiskPolicy, load_policy
-from rtcore.lines import Actor, Role, system_actor
+from risk_engine.policy import RiskPolicy, apply_limit_change, load_policy
+from rtcore.envelope import make_event
+from rtcore.errors import ControlDenied
+from rtcore.lines import Actor, ActorKind, Role, system_actor
 from rtcore.money import ZERO
-from rtcore.planes import GUARD, Plane, PlaneGuard, enter
-from rtcore.schemas.account import AccountMode, AccountSnapshot, EmergencyPolicy
+from rtcore.planes import Plane, PlaneGuard, enter
+from rtcore.schemas.account import AccountMode, AccountSnapshot, EmergencyPolicy, OpenOrder
 from rtcore.schemas.compliance import CustomerProfile, CustomerType, RestrictedLists
 from rtcore.schemas.intent import TradeIntent, ValidatedIntent
 from rtcore.schemas.market import InstrumentAttributes, MarketSnapshot
 from rtcore.schemas.order import OrderRecord
-from rtobs.alerts import AlertRouter
+from rtobs.alerts import Alert, AlertRouter
 from rtobs.metrics import MetricsRegistry
 from rtobs.slis import SliCatalog
 from rtobs.tracing import Tracer
-from strategy_service.registry import StrategyRegistry, StrategyVersion
+from strategy_service.registry import StrategyRegistry, StrategyStatus, StrategyVersion
 from strategy_service.signals import SmaCrossoverStrategy, intent_from_signal
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -71,8 +80,10 @@ INSTRUMENT_2 = "SIMEQ2"
 VENUE = "SIMX"
 BROKER = "sim-broker"
 STRATEGY = "strat-sma-xover"
+STRATEGY_VERSION = "0.1"
 JURISDICTION = "ZZ"  # ISO 3166 user-assigned code: explicitly not a real jurisdiction [Open: O-11]
 BASE_TIME = datetime(2026, 9, 7, 14, 0, tzinfo=UTC)  # a Monday, session open
+BACKTEST_START = datetime(2026, 9, 4, 14, 0, tzinfo=UTC)  # a Friday, session open
 
 
 @dataclass
@@ -90,27 +101,30 @@ class SimPlatform:
     leases: LeaseStore
     gateway: ExecutionGateway
     approvals: ApprovalQueue
-    killswitch: KillSwitchService
     jurisdictions: JurisdictionRegistry
     retention: RetentionService
     strategies: StrategyRegistry
     policy: RiskPolicy | None
     restricted: RestrictedLists
     customers: dict[str, CustomerProfile]
-    pipeline: TradePipeline = field(init=False)
     issuer: IdentityIssuer
     registry: ToolRegistry
     runtime: ToolRuntime
     egress: EgressPolicy
-    tickets: BreakTicketService
+    revocations: RevocationList
     limits_mc: MakerChecker
     alerts: AlertRouter
     metrics: MetricsRegistry
     tracer: Tracer
     slis: SliCatalog
     guard: PlaneGuard
+    allowlists: dict[str, TenantAllowlist]
+    pipeline: TradePipeline = field(init=False)
+    killswitch: KillSwitchService = field(init=False)
+    tickets: BreakTicketService = field(init=False)
     notifications: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
     applied_fill_refs: set[str] = field(default_factory=set)
+    applied_changes: set[str] = field(default_factory=set)
     executor_id: str = "executor-a"
 
     # --- clock ----------------------------------------------------------------------------------------
@@ -118,15 +132,13 @@ class SimPlatform:
         self.now = self.now + timedelta(seconds=seconds)
         return self.now
 
-    # --- snapshot providers --------------------------------------------------------------------------------
+    # --- snapshot providers ------------------------------------------------------------------------------
     def account_snapshot(self, account_id: str, now: datetime | None = None) -> AccountSnapshot | None:
         now = now or self.now
         try:
             acct = self.accounts.get(account_id)
         except KeyError:
             return None
-        from rtcore.schemas.account import OpenOrder
-
         open_orders = tuple(
             OpenOrder(
                 order_id=o.order_id,
@@ -163,7 +175,7 @@ class SimPlatform:
     def market_snapshot(self, instrument_id: str, now: datetime | None = None) -> MarketSnapshot | None:
         return self.market.for_decision(instrument_id, now=now or self.now)
 
-    # --- data ingestion -----------------------------------------------------------------------------------
+    # --- data ingestion ------------------------------------------------------------------------------------
     def ingest_bars(
         self, instrument_id: str, *, start: datetime, count: int, ingest_lag: timedelta = timedelta(milliseconds=200)
     ) -> tuple[MarketSnapshot, ...]:
@@ -185,7 +197,7 @@ class SimPlatform:
         base: dict[str, Any] = {
             "intent_id": str(uuid4()),
             "strategy_id": STRATEGY,
-            "strategy_version": "0.1",
+            "strategy_version": STRATEGY_VERSION,
             "model_id": "rule-sma",
             "model_version": "0.1",
             "account_id": ACCOUNT,
@@ -242,14 +254,18 @@ class SimPlatform:
         now = now or self.now
         for order in self.gateway.poll_fills(now=now):
             self.pipeline.sync_order_state(order, now=now)
+        for order in self.gateway.sync_statuses(now=now):
+            self.pipeline.sync_order_state(order, now=now)
         for order in self.gateway.orders():
             for f in order.fills:
                 if f.broker_ref in self.applied_fill_refs:
                     continue
                 self.applied_fill_refs.add(f.broker_ref)
-                self.ledger.apply_fill(order.command.account_id, order.command.instrument_id, order.command.side, f.quantity, f.price)
+                self.ledger.apply_fill(
+                    order.command.account_id, order.command.instrument_id, order.command.side, f.quantity, f.price, fee=f.fee
+                )
 
-    # --- reconciliation (P6) ---------------------------------------------------------------------------------------
+    # --- reconciliation (P6) -------------------------------------------------------------------------------
     def reconcile(self, account_id: str = ACCOUNT, now: datetime | None = None) -> ReconciliationResult:
         now = now or self.now
         statement = self.broker.statement(account_id, as_of=now)
@@ -261,43 +277,80 @@ class SimPlatform:
             statement=statement,
             now=now,
         )
+        corr = f"recon:{account_id}:{now.isoformat()}"
+        payload = {
+            "account_id": account_id,
+            "as_of": now.isoformat(),
+            "positions_compared": result.positions_compared,
+            "orders_compared": result.orders_compared,
+            "break_count": len(result.breaks),
+        }
         self.audit.append(
-            correlation_id=f"recon:{account_id}:{now.isoformat()}",
+            correlation_id=corr,
             tenant=TENANT,
             account=account_id,
             actor="reconciliation_service",
             action="reconciliation.completed.v1",
-            payload={
-                "account_id": account_id,
-                "as_of": now.isoformat(),
-                "positions_compared": result.positions_compared,
-                "orders_compared": result.orders_compared,
-                "break_count": len(result.breaks),
-            },
+            payload=payload,
+        )
+        self.outbox.publish(
+            make_event(
+                "reconciliation.completed.v1",
+                correlation_id=corr,
+                tenant=TENANT,
+                account=account_id,
+                producer="reconciliation_service",
+                payload=payload,
+                emitted_ts=now,
+            )
         )
         for brk in result.breaks:
             self.tickets.open(brk, now=now)
+            self.outbox.publish(
+                make_event(
+                    "reconciliation.break.v1",
+                    correlation_id=brk.correlation_ids[0] if brk.correlation_ids else brk.break_id,
+                    tenant=TENANT,
+                    account=account_id,
+                    producer="reconciliation_service",
+                    payload=brk,
+                    emitted_ts=now,
+                )
+            )
         return result
 
-    # --- runtime monitors (P4 triggers) -------------------------------------------------------------------------------
+    # --- runtime monitors (P4 triggers) -------------------------------------------------------------------
     def evaluate_monitors(self, account_id: str, metrics: RuntimeMetrics, now: datetime | None = None) -> tuple[str, ...]:
         now = now or self.now
         snap = self.account_snapshot(account_id, now)
         if snap is None or self.policy is None:
             return ()
+        open_breaks = len(self.tickets.open_tickets(account_id))
+        if open_breaks and metrics.open_reconciliation_breaks == 0:
+            metrics = metrics.model_copy(update={"open_reconciliation_breaks": open_breaks})  # RT-RECON is fed from open tickets (P6)
         events = evaluate_runtime(snap, self.policy, metrics, now)
         activated = []
-        monitor = Actor(
-            actor_id="runtime-monitor", role=Role.RUNTIME_MONITOR, kind=__import__("rtcore.lines", fromlist=["ActorKind"]).ActorKind.SYSTEM
-        )
+        monitor = Actor(actor_id="runtime-monitor", role=Role.RUNTIME_MONITOR, kind=ActorKind.SYSTEM)
         for ev in events:
+            corr = f"halt:{account_id}:{ev.reason_code}"
             self.audit.append(
-                correlation_id=f"halt:{account_id}:{ev.reason_code}",
+                correlation_id=corr,
                 tenant=TENANT,
                 account=account_id,
                 actor="runtime_monitor",
                 action="risk.halt.v1",
                 payload=ev.model_dump(mode="json"),
+            )
+            self.outbox.publish(
+                make_event(
+                    "risk.halt.v1",
+                    correlation_id=corr,
+                    tenant=TENANT,
+                    account=account_id,
+                    producer="runtime_monitor",
+                    payload=ev,
+                    emitted_ts=now,
+                )
             )
             level = KillSwitchLevel(ev.level) if ev.level in KillSwitchLevel.__members__ else KillSwitchLevel.ACCOUNT
             target = ev.target_id if ev.target_id != "*" else (account_id if level == KillSwitchLevel.ACCOUNT else "*")
@@ -308,12 +361,69 @@ class SimPlatform:
             activated.append(ev.reason_code)
         return tuple(activated)
 
-    # --- MCP helpers ------------------------------------------------------------------------------------------
+    # --- limits: the only write path (review F-04) ----------------------------------------------------------
+    def apply_effective_limits(self, now: datetime | None = None) -> RiskPolicy | None:
+        """EFFECTIVE maker-checker changes become a new policy version; nothing else can write a limit."""
+        now = now or self.now
+        if self.policy is None:
+            return None
+        for change_id in self.limits_mc.pending_ids():
+            change = self.limits_mc.effective(change_id, now=now)
+            if change is None or change.kind != "limit.changed" or change.change_id in self.applied_changes:
+                continue
+            payload = change.payload
+            self.policy = apply_limit_change(
+                self.policy,
+                level=str(payload["level"]),
+                scope_id=str(payload["scope_id"]),
+                metric=str(payload["metric"]),
+                threshold=Decimal(str(payload["threshold"])),
+                tenant_id=str(payload.get("tenant_id") or TENANT),
+                maker=change.maker_id,
+                checker=change.checker_id or "",
+                change_id=change.change_id,
+                effective_from=change.effective_at or now,
+            )
+            self.applied_changes.add(change.change_id)
+            self.audit.append(
+                correlation_id=change.change_id,
+                tenant=TENANT,
+                account=None,
+                actor="policy_store",
+                action="limit.changed.v1",
+                payload={
+                    **payload,
+                    "change_id": change.change_id,
+                    "policy_version": self.policy.policy_version,
+                    "maker": change.maker_id,
+                    "checker": change.checker_id,
+                },
+            )
+            self.alerts.raise_alert("limit.changed", {"change_id": change.change_id, "policy_version": self.policy.policy_version})
+        return self.policy
+
+    def restore_autonomy(self, account_id: str, actor: Actor, second: Actor, *, reason: str) -> None:
+        """Clearing an SLO/break suspension is a two-person, different-line human action (P4/P6)."""
+        if not (actor.is_human and second.is_human) or actor.actor_id == second.actor_id or actor.line == second.line:
+            raise ControlDenied("restoring autonomy requires two humans from different lines")
+        acct = self.accounts.get(account_id)
+        self.accounts._accounts[account_id] = acct.model_copy(update={"autonomy_suspended": False})
+        self.audit.append(
+            correlation_id=f"autonomy:{account_id}",
+            tenant=TENANT,
+            account=account_id,
+            actor=actor.actor_id,
+            action="account.autonomy.restored",
+            payload={"first": actor.actor_id, "second": second.actor_id, "reason": reason},
+        )
+
+    # --- MCP helpers ---------------------------------------------------------------------------------------
     def issue_agent(
         self,
         *,
         agent_id: str = "agent-sim-1",
         strategy_id: str = STRATEGY,
+        strategy_version: str = STRATEGY_VERSION,
         account_id: str = ACCOUNT,
         now: datetime | None = None,
         ttl: timedelta | None = None,
@@ -323,6 +433,7 @@ class SimPlatform:
             tenant_id=TENANT,
             account_id=account_id,
             strategy_id=strategy_id,
+            strategy_version=strategy_version,
             model_id="rule-sma",
             model_version="0.1",
             prompt_id="P-STRAT-SIGNAL",
@@ -331,12 +442,15 @@ class SimPlatform:
             ttl=ttl,
         )
 
-    def tool_call(self, ident: AgentIdentity, tool: str, args: dict[str, Any], *, now: datetime | None = None) -> Any:
-        sig = self.issuer.sign_call(ident, tool, args)
+    def tool_call(
+        self, ident: AgentIdentity, tool: str, args: dict[str, Any], *, now: datetime | None = None, nonce: str | None = None
+    ) -> Any:
+        at = now or self.now
+        sig = self.issuer.sign_call(ident, tool, args, now=at, nonce=nonce)
         with enter(Plane.ANALYTICS):
-            return self.runtime.call(token_id=ident.token_id, signature=sig, tool=tool, args=args, now=now or self.now)
+            return self.runtime.call(token_id=ident.token_id, signature=sig, tool=tool, args=args, now=at)
 
-    # --- synthetic probe [C9] -------------------------------------------------------------------------------------
+    # --- synthetic probe [C9] ---------------------------------------------------------------------------------
     def synthetic_probe(self, now: datetime | None = None) -> dict[str, Any]:
         now = now or self.now
         corr = f"probe-{now.isoformat()}"
@@ -385,17 +499,32 @@ def build_sim_platform(
     bars: int = 30,
     cash: Decimal = Decimal("1000000"),
     enable_cell: bool = True,
+    revocations_path: Path | None = None,
 ) -> SimPlatform:
     audit = AuditStore()
     outbox = Outbox()
     alerts = AlertRouter.load(REPO_ROOT / "observability" / "alerts.yaml")
     metrics = MetricsRegistry()
     tracer = Tracer()
-    guard = GUARD
-    guard.denies.clear()
-    guard.alert_hook = lambda ev: alerts.raise_alert(
-        "plane.deny", {"source": ev.source.value, "destination": ev.destination.value, "channel": ev.channel}
-    )
+    # Every platform (live or a throwaway backtest) owns a private PlaneGuard: nothing an agent can call
+    # touches the process-global guard or its deny evidence (MCP review OBJ-1).
+    guard = PlaneGuard()
+
+    def on_deny(ev: Any) -> None:
+        principal = current_principal()
+        alerts.raise_alert(
+            "plane.deny",
+            {
+                "source": ev.source.value,
+                "destination": ev.destination.value,
+                "channel": ev.channel,
+                "agent": principal.agent_id if principal else None,
+                "account": principal.account_id if principal else None,
+                "strategy": principal.strategy_id if principal else None,
+            },
+        )
+
+    guard.alert_hook = on_deny
 
     def audit5(action: str, correlation_id: str, tenant: str, account: str | None, payload: dict[str, Any]) -> None:
         audit.append(correlation_id=correlation_id, tenant=tenant, account=account, actor="platform", action=action, payload=payload)
@@ -420,6 +549,7 @@ def build_sim_platform(
         outbox,
         on_reject=lambda c, p: metrics.inc("intent.schema_rejected"),
         instrument_valid=lambda iid, venue, ts: (inst := master.get(iid, as_of=ts)) is not None and inst.venue == venue,
+        guard=guard,
     )
     accounts = AccountRegistry(
         audit_hook=lambda action, tenant, payload: audit.append(
@@ -468,22 +598,21 @@ def build_sim_platform(
         )
         master.add(inst)
         ledger.register_instrument(inst)
-    delisted = InstrumentAttributes(
-        instrument_id="SIMDELISTED",
-        venue=VENUE,
-        asset_class="EQUITY",
-        currency="USD",
-        tick_size=Decimal("0.01"),
-        lot_size=Decimal("1"),
-        valid_from=valid_from,
-        valid_to=datetime(2025, 1, 1, tzinfo=UTC),
+    master.add(
+        InstrumentAttributes(
+            instrument_id="SIMDELISTED",
+            venue=VENUE,
+            asset_class="EQUITY",
+            currency="USD",
+            tick_size=Decimal("0.01"),
+            lot_size=Decimal("1"),
+            valid_from=valid_from,
+            valid_to=datetime(2025, 1, 1, tzinfo=UTC),
+        )
     )
-    master.add(delisted)
     market = MarketDataService(store, master, cal, audit=audit2)
     feed = SimulatedFeed(start_prices={INSTRUMENT: Decimal("100"), INSTRUMENT_2: Decimal("50")}, entitlements={TENANT: {"*"}})
     broker = SimulatedBroker(known_instruments={INSTRUMENT: "EQUITY", INSTRUMENT_2: "EQUITY"}, venues=(VENUE,))
-    from broker_adapters.base import VaultRef
-
     broker.connect(VaultRef(path="vault://brokers/sim/creds", version=1), now=now)
     broker.fund(ACCOUNT, cash)
     leases = LeaseStore()
@@ -494,6 +623,7 @@ def build_sim_platform(
         publish=outbox.publish,
         alert=lambda n, p: alerts.raise_alert(n, p),
         broker_for_account=lambda a: accounts.get(a).broker,
+        guard=guard,
     )
     approvals = ApprovalQueue(audit_hook=audit3)
     jurisdictions = JurisdictionRegistry(audit_hook=audit2)
@@ -502,14 +632,14 @@ def build_sim_platform(
     strategies.register(
         StrategyVersion(
             strategy_id=STRATEGY,
-            version="0.1",
+            version=STRATEGY_VERSION,
             owner_id="quant.fixture",
             model_id="rule-sma",
             model_version="0.1",
             params={"fast": 3, "slow": 8},
             declaration=StrategyDeclaration(strategy_id=STRATEGY),
-            status=__import__("strategy_service.registry", fromlist=["StrategyStatus"]).StrategyStatus.PROPOSED,
-            docs="Simulation-only SMA crossover used to exercise the control envelope. Not a performance claim.",
+            status=StrategyStatus.PROPOSED,
+            docs="Simulation-only SMA crossover used to exercise the control envelope. Not a performance claim. See docs/STRATEGY_CARDS/strat-sma-xover.md.",
         )
     )
     policy = load_policy(policy_path or REPO_ROOT / "services" / "risk" / "policies" / "sim-policy-v0.1.yaml")
@@ -527,20 +657,21 @@ def build_sim_platform(
             cell, legal_record_ref="SIM-LEGAL-FIXTURE-001 [Committee: simulated cell, not a legal opinion]", actor=legal
         )
         jurisdictions.activate_flag(cell, actor=comp, now=now)
-    issuer = IdentityIssuer()
+    revocations = RevocationList(revocations_path)
+    issuer = IdentityIssuer(revocations=revocations, audit=audit2)
     registry = load_registry(registry_path or REPO_ROOT / "mcp" / "policies" / "tool_registry.signed.json")
-    allowlists = {TENANT: TenantAllowlist.load(REPO_ROOT / "mcp" / "policies" / "allowlist.tenant-sim.yaml")}
+    allowlists = {TENANT: TenantAllowlist.load(REPO_ROOT / "mcp" / "policies" / "allowlist.tenant-sim.yaml", revocations)}
     egress = EgressPolicy.load(REPO_ROOT / "mcp" / "policies" / "egress.yaml")
     runtime = ToolRuntime(
         registry=registry,
         issuer=issuer,
         allowlists=allowlists,
         audit=lambda action, corr, tenant, payload: audit.append(
-            correlation_id=corr, tenant=tenant, account=None, actor="mcp_runtime", action=action, payload=payload
+            correlation_id=corr, tenant=tenant, account=None, actor=str(payload.get("actor", "mcp_runtime")), action=action, payload=payload
         ),
         alert=lambda n, p: alerts.raise_alert(n, p),
+        revocations=revocations,
     )
-    tickets = BreakTicketService(on_break=lambda brk: None, audit=audit3)
     limits_mc = MakerChecker(cooling_period=timedelta(hours=1), require_different_line=True, audit_hook=audit2)
     slis = SliCatalog.load(REPO_ROOT / "observability" / "slis.yaml")
 
@@ -558,7 +689,6 @@ def build_sim_platform(
         leases=leases,
         gateway=gateway,
         approvals=approvals,
-        killswitch=KillSwitchService(),
         jurisdictions=jurisdictions,
         retention=retention,
         strategies=strategies,
@@ -569,16 +699,17 @@ def build_sim_platform(
         registry=registry,
         runtime=runtime,
         egress=egress,
-        tickets=tickets,
+        revocations=revocations,
         limits_mc=limits_mc,
         alerts=alerts,
         metrics=metrics,
         tracer=tracer,
         slis=slis,
         guard=guard,
+        allowlists=allowlists,
     )
 
-    # --- pipeline wiring -----------------------------------------------------------------------------------------
+    # --- pipeline wiring -----------------------------------------------------------------------------------
     def elig_inputs(vi: ValidatedIntent, at: datetime) -> EligibilityInputs:
         acct = accounts.get(vi.intent.account_id)
         return EligibilityInputs(
@@ -591,8 +722,11 @@ def build_sim_platform(
         )
 
     def on_authorised(vi: ValidatedIntent, decision: Any) -> None:
-        ledger.record_intent_hash(vi.intent.account_id, vi.intent_hash)
-        ledger.record_order_ts(vi.intent.account_id, platform.now)
+        i = vi.intent
+        ledger.record_intent_hash(i.account_id, vi.intent_hash)
+        ledger.record_order_ts(
+            i.account_id, platform.now, f"{i.instrument_id}|{i.side.value}|{i.order_type.value}|{i.quantity}|{i.limit_price}"
+        )
 
     platform.pipeline = TradePipeline(
         tracker=tracker,
@@ -611,28 +745,32 @@ def build_sim_platform(
         alert=lambda n, pl: alerts.raise_alert(n, pl),
     )
 
-    # --- kill switch wiring (P4) ----------------------------------------------------------------------------------
+    # --- kill switch wiring (P4) ----------------------------------------------------------------------------
     def cancel_open(level: KillSwitchLevel, target: str) -> list[str]:
-        tokens: dict[str, int] = {}
-        for acct in accounts.accounts():
-            if level == KillSwitchLevel.ACCOUNT and acct.account_id != target:
-                continue
-            if level == KillSwitchLevel.TENANT and acct.tenant_id != target:
-                continue
-            tokens[acct.account_id] = leases.preempt(acct.account_id, "killswitch", now=platform.now).fencing_token
-        kw: dict[str, Any] = {"fencing_tokens": tokens, "now": platform.now, "reason": f"killswitch {level.value}:{target}"}
+        """Cancel exactly the scope's open orders; preempt only the leases of accounts inside the scope."""
+        filters: dict[str, Any] = {}
         if level == KillSwitchLevel.ACCOUNT:
-            kw["account_id"] = target
+            filters["account_id"] = target
         elif level == KillSwitchLevel.TENANT:
-            kw["tenant_id"] = target
+            filters["tenant_id"] = target
+        elif level == KillSwitchLevel.STRATEGY:
+            filters["strategy_id"] = target
         elif level == KillSwitchLevel.ASSET:
-            kw["instrument_id"] = target
+            filters["instrument_id"] = target
         elif level == KillSwitchLevel.VENUE:
-            kw["venue"] = target
+            filters["venue"] = target
+        affected = set(gateway.affected_accounts(**filters))
+        if level == KillSwitchLevel.ACCOUNT:
+            affected.add(target)
+        if level == KillSwitchLevel.TENANT:
+            affected |= {a.account_id for a in accounts.accounts(target)}
+        if level == KillSwitchLevel.PLATFORM:
+            affected |= {a.account_id for a in accounts.accounts()}
+        tokens = {acct_id: leases.preempt(acct_id, "killswitch", now=platform.now).fencing_token for acct_id in sorted(affected)}
         with enter(Plane.CONTROL):
-            cancelled = gateway.cancel_all(**kw)
+            cancelled = gateway.cancel_all(fencing_tokens=tokens, now=platform.now, reason=f"killswitch {level.value}:{target}", **filters)
         for acct_id in tokens:
-            leases.release(acct_id, "killswitch")  # old executor token stays stale; a fresh lease is needed to resume
+            leases.release(acct_id, "killswitch")  # the old executor token stays stale; a fresh lease is needed to resume
         return cancelled
 
     def emergency_policy(level: KillSwitchLevel, target: str) -> tuple[EmergencyPolicy, str | None]:
@@ -652,22 +790,35 @@ def build_sim_platform(
     def halt_account(account_id: str, reason: str) -> None:
         accounts.halt(account_id, system_actor("killswitch"), reason=reason, now=platform.now)
 
+    def ks_audit(action: str, corr: str, payload: dict[str, Any]) -> None:
+        audit.append(correlation_id=corr, tenant=TENANT, account=None, actor="killswitch_service", action=action, payload=payload)
+        if action in ("killswitch.activated", "killswitch.deactivated"):
+            outbox.publish(
+                make_event(
+                    f"{action}.v1",
+                    correlation_id=corr,
+                    tenant=TENANT,
+                    producer="killswitch_service",
+                    payload={k: v for k, v in payload.items() if k != "evidence_snapshot"},
+                    emitted_ts=platform.now,
+                )
+            )
+
     platform.killswitch = KillSwitchService(
+        approved_liquidation_policies=policy.approved_liquidation_policies,
         hooks=KillSwitchHooks(
             cancel_open_orders=cancel_open,
-            revoke_agent_identities=lambda level, target: issuer.revoke_scope(level.value, target),
+            revoke_agent_identities=lambda level, target: issuer.revoke_scope(level.value, target, now=platform.now),
             emergency_policy_for=emergency_policy,
             evidence_snapshot=evidence,
             notify=lambda subject, payload: platform.notifications.append((subject, payload)),
-            audit=lambda action, corr, payload: audit.append(
-                correlation_id=corr, tenant=TENANT, account=None, actor="killswitch_service", action=action, payload=payload
-            ),
+            audit=ks_audit,
             alert=lambda n, p: alerts.raise_alert(n, p),
             halt_account=halt_account,
-        )
+        ),
     )
 
-    # --- reconciliation break handling (P6) -----------------------------------------------------------------------
+    # --- reconciliation break handling (P6) -------------------------------------------------------------------
     def on_break(brk: Any) -> None:
         if brk.severity == BreakSeverity.S1:
             alerts.raise_alert("execution.duplicate_order", {"account": brk.account_id, "break_id": brk.break_id})
@@ -675,38 +826,55 @@ def build_sim_platform(
             alerts.raise_alert("reconciliation.break", {"account": brk.account_id, "break_id": brk.break_id})
 
     platform.tickets = BreakTicketService(on_break=on_break, audit=audit3)
+
+    # --- alert auto-actions with payload contracts (MCP review OBJ-3) ------------------------------------------
     ops = Actor(actor_id="risk-officer.system", role=Role.RISK_OFFICER)
+
+    def killswitch_from_alert(level: KillSwitchLevel, target_key: str | None) -> Any:
+        def run(a: Alert) -> None:
+            target = str(a.payload[target_key]) if target_key else "*"
+            if not any(x.level == level and x.target_id == target for x in platform.killswitch.active()):
+                platform.killswitch.activate(level, target, reason=a.name, actor=ops, now=platform.now)
+
+        return run
+
+    def revoke_grant_for_scope(a: Alert) -> None:
+        allowlists[TENANT].revoke_grant(
+            account_id=str(a.payload["account"]),
+            strategy_id=str(a.payload["strategy"]),
+            tool=str(a.payload["tool"]),
+            by="alert_router",
+            at=platform.now,
+            reason=a.name,
+        )
+
     alerts.on(
         "account_to_supervised",
-        lambda a: (
-            accounts.suspend_autonomy(str(a.payload["account"]), reason=a.name, by="alert_router") if a.payload.get("account") else None
-        ),
+        lambda a: accounts.suspend_autonomy(str(a.payload["account"]), reason=a.name, by="alert_router"),
+        required=("account",),
     )
     alerts.on(
         "autonomy_to_supervised",
         lambda a: accounts.suspend_autonomy(str(a.payload.get("account", ACCOUNT)), reason=a.name, by="alert_router"),
     )
+    alerts.on("killswitch_account", killswitch_from_alert(KillSwitchLevel.ACCOUNT, "account"), required=("account",))
+    alerts.on("killswitch_platform", killswitch_from_alert(KillSwitchLevel.PLATFORM, None))
     alerts.on(
-        "killswitch_account",
-        lambda a: (
-            platform.killswitch.activate(KillSwitchLevel.ACCOUNT, str(a.payload["account"]), reason=a.name, actor=ops, now=platform.now)
-            if a.payload.get("account")
-            and not platform.killswitch.flags_for(tenant_id=TENANT, account_id=str(a.payload["account"])).account
-            else None
-        ),
+        "revoke_agent_identity",
+        lambda a: issuer.revoke_agent(str(a.payload["agent"]), by="alert_router", now=platform.now, reason=a.name),
+        required=("agent",),
     )
-    alerts.on("revoke_agent_identity", lambda a: issuer.revoke_agent(str(a.payload.get("agent", "unknown"))))
+    alerts.on("revoke_tool_for_scope", revoke_grant_for_scope, required=("tool", "account", "strategy"))
+    alerts.on("cancel_only", lambda a: accounts.suspend_autonomy(str(a.payload.get("account", ACCOUNT)), reason=a.name, by="alert_router"))
     alerts.on(
-        "revoke_tool_for_tenant",
-        lambda a: (
-            allowlists[TENANT].revoke_tool(str(a.payload.get("tool", "")))
-            if a.payload.get("tool") in registry.tools and str(a.payload.get("tenant")) == TENANT
-            else None
-        ),
+        "suspend_signals",
+        lambda a: issuer.revoke_scope("STRATEGY", str(a.payload["strategy"]), by="alert_router", now=platform.now),
+        required=("strategy",),
     )
 
-    # --- MCP tools ----------------------------------------------------------------------------------------------
-    def run_sim(args: dict[str, Any], ident: AgentIdentity, at: datetime) -> dict[str, Any]:
+    # --- MCP tools ---------------------------------------------------------------------------------------------
+    def run_sim(args: dict[str, Any], principal: Principal, at: datetime) -> dict[str, Any]:
+        # A throwaway platform with its own guard, alerts and audit: nothing here can reach the live platform.
         report = run_sim_backtest(instrument_id=str(args["instrument_id"]), cost_factor=Decimal(str(args.get("cost_factor", "1"))), bars=60)
         return {
             "data_snapshot_id": report.data_snapshot_id,
@@ -721,6 +889,7 @@ def build_sim_platform(
         intent_queue=intent_queue,
         run_simulation=run_sim,
         depth_entitled=lambda t: t in feed.depth_entitled,
+        instrument_entitled=lambda t, iid: feed.entitled(t, iid),
     )
     for name, handler in handlers.items():
         runtime.register_handler(name, handler)
@@ -732,9 +901,6 @@ def build_sim_platform(
     return platform
 
 
-BACKTEST_START = datetime(2026, 9, 4, 14, 0, tzinfo=UTC)  # a Friday, session open
-
-
 def run_sim_backtest(
     *,
     instrument_id: str = INSTRUMENT,
@@ -743,11 +909,16 @@ def run_sim_backtest(
     start: datetime = BACKTEST_START,
     strategy: SmaCrossoverStrategy | None = None,
 ) -> BacktestReport:
-    """ADR-008: a fresh sim platform in BACKTEST mode runs the production pipeline bar by bar."""
+    """ADR-008: a fresh sim platform in BACKTEST mode runs the production pipeline bar by bar.
+
+    Costs are charged by the simulated broker inside the pipeline (commission + slippage as fee_bps, spread
+    in the fill price), so backtest and paper share one code path. Financing/borrow [Open: C7 O-21].
+    """
     p = build_sim_platform(now=start, mode=AccountMode.BACKTEST, bars=0)
     strat = strategy or SmaCrossoverStrategy()
     cost = CostModel().scaled(cost_factor)
     p.broker.spread_bps = cost.spread_bps
+    p.broker.fee_bps = cost.commission_bps + cost.slippage_bps
     p.ingest_bars(instrument_id, start=start, count=bars)
     timestamps = p.market.store.market_timestamps(instrument_id)
     snapshot_id = p.market.store.snapshot_id_for_range(instrument_id, timestamps[0], timestamps[-1])
@@ -764,9 +935,9 @@ def run_sim_backtest(
     def submit_and_process(intent: TradeIntent, ts: datetime) -> dict[str, Any]:
         p.now = decision_time(ts)
         result = p.run_intent(intent, submitted_by="backtest", now=p.now)
-        fills = [{"quantity": str(f.quantity), "price": str(f.price)} for f in (result.order.fills if result.order else ())]
-        for f in fills:
-            p.ledger.book(ACCOUNT).cash -= cost.fee_for(Decimal(f["quantity"]) * Decimal(f["price"]))
+        fills = [
+            {"quantity": str(f.quantity), "price": str(f.price), "fee": str(f.fee)} for f in (result.order.fills if result.order else ())
+        ]
         return {
             "outcome": result.decision.outcome.value if result.decision else result.eligibility.outcome.value,
             "reason_codes": list(result.decision.reason_codes) if result.decision else list(result.eligibility.reason_codes),
@@ -789,18 +960,14 @@ def run_sim_backtest(
 
     runner = BacktestRunner(
         history=history,
-        position_qty=lambda iid: (
-            p.ledger.book(ACCOUNT)
-            .positions.get(iid, __import__("portfolio_service.ledger", fromlist=["PositionState"]).PositionState(instrument_id=iid))
-            .quantity
-        ),
+        position_qty=lambda iid: p.ledger.book(ACCOUNT).positions.get(iid, PositionState(instrument_id=iid)).quantity,
         nav=lambda: p.ledger.nav(ACCOUNT),
         gross=lambda: sum((abs(x.market_value) for x in p.ledger.positions(ACCOUNT)), ZERO),
         submit_and_process=submit_and_process,
         settle_bar=settle,
         cost_model=cost,
     )
-    sv = p.strategies.get(STRATEGY, "0.1")
+    sv = p.strategies.get(STRATEGY, STRATEGY_VERSION)
     return runner.run(
         strategy=strat,
         intent_builder=lambda sig, snap, qty: intent_from_signal(sig, snap, account_id=ACCOUNT, position_qty=qty),

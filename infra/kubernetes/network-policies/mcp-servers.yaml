@@ -1,4 +1,5 @@
-# MCP servers run inside the analytics plane with a tighter egress: analytics services + intent queue only [Source: 04].
+# MCP servers run inside the analytics plane with a tighter egress: named analytics services + the intent queue only [Source: 04].
+# They are excluded from analytics-allow-intent-queue (NotIn component=mcp-server), so this policy is the whole of their egress.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: {name: mcp-servers-egress, namespace: analytics}
@@ -9,6 +10,7 @@ spec:
     - to:
         - namespaceSelector: {matchLabels: {plane: analytics}}
           podSelector: {matchExpressions: [{key: app, operator: In, values: [market-data, strategy, backtest]}]}
+      ports: [{protocol: TCP, port: 8443}]
     - to:
         - namespaceSelector: {matchLabels: {plane: control}}
           podSelector: {matchLabels: {app: intent-queue}}
@@ -17,3 +19,5 @@ spec:
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
           podSelector: {matchLabels: {k8s-app: kube-dns}}
       ports: [{protocol: UDP, port: 53}]
+# [Open: O-21 review] read_account_state is served by an analytics-plane read replica (app: account-state-replica) fed
+# by Control-plane events; adding it here requires a threat-model delta signed by the Security Architect.

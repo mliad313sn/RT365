@@ -56,7 +56,9 @@ class JurisdictionRegistry:
         return updated
 
     def disable_flag(self, cell: JurisdictionCell, *, actor: Actor, reason: str) -> JurisdictionCell:
-        """Single person may disable (ROLLBACK_PLAN); enabling needs dual key."""
+        """Single *human* Compliance/Legal person may disable (ROLLBACK_PLAN); enabling needs dual key; agents never."""
+        if not actor.is_human or actor.role not in (Role.COMPLIANCE_AGENT, Role.LEGAL_AGENT, Role.COMPLIANCE_ANALYST):
+            raise ControlDenied("flag disable requires a human Compliance or Legal role")
         current = self._cells[cell.key]
         updated = current.model_copy(update={"technical_flag": False, "flag_activated_by": None, "activated_at": None})
         self._cells[cell.key] = updated

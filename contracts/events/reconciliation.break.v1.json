@@ -15,7 +15,8 @@
         "DUPLICATE",
         "PRICE",
         "QUANTITY",
-        "CASH"
+        "CASH",
+        "STATUS"
       ],
       "title": "BreakType",
       "type": "string"

@@ -18,6 +18,7 @@ class BreakType(str, Enum):
     PRICE = "PRICE"
     QUANTITY = "QUANTITY"
     CASH = "CASH"
+    STATUS = "STATUS"  # internal terminal state disagrees with the broker's (review OBJ-3)
 
 
 class BreakSeverity(str, Enum):
@@ -107,7 +108,25 @@ def reconcile(
 
     iorders = {o.client_order_id: o for o in internal_orders}
     borders = {o.client_order_id: o for o in statement.orders}
+    # More than one live/filled order for the same intent is a duplicate whatever the broker says (review OBJ-1)
+    by_intent: dict[str, list[OrderRecord]] = {}
+    for o in internal_orders:
+        if o.state in (OrderState.SUBMITTED, OrderState.ACKNOWLEDGED, OrderState.PARTIALLY_FILLED, OrderState.FILLED):
+            by_intent.setdefault(o.command.intent_id, []).append(o)
+    for intent_id, orders in by_intent.items():
+        if len(orders) > 1:
+            add(
+                BreakType.DUPLICATE,
+                BreakSeverity.S1,
+                orders[0].command.instrument_id,
+                len(orders),
+                "1 expected",
+                tuple(o.command.correlation_id for o in orders),
+                f"{len(orders)} live orders for intent {intent_id}",
+            )
     seen_refs: dict[str, str] = {}
+    _closed = {"CANCELLED", "REJECTED"}
+    _open = {"OPEN", "PARTIAL"}
     for coid, bo in borders.items():
         if bo.broker_order_ref in seen_refs and seen_refs[bo.broker_order_ref] != coid:
             add(
@@ -124,6 +143,29 @@ def reconcile(
         if io is None:
             add(BreakType.DUPLICATE, BreakSeverity.S1, None, "none", coid, (), "broker order has no internal counterpart")
             continue
+        # Status disagreement (review OBJ-3): an order we believe closed but the broker still works can hit the book
+        # without any internal control seeing it -> S1. The reverse (broker closed, internal open) is adoptable by
+        # ExecutionGateway.sync_statuses and is flagged S2 so that a stale adoption loop is still visible.
+        if bo.status.upper() in _open and io.state in (OrderState.CANCELLED, OrderState.BROKER_REJECTED, OrderState.EXPIRED):
+            add(
+                BreakType.STATUS,
+                BreakSeverity.S1,
+                io.command.instrument_id,
+                io.state.value,
+                bo.status,
+                (io.command.correlation_id,),
+                "internal terminal state but the broker still reports the order live",
+            )
+        elif bo.status.upper() in _closed and io.state in (OrderState.SUBMITTED, OrderState.ACKNOWLEDGED, OrderState.PARTIALLY_FILLED):
+            add(
+                BreakType.STATUS,
+                BreakSeverity.S2,
+                io.command.instrument_id,
+                io.state.value,
+                bo.status,
+                (io.command.correlation_id,),
+                "broker closed the order but it is still open internally (sync_statuses should adopt)",
+            )
         if bo.filled_quantity > io.filled_quantity:
             add(
                 BreakType.MISSING_FILL,

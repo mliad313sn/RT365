@@ -23,6 +23,7 @@ from broker_adapters.base import (
     BrokerStatement,
     BrokerUnavailable,
     Capabilities,
+    OrderStatus,
     StatementOrder,
     StatementPosition,
     SubmitRequest,
@@ -43,6 +44,7 @@ class _SimOrder:
 class SimulatedBroker(BrokerAdapter):
     name: str = "sim-broker"
     spread_bps: Decimal = Decimal("5")
+    fee_bps: Decimal = Decimal("1")  # commissions charged by the broker: costs stay inside the single code path (ADR-008)
     partial_fill_ratio: Decimal | None = None  # e.g. 0.5 -> first fill half, rest on next poll
     dedupe_client_order_id: bool = True
     known_instruments: dict[str, str] = field(default_factory=dict)  # instrument -> asset class
@@ -177,12 +179,14 @@ class SimulatedBroker(BrokerAdapter):
             if qty <= ZERO:
                 qty = remaining
         self._fill_seq += 1
+        fee = (qty * px * self.fee_bps / Decimal("10000")).quantize(Decimal("0.01"))
         fill = BrokerFill(
             fill_ref=f"F-{self._fill_seq:08d}",
             client_order_id=order.request.client_order_id,
             broker_order_ref=order.broker_ref,
             quantity=qty,
             price=px,
+            fee=fee,
             ts=now,
         )
         order.avg_price = ((order.avg_price * order.filled) + px * qty) / (order.filled + qty)
@@ -191,6 +195,7 @@ class SimulatedBroker(BrokerAdapter):
         self._pending_fills.append(fill)
         self._all_fills.append(fill)
         self._apply_position(order.request.account_id, order.request.instrument_id, order.request.side, qty, px)
+        self._cash[order.request.account_id] = self._cash.get(order.request.account_id, ZERO) - fee
 
     def _apply_position(self, account_id: str, instrument_id: str, side: Side, qty: Decimal, px: Decimal) -> None:
         cur_qty, cur_avg = self._positions.get((account_id, instrument_id), (ZERO, ZERO))
@@ -247,6 +252,15 @@ class SimulatedBroker(BrokerAdapter):
         self._pending_fills.clear()
         self._try_fill_resting(now)  # remaining quantity of partial fills arrives on the next poll
         return out
+
+    def query_order(self, client_order_id: str, *, now: datetime) -> OrderStatus:
+        self._require_connected()
+        for key, o in self._orders.items():
+            if o.request.client_order_id == client_order_id or key == client_order_id:
+                return OrderStatus(
+                    client_order_id=client_order_id, known=True, broker_order_ref=o.broker_ref, status=o.status, filled_quantity=o.filled
+                )
+        return OrderStatus(client_order_id=client_order_id, known=False)
 
     def statement(self, account_id: str, *, as_of: datetime) -> BrokerStatement:
         positions = tuple(

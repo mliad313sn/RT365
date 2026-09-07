@@ -123,3 +123,54 @@ def test_gateway_denies_calls_from_analytics_plane(platform):  # type: ignore[no
         platform.gateway.submit(
             r.order.command.model_copy(update={"idempotency_key": "k2"}), executor_id="x", fencing_token=1, now=platform.now
         )
+
+
+@pytest.mark.tc("TC-EX-007")
+@pytest.mark.req("FR-13")
+@pytest.mark.quartet("abuse")
+def test_new_policy_version_cannot_create_second_live_order(platform):  # type: ignore[no-untyped-def]
+    """A re-evaluation of the same intent under a new policy version yields a new key but is refused while an order is live (Trading review OBJ-1)."""
+    from execution_gateway.gateway import DuplicateIntentOrder
+
+    r = platform.run_intent(platform.make_intent())
+    cmd = r.order.command.model_copy(update={"idempotency_key": "k-policy-v2", "policy_version": "sim-policy-v0.2"})
+    lease = platform.leases.current(ACCOUNT)
+    with enter(Plane.CONTROL), pytest.raises(DuplicateIntentOrder):
+        platform.gateway.submit(cmd, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
+    assert platform.broker.submissions_received == 1 and platform.alerts.by_name("execution.duplicate_order")
+
+
+@pytest.mark.tc("TC-EX-008")
+@pytest.mark.req("FR-13")
+@pytest.mark.quartet("recovery")
+def test_retry_queries_non_deduping_broker_before_resubmitting(platform):  # type: ignore[no-untyped-def]
+    """With a broker that does not dedupe client ids, a retry after an outage adopts the existing order instead of sending a second one (Trading review OBJ-2)."""
+    platform.broker.dedupe_client_order_id = False
+    platform.broker.fail_submissions = True
+    r = platform.run_intent(platform.make_intent())
+    assert r.order.state == OrderState.SUBMITTED
+    platform.broker.fail_submissions = False
+    # simulate: the first submission actually reached the broker before the outage was detected
+    from broker_adapters.base import SubmitRequest
+
+    c = r.order.command
+    platform.broker.submit(
+        SubmitRequest(
+            client_order_id=r.order.client_order_id,
+            account_id=c.account_id,
+            venue=c.venue,
+            instrument_id=c.instrument_id,
+            side=c.side,
+            order_type=c.order_type,
+            quantity=c.quantity,
+            time_in_force=c.time_in_force,
+        ),
+        now=platform.now,
+    )
+    lease = platform.leases.current(ACCOUNT)
+    rec = platform.gateway.retry_submit(
+        r.order.order_id, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now
+    )
+    assert rec.state == OrderState.ACKNOWLEDGED and platform.broker.submissions_received == 1
+    platform.settle()
+    assert platform.reconcile().clean

@@ -113,3 +113,6 @@ class MakerChecker:
 
     def get(self, change_id: str) -> PendingChange:
         return self._changes[change_id]
+
+    def pending_ids(self) -> tuple[str, ...]:
+        return tuple(cid for cid, c in self._changes.items() if c.status in (ChangeStatus.CHECKED, ChangeStatus.EFFECTIVE))

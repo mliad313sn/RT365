@@ -22,6 +22,8 @@ class RuntimeMetrics(StrictModel):
     broker_connected: bool = True
     venue_healthy: bool = True
     model_drift_breached: bool = False
+    drifted_strategy_ids: tuple[str, ...] = ()
+    unhealthy_venues: tuple[str, ...] = ()
     open_reconciliation_breaks: int = 0
 
 
@@ -69,12 +71,18 @@ def evaluate_runtime(
         (Metric.MONTHLY_LOSS_LIMIT_PCT, account.monthly_pnl, "RT-LOSS-MONTHLY"),
     ):
         limit = lim(metric)
-        loss_pct = pct(-pnl, nav) if pnl < ZERO else ZERO
-        if limit is not None and loss_pct >= limit:
+        loss_pct = pct(-pnl, nav) if (pnl < ZERO and nav > ZERO) else ZERO
+        if limit is None:
+            halt(f"{code}-UNDEFINED", "ACCOUNT", account.account_id, loss_pct, "UNDEFINED")  # fail closed (review P12)
+        elif loss_pct >= limit:
             halt(code, "ACCOUNT", account.account_id, loss_pct, limit)
+    if nav <= ZERO:
+        halt("RT-NAV", "ACCOUNT", account.account_id, nav, "> 0")
     dd_limit = lim(Metric.MAX_DRAWDOWN_PCT)
     drawdown = pct(account.peak_nav - nav, account.peak_nav) if account.peak_nav > nav else ZERO
-    if dd_limit is not None and drawdown >= dd_limit:
+    if dd_limit is None:
+        halt("RT-DRAWDOWN-UNDEFINED", "ACCOUNT", account.account_id, drawdown, "UNDEFINED")
+    elif drawdown >= dd_limit:
         halt("RT-DRAWDOWN", "ACCOUNT", account.account_id, drawdown, dd_limit)
     opm = lim(Metric.ORDERS_PER_MINUTE)
     if opm is not None and Decimal(metrics.orders_last_minute) >= opm * th.abnormal_orders_per_minute_factor:
@@ -87,10 +95,17 @@ def evaluate_runtime(
         halt("RT-LATENCY", "PLATFORM", "*", metrics.decision_latency_p99_ms, th.decision_latency_p99_ms)
     if not metrics.broker_connected:
         halt("RT-CONNECTIVITY", "ACCOUNT", account.account_id, False, True)
-    if metrics.model_drift_breached:
-        halt("RT-DRIFT", "STRATEGY", "*", True, False)
+    if metrics.model_drift_breached or metrics.drifted_strategy_ids:
+        targets = (
+            metrics.drifted_strategy_ids or account.authorised_strategies
+        )  # a drift with no named strategy halts every strategy of the account
+        for sid in targets:
+            halt("RT-DRIFT", "STRATEGY", sid, True, False)
+        if not targets:
+            halt("RT-DRIFT", "ACCOUNT", account.account_id, True, False)
     if metrics.open_reconciliation_breaks > 0:
         halt("RT-RECON", "ACCOUNT", account.account_id, metrics.open_reconciliation_breaks, 0)
-    if not metrics.venue_healthy:
-        halt("RT-VENUE", "VENUE", "*", False, True)
+    if not metrics.venue_healthy or metrics.unhealthy_venues:
+        for venue in metrics.unhealthy_venues or ("*",):
+            halt("RT-VENUE", "VENUE" if venue != "*" else "ACCOUNT", venue if venue != "*" else account.account_id, False, True)
     return tuple(events)

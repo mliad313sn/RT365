@@ -2,7 +2,7 @@
 
 Control: Deterministic risk engine — Requirement: FR-11 — RTM row: FR-11 — Owner: Backend Lead — Reviewer (≠ owner): Chief Risk Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-07T17:33:35.225922+00:00 at `03e673908c3ab4b22bd809990fe06995cc4cf8fb`
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-07T18:09:37.793153+00:00 at `78742a240edbfb535d75ff8c942a4b2a9b6a2bb1`
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
@@ -10,6 +10,7 @@ Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | 
 | positive | TC-RK-012 | Effective limit = min over platform/tenant/account/strategy/instrument levels [Committee]. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_limit_hierarchy_effective_is_minimum` |
 | positive | TC-RK-014 | Supervised -> REQUIRES_HUMAN_APPROVAL; bounded autonomy inside envelope -> APPROVED, beyond -> approval. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_mode_semantics_supervised_and_envelope` |
 | positive | TC-RK-016 | Runtime controls produce HALT events for loss, drawdown, frequency, slippage, rejects, latency, connectivity, drift, breaks, venue. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_runtime_monitors_emit_halt_events` |
+| positive | TC-RK-020 | A checked, cooled-down limit change becomes a new policy version; nothing else writes limits (Risk review F-04). | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_limit_change_only_via_maker_checker` |
 | negative | TC-RK-002 | Changing policy_version produces a different decision_id and is recorded in the decision. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_changed_policy_version_yields_new_decision` |
 | negative | TC-RK-010 | Each pre-trade control produces its reason code, evaluated value and threshold; outcome follows precedence. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_each_pre_trade_control_fails_with_its_reason_code[<lambda>-RK-AUTH-STATUS-REJECTED]` |
 | negative | TC-RK-010 | Each pre-trade control produces its reason code, evaluated value and threshold; outcome follows precedence. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_each_pre_trade_control_fails_with_its_reason_code[<lambda>-RK-AUTH-STRATEGY-REJECTED]` |
@@ -40,8 +41,11 @@ Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | 
 | negative | TC-RK-010 | Each pre-trade control produces its reason code, evaluated value and threshold; outcome follows precedence. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_each_pre_trade_control_fails_with_its_reason_code[<lambda>-RK-EXPIRED-REJECTED]` |
 | negative | TC-RK-011 | Fail-fast order but complete reason list: several failing controls appear together. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_all_failing_reasons_listed_not_only_first` |
 | negative | TC-RK-013 | A metric with no limit at any level fails (RK-*-UNDEFINED) rather than passing silently [O-07]. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_undefined_limit_fails_closed` |
+| negative | TC-RK-018 | Stale account snapshot -> HALTED; tenant mismatch -> REJECTED; already-breached daily loss -> REJECTED; NAV <= 0 -> REJECTED (Risk review OBJ-2). | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_stale_snapshot_tenant_mismatch_and_breached_loss` |
 | abuse | TC-RK-003 | Intent mutated after validation (hash mismatch) -> REJECTED with RK-INTEG; pipeline raises an S1 alert. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_tampered_intent_hash_rejected` |
 | abuse | TC-RK-015 | Replayed signed intent -> RK-DUP; correlated group exposure enforced across instruments. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_duplicate_and_correlated_group` |
+| abuse | TC-RK-017 | Open buys are projected into gross exposure (no evasion via resting orders); a SELL that shrinks an over-limit book is allowed (Risk review OBJ-3/P4). | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_open_orders_count_towards_exposure_and_risk_reducing_orders_pass` |
 | recovery | TC-RK-004 | Missing policy/snapshots -> HALTED (fail closed); after restore the same inputs give the same decision as before. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_engine_restart_same_decision_and_fail_closed_on_missing_inputs` |
+| recovery | TC-RK-019 | An approved intent is re-decided at execution time; a limit breached meanwhile blocks execution (Risk review OBJ-2). | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_approval_re_decides_on_current_snapshots` |
 
-Quartet complete: yes. Records: 37.
+Quartet complete: yes. Records: 41.

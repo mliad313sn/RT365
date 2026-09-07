@@ -14,7 +14,7 @@ from pydantic import ValidationError
 from rtcore.envelope import make_event
 from rtcore.errors import SchemaViolation
 from rtcore.ids import new_id
-from rtcore.planes import GUARD, Plane
+from rtcore.planes import GUARD, Plane, PlaneGuard
 from rtcore.schemas.intent import TradeIntent, ValidatedIntent
 
 from oms.lifecycle import IntentState, IntentTracker
@@ -30,8 +30,10 @@ class IntentQueue:
         max_depth: int = 10_000,
         on_reject: Callable[[str, dict[str, Any]], object] | None = None,
         instrument_valid: Callable[[str, str, datetime], bool] | None = None,
+        guard: PlaneGuard = GUARD,
     ) -> None:
         self._q: deque[ValidatedIntent] = deque()
+        self._guard = guard
         self._instrument_valid = instrument_valid or (lambda instrument_id, venue, ts: True)
         self._tracker = tracker
         self._outbox = outbox
@@ -42,9 +44,13 @@ class IntentQueue:
     def submit(
         self, raw: dict[str, Any] | TradeIntent, *, tenant_id: str, submitted_by: str, now: datetime, correlation_id: str | None = None
     ) -> ValidatedIntent:
-        GUARD.check_caller(Plane.CONTROL, "intent_queue")
+        self._guard.check_caller(Plane.CONTROL, "intent_queue")
         corr = correlation_id or new_id("corr")
         intent_id = str(raw.get("intent_id", "unknown")) if isinstance(raw, dict) else str(raw.intent_id)
+        if self._tracker.exists(intent_id):
+            # Replayed intent_id (review F-01): the first submission stands; the replay is refused, not reset.
+            self._on_reject(corr, {"intent_id": intent_id, "reason": "DUPLICATE_INTENT_ID"})
+            raise SchemaViolation(f"intent {intent_id} was already submitted")
         self._tracker.create(intent_id, corr, now=now)
         try:
             intent = raw if isinstance(raw, TradeIntent) else TradeIntent.model_validate(raw)
@@ -71,6 +77,10 @@ class IntentQueue:
             self._tracker.transition(intent_id, IntentState.REJECTED, now=now, detail={"reason": "BACKPRESSURE"})
             raise SchemaViolation("intent queue at capacity; analytics shed first [Committee C2 §6]")
         vi = ValidatedIntent.seal(intent, correlation_id=corr, tenant_id=tenant_id, submitted_by=submitted_by, validated_at=now)
+        if vi.intent_hash in self._seen_hashes:
+            self._tracker.transition(intent_id, IntentState.REJECTED, now=now, detail={"reason": "DUPLICATE_INTENT_HASH"})
+            raise SchemaViolation("identical intent already submitted (replay)")
+        self._seen_hashes.add(vi.intent_hash)
         self._tracker.transition(intent_id, IntentState.SCHEMA_VALIDATED, now=now, detail={"intent_hash": vi.intent_hash})
         self._q.append(vi)
         self._outbox.publish(

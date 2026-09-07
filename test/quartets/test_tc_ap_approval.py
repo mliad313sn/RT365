@@ -70,7 +70,7 @@ def test_expired_or_killed_intent_not_executed_after_approval(supervised):  # ty
     from killswitch_service.service import KillSwitchLevel
 
     supervised.killswitch.activate(KillSwitchLevel.ACCOUNT, ACCOUNT, reason="drill", actor=RISK_OFFICER, now=supervised.now)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ControlDenied):
         supervised.approve(r2.approval_id, PM)
     assert supervised.broker.submissions_received == 0
     r3 = supervised.run_intent(supervised.make_intent())

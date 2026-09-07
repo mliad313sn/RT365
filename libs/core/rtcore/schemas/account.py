@@ -105,6 +105,7 @@ class AccountSnapshot(StrictModel):
     open_orders: tuple[OpenOrder, ...] = ()
     orders_last_minute: int = 0
     recent_intent_hashes: tuple[str, ...] = ()
+    recent_order_signatures: tuple[str, ...] = ()  # instrument|side|type|qty|limit within the duplicate window
     kill_switch: KillSwitchFlags = KillSwitchFlags()
     emergency_policy: EmergencyPolicy = EmergencyPolicy.CANCEL_ONLY
     capital_envelope: Decimal | None = None

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Generate docs/TEST_CASES/TC-<AREA>.md (one quartet file per area) from the evidence index and test docstrings."""
+
 from __future__ import annotations
 
 import json
@@ -32,14 +33,25 @@ for r in data["records"]:
 for area, records in sorted(by_area.items()):
     title, req, owner, reviewer = AREAS.get(area, (area, "-", "Backend Lead", "pending"))
     quartet = {k: [r for r in records if r["quartet"] == k] for k in ("positive", "negative", "abuse", "recovery")}
-    lines = [f"# TC-{area} — {title}", "", f"Control: {title} — Requirement: {req} — RTM row: {req} — Owner: {owner} — Reviewer (≠ owner): {reviewer} — **signature pending** (generated evidence is never self-certified [Source: 00, 11])", "", f"Environment tag: dev/sim — Data version: `{records[0]['data_version']}` — Generated {data['generated_at']} at `{data['git_sha']}`", "", "| Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |", "|---|---|---|---|---|---|"]
+    lines = [
+        f"# TC-{area} — {title}",
+        "",
+        f"Control: {title} — Requirement: {req} — RTM row: {req} — Owner: {owner} — Reviewer (≠ owner): {reviewer} — **signature pending** (generated evidence is never self-certified [Source: 00, 11])",
+        "",
+        f"Environment tag: dev/sim — Data version: `{records[0]['data_version']}` — Generated {data['generated_at']} at `{data['git_sha']}`",
+        "",
+        "| Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |",
+        "|---|---|---|---|---|---|",
+    ]
     for kind in ("positive", "negative", "abuse", "recovery"):
         rows = quartet[kind] or [None]
         for r in rows:
             if r is None:
                 lines.append(f"| {kind} | — | **GAP** | | | |")
             else:
-                lines.append(f"| {kind} | {r['test_id']} | {r['expected'].replace('|', '/')} | pass | {r['actual']} | `{r['evidence_link']}` |")
+                lines.append(
+                    f"| {kind} | {r['test_id']} | {r['expected'].replace('|', '/')} | pass | {r['actual']} | `{r['evidence_link']}` |"
+                )
     lines += ["", f"Quartet complete: {'yes' if all(quartet.values()) else 'NO'}. Records: {len(records)}."]
     (ROOT / "docs" / "TEST_CASES" / f"TC-{area}.md").write_text("\n".join(lines) + "\n")
 print(f"wrote {len(by_area)} TEST_CASES files")

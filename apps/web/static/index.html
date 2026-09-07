@@ -61,20 +61,21 @@
 </main>
 <script>
 const H = { 'X-Actor-Id': localStorage.getItem('actor') || 'risk-officer.demo', 'X-Actor-Role': localStorage.getItem('role') || 'risk_officer', 'X-MFA': 'verified', 'Content-Type': 'application/json' };
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const api = (path, opts={}) => fetch(path, { headers: H, ...opts }).then(async r => { const j = await r.json().catch(()=>({})); if (!r.ok) throw new Error(j.detail?.error || j.detail || j.error || r.status); return j; });
-function fill(id, obj) { const dl = document.getElementById(id); dl.innerHTML = ''; for (const [k,v] of Object.entries(obj)) { if (typeof v === 'object' && v !== null) continue; dl.insertAdjacentHTML('beforeend', `<dt>${k.replace(/_/g,' ')}</dt><dd>${v}</dd>`); } }
+function fill(id, obj) { const dl = document.getElementById(id); dl.innerHTML = ''; for (const [k,v] of Object.entries(obj)) { if (typeof v === 'object' && v !== null) continue; dl.insertAdjacentHTML('beforeend', `<dt>${esc(k.replace(/_/g,' '))}</dt><dd>${esc(v)}</dd>`); } }
 async function refresh() {
   try {
     const s = await api('/v1/status');
     const g = s['1_global_status'];
     const ks = document.getElementById('ks-banner'); const active = g.kill_switch_active.length;
-    ks.className = 'banner ' + (active ? 'bad' : 'ok'); ks.textContent = active ? `Kill Switch ACTIVE: ${g.kill_switch_active.map(a=>a.level+':'+a.target_id).join(', ')}` : 'Kill Switch: inactive';
+    ks.className = 'banner ' + (active ? 'bad' : 'ok'); ks.textContent = active ? `Kill Switch ACTIVE: ${esc(g.kill_switch_active.map(a=>a.level+':'+a.target_id).join(', '))}` : 'Kill Switch: inactive';
     const mb = document.getElementById('mode-banner'); mb.textContent = `Mode: ${g.account_mode}${g.autonomy_suspended ? ' (autonomy suspended)' : ''}`; mb.className = 'banner ' + (g.account_mode === 'HALTED' ? 'bad' : 'warn');
     fill('global', g); fill('capital', s['2_capital_at_risk']); fill('exposure', s['3_exposure_vs_limits']); fill('pnl', s['5_pnl']); fill('fresh', s['7_data_freshness']);
-    const tb = document.querySelector('#positions tbody'); tb.innerHTML = s['4_positions_orders'].positions.map(p=>`<tr><td>${p.instrument_id}</td><td>${p.quantity}</td><td>${p.average_price}</td><td>${p.market_value}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">no positions</td></tr>';
-    document.getElementById('alerts').innerHTML = s['6_alerts'].map(a=>`<li><strong>${a.severity}</strong> ${a.name} → ${a.auto_action}</li>`).join('') || '<li class="muted">none</li>';
+    const tb = document.querySelector('#positions tbody'); tb.innerHTML = s['4_positions_orders'].positions.map(p=>`<tr><td>${esc(p.instrument_id)}</td><td>${esc(p.quantity)}</td><td>${esc(p.average_price)}</td><td>${esc(p.market_value)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">no positions</td></tr>';
+    document.getElementById('alerts').innerHTML = s['6_alerts'].map(a=>`<li><strong>${esc(a.severity)}</strong> ${esc(a.name)} → ${esc(a.auto_action)}</li>`).join('') || '<li class="muted">none</li>';
     const ap = await api('/v1/approvals'); const at = document.querySelector('#approvals tbody');
-    at.innerHTML = ap.map(a=>`<tr><td>${a.intent_id.slice(0,8)}…<br><span class="muted">maker ${a.maker_id}</span></td><td>${a.side} ${a.quantity} ${a.instrument_id}</td><td>${a.reasons_explained.map(r=>`<div><code>${r.code}</code> ${r.explanation}</div>`).join('')}</td><td><button data-id="${a.approval_id}" data-act="approve">Approve</button> <button data-id="${a.approval_id}" data-act="decline">Decline</button></td></tr>`).join('') || '<tr><td colspan="4" class="muted">queue empty</td></tr>';
+    at.innerHTML = ap.map(a=>`<tr><td>${esc(a.intent_id.slice(0,8))}…<br><span class="muted">maker ${esc(a.maker_id)}</span></td><td>${esc(a.side)} ${esc(a.quantity)} ${esc(a.instrument_id)}</td><td>${a.reasons_explained.map(r=>`<div><code>${esc(r.code)}</code> ${esc(r.explanation)}</div>`).join('')}</td><td><button data-id="${esc(a.approval_id)}" data-act="approve">Approve</button> <button data-id="${esc(a.approval_id)}" data-act="decline">Decline</button></td></tr>`).join('') || '<tr><td colspan="4" class="muted">queue empty</td></tr>';
     at.querySelectorAll('button').forEach(b => b.onclick = async () => { const reason = prompt(`Reason to ${b.dataset.act} (recorded in audit):`); if (!reason) return; try { await api(`/v1/approvals/${b.dataset.id}/${b.dataset.act}`, { method:'POST', body: JSON.stringify({ reason }) }); } catch (e) { alert('Denied: ' + e.message); } refresh(); });
   } catch (e) { document.getElementById('global').innerHTML = `<dt>error</dt><dd>${e.message}</dd>`; }
 }

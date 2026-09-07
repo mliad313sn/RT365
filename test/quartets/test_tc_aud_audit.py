@@ -76,3 +76,22 @@ def test_export_reload_and_file_backed_worm(platform, tmp_path):  # type: ignore
     s2.append(correlation_id="c1", tenant="t", actor="a", action="three", payload={"n": 3})
     assert AuditStore(path).verify().ok and len(AuditStore(path)) == 3
     assert AUDITOR.role.value == "auditor" and platform.audit.export("nonexistent") == ""
+
+
+@pytest.mark.tc("TC-AUD-005")
+@pytest.mark.req("NFR-AUD-01")
+@pytest.mark.quartet("abuse")
+def test_truncation_detected_with_sealed_anchor_and_backdating_refused(platform):  # type: ignore[no-untyped-def]
+    """A truncated tail verifies as a valid prefix without an anchor; with the sealed head it is detected; timestamps are monotonic (Security review OBJ-3)."""
+    from datetime import timedelta
+
+    platform.run_intent(platform.make_intent())
+    anchor = platform.audit.seal()
+    events = list(platform.audit.all())
+    truncated = events[:-5]
+    assert platform.audit.verify(truncated).ok  # prefix is internally consistent...
+    v = platform.audit.verify(truncated, anchor=anchor)
+    assert not v.ok and "truncated" in v.detail  # ...but the anchor exposes it
+    assert platform.audit.verify(anchor=anchor).ok
+    e = platform.audit.append(correlation_id="c", tenant="t", actor="a", action="x", payload={}, ts=platform.now - timedelta(days=1))
+    assert e.ts >= events[-1].ts

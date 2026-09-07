@@ -14,6 +14,16 @@ def hdr(actor, mfa: str = "verified") -> dict[str, str]:  # type: ignore[no-unty
     return {"X-Actor-Id": actor.actor_id, "X-Actor-Role": actor.role.value, "X-MFA": mfa}
 
 
+def signed(p, ident, body) -> dict[str, str]:  # type: ignore[no-untyped-def]
+    sig = p.issuer.sign_call(ident, "submit_trade_intent", {"intent": body}, now=p.now)
+    return {
+        "Authorization": f"Bearer {ident.token_id}",
+        "X-Call-Signature": sig.signature,
+        "X-Call-Nonce": sig.nonce,
+        "X-Call-Issued-At": sig.issued_at.isoformat(),
+    }
+
+
 @pytest.fixture
 def client():  # type: ignore[no-untyped-def]
     p = build_sim_platform(mode=AccountMode.SUPERVISED)
@@ -28,8 +38,7 @@ def test_j03_supervised_order_end_to_end(client):  # type: ignore[no-untyped-def
     c, p = client
     ident = p.issue_agent()
     body = p.make_intent()
-    sig = p.issuer.sign_call(ident, "submit_trade_intent", {"intent": body})
-    r = c.post("/v1/intents", json=body, headers={"Authorization": f"Bearer {ident.token_id}", "X-Call-Signature": sig})
+    r = c.post("/v1/intents", json=body, headers=signed(p, ident, body))
     assert r.status_code == 202, r.text
     intent_id, corr = r.json()["intent_id"], r.json()["correlation_id"]
     pr = c.post(f"/v1/intents/{intent_id}/process", headers=hdr(RISK_OFFICER))
@@ -90,23 +99,17 @@ def test_schema_violation_and_non_allowlisted_agent(client):  # type: ignore[no-
     c, p = client
     ident = p.issue_agent()
     body = {**p.make_intent(), "leverage_override": 10}
-    sig = p.issuer.sign_call(ident, "submit_trade_intent", {"intent": body})
-    assert (
-        c.post("/v1/intents", json=body, headers={"Authorization": f"Bearer {ident.token_id}", "X-Call-Signature": sig}).status_code == 400
-    )
+    assert c.post("/v1/intents", json=body, headers=signed(p, ident, body)).status_code == 400
     research = p.issue_agent(agent_id="r", strategy_id="strat-research-only")
     body = p.make_intent(strategy_id="strat-research-only")
-    sig = p.issuer.sign_call(research, "submit_trade_intent", {"intent": body})
-    assert (
-        c.post("/v1/intents", json=body, headers={"Authorization": f"Bearer {research.token_id}", "X-Call-Signature": sig}).status_code
-        == 403
-    )
-    assert (
-        c.post(
-            "/v1/intents", json=p.make_intent(), headers={"Authorization": f"Bearer {ident.token_id}", "X-Call-Signature": "bad"}
-        ).status_code
-        == 403
-    )
+    assert c.post("/v1/intents", json=body, headers=signed(p, research, body)).status_code == 403
+    # bearer without a valid signature / with a replayed nonce is never accepted (security review F-01)
+    assert c.post("/v1/intents", json=p.make_intent(), headers={"Authorization": f"Bearer {ident.token_id}"}).status_code == 403
+    body = p.make_intent()
+    good = signed(p, ident, body)
+    assert c.post("/v1/intents", json=body, headers={**good, "X-Call-Signature": "bad"}).status_code == 403
+    assert c.post("/v1/intents", json=body, headers=good).status_code == 202
+    assert c.post("/v1/intents", json=body, headers=good).status_code == 403  # replay of the same signed call
     assert c.post("/v1/intents", json=p.make_intent(), headers=hdr(TRADER, mfa="none")).status_code == 401
     assert c.get("/v1/reason-codes").status_code == 200 and c.get("/").status_code == 200 and c.get("/healthz").json()["ok"]
 
@@ -133,8 +136,12 @@ def test_j06_break_ticket_via_api(client):  # type: ignore[no-untyped-def]
         == "PENDING_SECOND"
     )
     assert c.post(f"/v1/reconciliation/tickets/{tid}/resolve", json={"resolution": "late fill"}, headers=hdr(OPS)).status_code == 403
+    # same line of defense (1st) as the first resolver -> refused; a 2nd-line risk officer may confirm
     assert (
-        c.post(f"/v1/reconciliation/tickets/{tid}/resolve", json={"resolution": "confirmed"}, headers=hdr(TRADING_LEAD)).json()["status"]
+        c.post(f"/v1/reconciliation/tickets/{tid}/resolve", json={"resolution": "confirmed"}, headers=hdr(TRADING_LEAD)).status_code == 403
+    )
+    assert (
+        c.post(f"/v1/reconciliation/tickets/{tid}/resolve", json={"resolution": "confirmed"}, headers=hdr(RISK_OFFICER)).json()["status"]
         == "RESOLVED"
     )
     prop = c.post(

@@ -1,5 +1,7 @@
 {
   "algorithm": "HMAC-SHA256",
+  "environment_tag": "sim",
+  "fixture": true,
   "key_id": "dev-key-v0",
   "registry": {
     "canary_tokens": [
@@ -7,7 +9,7 @@
       "CANARY-RT365-b2e1d0"
     ],
     "environment_tag": "sim",
-    "note": "[Source: 04] Six allowed capabilities. Anything absent is forbidden and structurally impossible. Signed copy: tool_registry.signed.json (dev key; replace before Gate B \u2014 MISSING_ACTIONS H-05/H-10 family).",
+    "note": "[Source: 04] Six allowed capabilities. Anything absent is forbidden and structurally impossible. Signed copy: tool_registry.signed.json is a SIM FIXTURE (fixture=true) because every approval_record is pending; a fixture signature never embodies approval and is refused outside dev/sim (ADR-011, review OBJ-2).",
     "registry_version": "0.1.0",
     "tools": [
       {
@@ -28,7 +30,9 @@
         },
         "masking": "unlicensed fields removed",
         "name": "read_market_snapshot",
+        "output_provenance": "simulated",
         "output_schema": {
+          "additionalProperties": false,
           "properties": {
             "ask": {
               "type": [
@@ -52,9 +56,19 @@
               "type": "string"
             },
             "provenance": {
+              "enum": [
+                "licensed_feed",
+                "simulated"
+              ],
               "type": "string"
             },
             "quality": {
+              "enum": [
+                "OK",
+                "SUSPECT",
+                "STALE",
+                "MISSING"
+              ],
               "type": "string"
             }
           },
@@ -91,18 +105,57 @@
         },
         "masking": "identifiers masked; balances rounded per policy",
         "name": "read_account_state",
+        "output_provenance": "internal",
         "output_schema": {
+          "additionalProperties": false,
           "properties": {
             "account_ref": {
+              "pattern": "^acct:[0-9a-f]{16}$",
               "type": "string"
             },
             "mode": {
+              "enum": [
+                "OBSERVE",
+                "BACKTEST",
+                "PAPER",
+                "SUPERVISED",
+                "BOUNDED_AUTONOMOUS",
+                "HALTED"
+              ],
               "type": "string"
             },
             "nav_rounded": {
+              "maxLength": 32,
               "type": "string"
             },
             "positions": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "exposure_rounded": {
+                    "maxLength": 32,
+                    "type": "string"
+                  },
+                  "instrument_id": {
+                    "maxLength": 64,
+                    "type": "string"
+                  },
+                  "side": {
+                    "enum": [
+                      "LONG",
+                      "SHORT"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "instrument_id",
+                  "side",
+                  "exposure_rounded"
+                ],
+                "type": "object"
+              },
+              "maxItems": 500,
               "type": "array"
             }
           },
@@ -153,12 +206,19 @@
         },
         "masking": "none",
         "name": "calculate_indicator",
+        "output_provenance": "internal",
         "output_schema": {
+          "additionalProperties": false,
           "properties": {
             "as_of": {
               "type": "string"
             },
             "indicator": {
+              "enum": [
+                "sma",
+                "ema",
+                "rsi"
+              ],
               "type": "string"
             },
             "value": {
@@ -222,15 +282,27 @@
         },
         "masking": "none",
         "name": "run_simulation",
+        "output_provenance": "internal",
         "output_schema": {
+          "additionalProperties": false,
           "properties": {
             "data_snapshot_id": {
+              "pattern": "^ds_[0-9a-f]{16}$",
               "type": "string"
             },
             "disclaimer": {
+              "maxLength": 1000,
               "type": "string"
             },
             "metrics": {
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "number",
+                  "integer",
+                  "null"
+                ]
+              },
               "type": "object"
             }
           },
@@ -244,7 +316,7 @@
         "owner": "Quant Research Lead",
         "payload_limit_bytes": 5242880,
         "quota_per_minute": 6,
-        "scope": "approved simulation templates, pinned snapshot",
+        "scope": "approved simulation templates only (sma_crossover_replay), identity's own strategy@version, pinned snapshot; per-scope quota; pre-emptive deadline",
         "server": "analytics-backtest",
         "timeout_s": 60
       },
@@ -265,9 +337,12 @@
         },
         "masking": "none",
         "name": "get_strategy_docs",
+        "output_provenance": "internal_doc",
         "output_schema": {
+          "additionalProperties": false,
           "properties": {
             "docs": {
+              "maxLength": 4096,
               "type": "string"
             },
             "strategy_id": {
@@ -283,7 +358,7 @@
         "owner": "Product Director",
         "payload_limit_bytes": 524288,
         "quota_per_minute": 60,
-        "scope": "strategy registry docs",
+        "scope": "strategy registry docs for the identity's own strategy; output delimited as internal_doc",
         "server": "analytics-strategy",
         "timeout_s": 2
       },
@@ -304,18 +379,26 @@
         },
         "masking": "none",
         "name": "submit_trade_intent",
+        "output_provenance": "internal",
         "output_schema": {
+          "additionalProperties": false,
           "properties": {
             "correlation_id": {
+              "maxLength": 64,
               "type": "string"
             },
             "intent_hash": {
+              "pattern": "^[0-9a-f]{64}$",
               "type": "string"
             },
             "intent_id": {
+              "format": "uuid",
               "type": "string"
             },
             "state": {
+              "enum": [
+                "SCHEMA_VALIDATED"
+              ],
               "type": "string"
             }
           },
@@ -330,11 +413,13 @@
         "owner": "Backend Lead",
         "payload_limit_bytes": 32768,
         "quota_per_minute": 10,
-        "scope": "strategy/account allowlist; writes to the Control-plane intent queue only",
+        "scope": "strategy/account/version allowlist; writes to the Control-plane intent queue only; quota per (tenant, account, strategy)",
         "server": "control-intake",
         "timeout_s": 2
       }
     ]
   },
-  "signature": "39a63c1882d72bb68d7f717a25da6e1e3f7a0e775083ba13cf9263dd7e4ba51c"
+  "registry_version": "0.1.0",
+  "signature": "5b3f19e8a2505b46b3dbcd2d351d48586e5d5434546bf5f4699e88ac144e9f9e",
+  "signed_at": "2026-09-07T17:39:59.766054+00:00"
 }

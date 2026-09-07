@@ -1,5 +1,6 @@
 # Local developer entry points. CI runs the same targets (see .github/workflows/ci.yml).
 PY ?= python3
+export RT_ENV ?= sim
 export PYTHONPATH := libs/core:services/market-data:services/strategy:services/backtest:services/portfolio:services/risk:services/compliance:services/approval:services/oms:services/execution:services/reconciliation:services/audit:services/killswitch:services/identity:mcp/servers:connectors/brokers:connectors/data-providers:observability:apps/web:test
 
 .PHONY: install lint typecheck test evidence schemas policy-check sbom secret-scan certify-broker run-bff all
@@ -30,6 +31,13 @@ policy-check:
 
 sbom:
 	$(PY) scripts/generate_sbom.py
+
+lock:
+	$(PY) -m pip freeze --exclude-editable > requirements.lock.txt
+
+security-scan:
+	$(PY) -m bandit -q -r libs services mcp connectors observability apps -x test || true
+	$(PY) -m pip_audit -r requirements.lock.txt || true
 
 secret-scan:
 	$(PY) scripts/secret_scan.py

@@ -15,6 +15,9 @@ _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"(?i)bearer\s+[A-Za-z0-9._\-]+"), "bearer <token>"),
     (re.compile(r"vault://[^\s\"']+"), "vault://<ref>"),
     (re.compile(r"\b\d{12,19}\b"), "<number>"),
+    (re.compile(r"\b(acct|cust|tenant)-[A-Za-z0-9-]{3,}\b"), "<id>"),
+    (re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b"), "<iban>"),
+    (re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"), "<ip>"),
     (re.compile(r"(?i)(\"?(?:secret|password|api_key|token)\"?\s*[:=]\s*)\"?[^\s\",}]+\"?"), r"\1<redacted>"),
 )
 

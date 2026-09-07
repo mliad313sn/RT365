@@ -6,6 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 
+from rtcore.errors import TransitionError
 from rtcore.schemas.base import StrictModel
 from rtcore.statemachine import MonotonicStateMachine
 
@@ -43,9 +44,15 @@ _T = {
         IntentState.HALTED,
         IntentState.EXPIRED,
     },
-    IntentState.PENDING_APPROVAL: {IntentState.AUTHORISED, IntentState.DECLINED, IntentState.EXPIRED, IntentState.HALTED},
+    IntentState.PENDING_APPROVAL: {
+        IntentState.AUTHORISED,
+        IntentState.DECLINED,
+        IntentState.REJECTED,
+        IntentState.EXPIRED,
+        IntentState.HALTED,
+    },
     IntentState.AUTHORISED: {IntentState.SUBMITTED, IntentState.EXPIRED, IntentState.HALTED},
-    IntentState.SUBMITTED: {IntentState.ACKNOWLEDGED, IntentState.BROKER_REJECTED},
+    IntentState.SUBMITTED: {IntentState.ACKNOWLEDGED, IntentState.BROKER_REJECTED, IntentState.CANCELLED, IntentState.EXPIRED},
     IntentState.ACKNOWLEDGED: {IntentState.PARTIALLY_FILLED, IntentState.FILLED, IntentState.CANCELLED, IntentState.BROKER_REJECTED},
     IntentState.PARTIALLY_FILLED: {IntentState.PARTIALLY_FILLED, IntentState.FILLED, IntentState.CANCELLED},
     IntentState.FILLED: {IntentState.RECONCILED},
@@ -73,7 +80,12 @@ class IntentTracker:
         self._status: dict[str, IntentStatus] = {}
         self._audit = audit_hook or (lambda action, correlation_id, payload: None)
 
+    def exists(self, intent_id: str) -> bool:
+        return intent_id in self._status
+
     def create(self, intent_id: str, correlation_id: str, *, now: datetime) -> IntentStatus:
+        if intent_id in self._status:
+            raise TransitionError(f"intent {intent_id} already tracked; states are monotonic and never reset")
         st = IntentStatus(
             intent_id=intent_id,
             correlation_id=correlation_id,

@@ -102,6 +102,14 @@
       "title": "Evidence Hash",
       "type": "string"
     },
+    "hook_failures": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Hook Failures",
+      "type": "array"
+    },
     "level": {
       "$ref": "#/$defs/KillSwitchLevel"
     },

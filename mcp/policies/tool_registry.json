@@ -1,26 +1,416 @@
 {
   "registry_version": "0.1.0",
   "environment_tag": "sim",
-  "note": "[Source: 04] Six allowed capabilities. Anything absent is forbidden and structurally impossible. Signed copy: tool_registry.signed.json (dev key; replace before Gate B — MISSING_ACTIONS H-05/H-10 family).",
-  "canary_tokens": ["CANARY-RT365-7f3a9c", "CANARY-RT365-b2e1d0"],
+  "note": "[Source: 04] Six allowed capabilities. Anything absent is forbidden and structurally impossible. Signed copy: tool_registry.signed.json is a SIM FIXTURE (fixture=true) because every approval_record is pending; a fixture signature never embodies approval and is refused outside dev/sim (ADR-011, review OBJ-2).",
+  "canary_tokens": [
+    "CANARY-RT365-7f3a9c",
+    "CANARY-RT365-b2e1d0"
+  ],
   "tools": [
-    {"name": "read_market_snapshot", "class": "read", "server": "analytics-market", "scope": "instrument list within entitlement", "masking": "unlicensed fields removed", "quota_per_minute": 120, "timeout_s": 2, "payload_limit_bytes": 1048576, "owner": "Data Engineering Lead", "approval_record": "MCP-SEC-2026-001 [Committee: pending MCP Security Agent review]",
-     "input_schema": {"type": "object", "additionalProperties": false, "required": ["instrument_id"], "properties": {"instrument_id": {"type": "string", "maxLength": 64}}},
-     "output_schema": {"type": "object", "required": ["instrument_id", "market_ts", "last_price", "provenance"], "properties": {"instrument_id": {"type": "string"}, "market_ts": {"type": "string"}, "last_price": {"type": "string"}, "provenance": {"type": "string"}, "quality": {"type": "string"}, "bid": {"type": ["string", "null"]}, "ask": {"type": ["string", "null"]}}}},
-    {"name": "read_account_state", "class": "read", "server": "analytics-account", "scope": "account", "masking": "identifiers masked; balances rounded per policy", "quota_per_minute": 60, "timeout_s": 2, "payload_limit_bytes": 262144, "owner": "Backend Lead", "approval_record": "MCP-SEC-2026-002 [Committee: pending]",
-     "input_schema": {"type": "object", "additionalProperties": false, "required": ["account_id"], "properties": {"account_id": {"type": "string", "maxLength": 64}}},
-     "output_schema": {"type": "object", "required": ["account_ref", "mode", "nav_rounded", "positions"], "properties": {"account_ref": {"type": "string"}, "mode": {"type": "string"}, "nav_rounded": {"type": "string"}, "positions": {"type": "array"}}}},
-    {"name": "calculate_indicator", "class": "read", "server": "analytics-indicators", "scope": "approved indicator registry only", "masking": "none", "quota_per_minute": 120, "timeout_s": 5, "payload_limit_bytes": 1048576, "owner": "Quant Research Lead", "approval_record": "MCP-SEC-2026-003 [Committee: pending]",
-     "input_schema": {"type": "object", "additionalProperties": false, "required": ["indicator", "instrument_id", "window"], "properties": {"indicator": {"type": "string", "enum": ["sma", "ema", "rsi"]}, "instrument_id": {"type": "string"}, "window": {"type": "integer", "minimum": 2, "maximum": 500}}},
-     "output_schema": {"type": "object", "required": ["indicator", "value", "as_of"], "properties": {"indicator": {"type": "string"}, "value": {"type": ["string", "null"]}, "as_of": {"type": "string"}}}},
-    {"name": "run_simulation", "class": "read", "server": "analytics-backtest", "scope": "approved simulation templates, pinned snapshot", "masking": "none", "quota_per_minute": 6, "timeout_s": 60, "payload_limit_bytes": 5242880, "owner": "Quant Research Lead", "approval_record": "MCP-SEC-2026-004 [Committee: pending]",
-     "input_schema": {"type": "object", "additionalProperties": false, "required": ["template", "strategy_id", "strategy_version", "instrument_id"], "properties": {"template": {"type": "string", "enum": ["sma_crossover_replay"]}, "strategy_id": {"type": "string"}, "strategy_version": {"type": "string"}, "instrument_id": {"type": "string"}, "cost_factor": {"type": "string", "enum": ["1", "1.5", "2"]}}},
-     "output_schema": {"type": "object", "required": ["data_snapshot_id", "metrics", "disclaimer"], "properties": {"data_snapshot_id": {"type": "string"}, "metrics": {"type": "object"}, "disclaimer": {"type": "string"}}}},
-    {"name": "get_strategy_docs", "class": "read", "server": "analytics-strategy", "scope": "strategy registry docs", "masking": "none", "quota_per_minute": 60, "timeout_s": 2, "payload_limit_bytes": 524288, "owner": "Product Director", "approval_record": "MCP-SEC-2026-005 [Committee: pending]",
-     "input_schema": {"type": "object", "additionalProperties": false, "required": ["strategy_id"], "properties": {"strategy_id": {"type": "string"}}},
-     "output_schema": {"type": "object", "required": ["strategy_id", "docs"], "properties": {"strategy_id": {"type": "string"}, "docs": {"type": "string"}}}},
-    {"name": "submit_trade_intent", "class": "write", "server": "control-intake", "scope": "strategy/account allowlist; writes to the Control-plane intent queue only", "masking": "none", "quota_per_minute": 10, "timeout_s": 2, "payload_limit_bytes": 32768, "owner": "Backend Lead", "approval_record": "MCP-SEC-2026-006 [Committee: pending]",
-     "input_schema": {"type": "object", "additionalProperties": false, "required": ["intent"], "properties": {"intent": {"type": "object"}}},
-     "output_schema": {"type": "object", "required": ["intent_id", "intent_hash", "correlation_id", "state"], "properties": {"intent_id": {"type": "string"}, "intent_hash": {"type": "string"}, "correlation_id": {"type": "string"}, "state": {"type": "string"}}}}
+    {
+      "name": "read_market_snapshot",
+      "class": "read",
+      "server": "analytics-market",
+      "scope": "instrument list within entitlement",
+      "masking": "unlicensed fields removed",
+      "quota_per_minute": 120,
+      "timeout_s": 2,
+      "payload_limit_bytes": 1048576,
+      "owner": "Data Engineering Lead",
+      "approval_record": "MCP-SEC-2026-001 [Committee: pending MCP Security Agent review]",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "maxLength": 64
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "required": [
+          "instrument_id",
+          "market_ts",
+          "last_price",
+          "provenance"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string"
+          },
+          "market_ts": {
+            "type": "string"
+          },
+          "last_price": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "licensed_feed",
+              "simulated"
+            ]
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "SUSPECT",
+              "STALE",
+              "MISSING"
+            ]
+          },
+          "bid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ask": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_provenance": "simulated"
+    },
+    {
+      "name": "read_account_state",
+      "class": "read",
+      "server": "analytics-account",
+      "scope": "account",
+      "masking": "identifiers masked; balances rounded per policy",
+      "quota_per_minute": 60,
+      "timeout_s": 2,
+      "payload_limit_bytes": 262144,
+      "owner": "Backend Lead",
+      "approval_record": "MCP-SEC-2026-002 [Committee: pending]",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "account_id"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "maxLength": 64
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "required": [
+          "account_ref",
+          "mode",
+          "nav_rounded",
+          "positions"
+        ],
+        "properties": {
+          "account_ref": {
+            "type": "string",
+            "pattern": "^acct:[0-9a-f]{16}$"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "OBSERVE",
+              "BACKTEST",
+              "PAPER",
+              "SUPERVISED",
+              "BOUNDED_AUTONOMOUS",
+              "HALTED"
+            ]
+          },
+          "nav_rounded": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "positions": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "instrument_id",
+                "side",
+                "exposure_rounded"
+              ],
+              "properties": {
+                "instrument_id": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "LONG",
+                    "SHORT"
+                  ]
+                },
+                "exposure_rounded": {
+                  "type": "string",
+                  "maxLength": 32
+                }
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_provenance": "internal"
+    },
+    {
+      "name": "calculate_indicator",
+      "class": "read",
+      "server": "analytics-indicators",
+      "scope": "approved indicator registry only",
+      "masking": "none",
+      "quota_per_minute": 120,
+      "timeout_s": 5,
+      "payload_limit_bytes": 1048576,
+      "owner": "Quant Research Lead",
+      "approval_record": "MCP-SEC-2026-003 [Committee: pending]",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "indicator",
+          "instrument_id",
+          "window"
+        ],
+        "properties": {
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "sma",
+              "ema",
+              "rsi"
+            ]
+          },
+          "instrument_id": {
+            "type": "string"
+          },
+          "window": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 500
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "required": [
+          "indicator",
+          "value",
+          "as_of"
+        ],
+        "properties": {
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "sma",
+              "ema",
+              "rsi"
+            ]
+          },
+          "value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "as_of": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_provenance": "internal"
+    },
+    {
+      "name": "run_simulation",
+      "class": "read",
+      "server": "analytics-backtest",
+      "scope": "approved simulation templates only (sma_crossover_replay), identity's own strategy@version, pinned snapshot; per-scope quota; pre-emptive deadline",
+      "masking": "none",
+      "quota_per_minute": 6,
+      "timeout_s": 60,
+      "payload_limit_bytes": 5242880,
+      "owner": "Quant Research Lead",
+      "approval_record": "MCP-SEC-2026-004 [Committee: pending]",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "template",
+          "strategy_id",
+          "strategy_version",
+          "instrument_id"
+        ],
+        "properties": {
+          "template": {
+            "type": "string",
+            "enum": [
+              "sma_crossover_replay"
+            ]
+          },
+          "strategy_id": {
+            "type": "string"
+          },
+          "strategy_version": {
+            "type": "string"
+          },
+          "instrument_id": {
+            "type": "string"
+          },
+          "cost_factor": {
+            "type": "string",
+            "enum": [
+              "1",
+              "1.5",
+              "2"
+            ]
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "required": [
+          "data_snapshot_id",
+          "metrics",
+          "disclaimer"
+        ],
+        "properties": {
+          "data_snapshot_id": {
+            "type": "string",
+            "pattern": "^ds_[0-9a-f]{16}$"
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "integer",
+                "null"
+              ]
+            }
+          },
+          "disclaimer": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_provenance": "internal"
+    },
+    {
+      "name": "get_strategy_docs",
+      "class": "read",
+      "server": "analytics-strategy",
+      "scope": "strategy registry docs for the identity's own strategy; output delimited as internal_doc",
+      "masking": "none",
+      "quota_per_minute": 60,
+      "timeout_s": 2,
+      "payload_limit_bytes": 524288,
+      "owner": "Product Director",
+      "approval_record": "MCP-SEC-2026-005 [Committee: pending]",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "strategy_id"
+        ],
+        "properties": {
+          "strategy_id": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "required": [
+          "strategy_id",
+          "docs"
+        ],
+        "properties": {
+          "strategy_id": {
+            "type": "string"
+          },
+          "docs": {
+            "type": "string",
+            "maxLength": 4096
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_provenance": "internal_doc"
+    },
+    {
+      "name": "submit_trade_intent",
+      "class": "write",
+      "server": "control-intake",
+      "scope": "strategy/account/version allowlist; writes to the Control-plane intent queue only; quota per (tenant, account, strategy)",
+      "masking": "none",
+      "quota_per_minute": 10,
+      "timeout_s": 2,
+      "payload_limit_bytes": 32768,
+      "owner": "Backend Lead",
+      "approval_record": "MCP-SEC-2026-006 [Committee: pending]",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "intent"
+        ],
+        "properties": {
+          "intent": {
+            "type": "object"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "required": [
+          "intent_id",
+          "intent_hash",
+          "correlation_id",
+          "state"
+        ],
+        "properties": {
+          "intent_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "intent_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "correlation_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "SCHEMA_VALIDATED"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_provenance": "internal"
+    }
   ]
 }
