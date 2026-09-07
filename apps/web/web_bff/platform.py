@@ -60,6 +60,7 @@ from rtcore.errors import ControlDenied
 from rtcore.lines import Actor, ActorKind, Role, system_actor
 from rtcore.money import ZERO
 from rtcore.planes import Plane, PlaneGuard, enter
+from rtcore.resources import resource_root
 from rtcore.schemas.account import AccountMode, AccountSnapshot, EmergencyPolicy, OpenOrder, TradingStatus
 from rtcore.schemas.compliance import CustomerProfile, CustomerType, RestrictedLists
 from rtcore.schemas.decision import DecisionRecord, Outcome
@@ -73,7 +74,6 @@ from rtobs.tracing import Tracer
 from strategy_service.registry import StrategyRegistry, StrategyStatus, StrategyVersion
 from strategy_service.signals import SmaCrossoverStrategy, intent_from_signal
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
 TENANT = "tenant-sim"
 ACCOUNT = "acct-sim-001"
 CUSTOMER = "cust-sim-001"
@@ -504,9 +504,10 @@ def build_sim_platform(
     revocations_path: Path | None = None,
     nonce_path: Path | None = None,
 ) -> SimPlatform:
+    root = resource_root()  # source checkout, installed bundle or frozen executable; fails closed when absent (ADR-016)
     audit = AuditStore()
     outbox = Outbox()
-    alerts = AlertRouter.load(REPO_ROOT / "observability" / "alerts.yaml")
+    alerts = AlertRouter.load(root / "observability" / "alerts.yaml")
     metrics = MetricsRegistry()
     tracer = Tracer()
     # Every platform (live or a throwaway backtest) owns a private PlaneGuard: nothing an agent can call
@@ -694,7 +695,7 @@ def build_sim_platform(
             docs="Simulation-only SMA crossover used to exercise the control envelope. Not a performance claim. See docs/STRATEGY_CARDS/strat-sma-xover.md.",
         )
     )
-    policy = load_policy(policy_path or REPO_ROOT / "services" / "risk" / "policies" / "sim-policy-v0.1.yaml")
+    policy = load_policy(policy_path or root / "services" / "risk" / "policies" / "sim-policy-v0.1.yaml")
     restricted = RestrictedLists(
         policy_version="lists-sim-v0.1", restricted_instruments=("SIMRESTRICTED",), restricted_venues=("SIMBANNED",)
     )
@@ -711,9 +712,9 @@ def build_sim_platform(
         jurisdictions.activate_flag(cell, actor=comp, now=now)
     revocations = RevocationList(revocations_path)
     issuer = IdentityIssuer(revocations=revocations, audit=audit2, nonce_path=nonce_path)
-    registry = load_registry(registry_path or REPO_ROOT / "mcp" / "policies" / "tool_registry.signed.json")
-    allowlists = {TENANT: TenantAllowlist.load(REPO_ROOT / "mcp" / "policies" / "allowlist.tenant-sim.yaml", revocations)}
-    egress = EgressPolicy.load(REPO_ROOT / "mcp" / "policies" / "egress.yaml")
+    registry = load_registry(registry_path or root / "mcp" / "policies" / "tool_registry.signed.json")
+    allowlists = {TENANT: TenantAllowlist.load(root / "mcp" / "policies" / "allowlist.tenant-sim.yaml", revocations)}
+    egress = EgressPolicy.load(root / "mcp" / "policies" / "egress.yaml")
     runtime = ToolRuntime(
         registry=registry,
         issuer=issuer,
@@ -725,7 +726,7 @@ def build_sim_platform(
         revocations=revocations,
     )
     limits_mc = MakerChecker(cooling_period=timedelta(hours=1), require_different_line=True, audit_hook=audit2)
-    slis = SliCatalog.load(REPO_ROOT / "observability" / "slis.yaml")
+    slis = SliCatalog.load(root / "observability" / "slis.yaml")
 
     platform = SimPlatform(
         now=now,

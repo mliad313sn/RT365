@@ -20,3 +20,10 @@ Forbidden [Source: 04]: direct broker calls, arbitrary code execution, shell acc
 Registration process: proposal → threat-model delta → sandbox tests (injection corpus, escalation, oversize payload, revoked call) → signature → per-tenant allowlist → quarterly re-attestation.
 
 Dev/sim status [Committee]: all six tools are implemented behind `mcp_servers.runtime.ToolRuntime` (identity → signed registry → revocation → allowlist → quota → payload → input schema → handler deadline → output schema → canary → tamper-evident log). Registry signed with the documented dev key [Open: O-22]. Independent review: SESSIONS/REVIEW_C3_mcp_security_agent.md.
+
+## Servers and transports [Committee; ADR-016]
+| Server | Transport | Where | Identity | Exposes | Status |
+|---|---|---|---|---|---|
+| `rt365-sim` (`.mcp.json`) | MCP stdio, JSON-RPC 2.0 one frame per line (`mcp_servers.stdio`, `rt365 mcp-serve --env sim`) | agent host machine (Claude Code or any MCP client) | issued by the host process for `agent-claude-code` on `tenant-sim`/`acct-sim-001`/`strat-sma-xover@0.1`; never client-asserted | tools/list and tools/call for the six registered tools only; no resources, prompts or sampling; 1 MiB frame cap; per-tool payload/quota/timeout inside the runtime | implemented in sim (TC-AI-012..015); registration pending MCP Security Agent review with the tools (REVIEW_C3, O-35) |
+| BFF agent route (`POST /v1/intents` with bearer + call signature) | HTTPS | `apps/web` | signed MCP identity | `submit_trade_intent` only | implemented in sim (TC-E2E-API) |
+Both transports call `ToolRuntime.call`; there is no third path to a tool. Forbidden servers for any agent context: broker, vault/secrets, shell, arbitrary web, limit/mode/audit mutation.

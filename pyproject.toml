@@ -18,6 +18,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "hypothesis>=6.90", "ruff>=0.4", "mypy>=1.8", "types-PyYAML"]
+build = ["build>=1.0", "pyinstaller>=6.0"]
+
+[project.scripts]
+rt365 = "rt365_cli.main:main"
 
 # Repository structure target [Source: 16]: one package per bounded context, mapped to
 # the blueprint directory layout. Protected paths (services/risk, services/compliance,
@@ -42,14 +46,20 @@ broker_adapters = "connectors/brokers/broker_adapters"
 data_providers = "connectors/data-providers/data_providers"
 rtobs = "observability/rtobs"
 web_bff = "apps/web/web_bff"
+rt365_cli = "apps/cli/rt365_cli"
 
 [tool.setuptools]
 packages = [
   "rtcore", "rtcore.schemas", "market_data", "strategy_service", "backtest_engine", "portfolio_service",
   "risk_engine", "compliance_engine", "approval_service", "oms", "execution_gateway",
   "reconciliation_service", "audit_service", "killswitch_service", "identity_service",
-  "mcp_servers", "broker_adapters", "data_providers", "rtobs", "web_bff",
+  "mcp_servers", "broker_adapters", "data_providers", "rtobs", "web_bff", "rt365_cli",
 ]
+
+# The resource bundle (mcp/policies, observability catalogues, risk policy, dashboard assets) is staged into
+# apps/cli/rt365_cli/_bundle by scripts/build_package.sh before `python -m build`; it is git-ignored.
+[tool.setuptools.package-data]
+rt365_cli = ["_bundle/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
@@ -57,7 +67,7 @@ pythonpath = [
   "libs/core", "services/market-data", "services/strategy", "services/backtest", "services/portfolio",
   "services/risk", "services/compliance", "services/approval", "services/oms", "services/execution",
   "services/reconciliation", "services/audit", "services/killswitch", "services/identity",
-  "mcp/servers", "connectors/brokers", "connectors/data-providers", "observability", "apps/web", "test",
+  "mcp/servers", "connectors/brokers", "connectors/data-providers", "observability", "apps/web", "apps/cli", "test",
 ]
 markers = [
   "tc(id): control-quartet test case ID from docs/TEST_CASES (e.g. TC-RK-001)",
@@ -79,7 +89,7 @@ ignore = ["N818", "E501", "B008", "B023", "UP042"]
 
 [tool.mypy]
 python_version = "3.11"
-mypy_path = "libs/core:services/market-data:services/strategy:services/backtest:services/portfolio:services/risk:services/compliance:services/approval:services/oms:services/execution:services/reconciliation:services/audit:services/killswitch:services/identity:mcp/servers:connectors/brokers:connectors/data-providers:observability:apps/web"
+mypy_path = "libs/core:services/market-data:services/strategy:services/backtest:services/portfolio:services/risk:services/compliance:services/approval:services/oms:services/execution:services/reconciliation:services/audit:services/killswitch:services/identity:mcp/servers:connectors/brokers:connectors/data-providers:observability:apps/web:apps/cli"
 explicit_package_bases = true
 namespace_packages = true
 warn_unused_ignores = true

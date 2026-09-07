@@ -43,3 +43,7 @@ Every artefact of blueprint §15 [Source: 15], its owner and the gate at which i
 | STRATEGY_CARDS/strat-sma-xover.md, MODEL_CARDS/rule-sma.md | Quant Research Lead / Model Risk Lead | D |
 | ADRs/ADR-009..012 | Enterprise Architect | B |
 | REPORTS/WEEKLY_*.md | Program Orchestrator | weekly |
+| PRODUCT_OWNER.md (appointment record), AGENT_ROSTER.md (agents and MCP servers), INSTALLATION.md | Product Owner | A/B |
+| ADRs/ADR-013..016 | Enterprise Architect | B |
+| goals/build/README.md, E01..E15 (build-agent prompts; agents generated into .claude/agents/) | Program Orchestrator / Product Owner | B |
+| TEST_CASES/TC-PKG.md, TC-AGT.md (generated) | QA Lead | B |

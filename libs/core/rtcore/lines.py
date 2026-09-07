@@ -26,6 +26,7 @@ class ActorKind(str, Enum):
 
 class Role(str, Enum):
     # 1st line
+    PRODUCT_OWNER = "product_owner"  # accountable for completeness and executability; docs/PRODUCT_OWNER.md
     PRODUCT_DIRECTOR = "product_director"
     PROGRAM_ORCHESTRATOR = "program_orchestrator"
     TRADING_DOMAIN_LEAD = "trading_domain_lead"
@@ -58,6 +59,7 @@ class Role(str, Enum):
 
 
 ROLE_LINE: dict[Role, DefenseLine] = {
+    Role.PRODUCT_OWNER: DefenseLine.FIRST,
     Role.PRODUCT_DIRECTOR: DefenseLine.FIRST,
     Role.PROGRAM_ORCHESTRATOR: DefenseLine.FIRST,
     Role.TRADING_DOMAIN_LEAD: DefenseLine.FIRST,

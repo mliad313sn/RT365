@@ -1,0 +1,93 @@
+name: release
+# Builds the installation package (wheel + sdist) and the one-file executables (Linux, macOS, Windows .exe) [ADR-016].
+# Runs on every push to a claude/** branch or main (artifacts kept 30 days) and on tags v* (attached to the GitHub release).
+# Nothing built here is authorised beyond the sim environment; artefact signing is pending O-23.
+on:
+  push:
+    branches: [main, "claude/**"]
+    tags: ["v*"]
+  workflow_dispatch:
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install
+        run: pip install -e ".[dev,build]"
+      - name: Gates that the package must pass (subset of ci.yml)
+        env: {RT_ENV: sim}
+        run: make lint agents-check policy-check && python -m pytest test/quartets/test_tc_pkg_cli.py test/quartets/test_tc_ai_stdio.py test/quartets/test_tc_agt_agent_guard.py -q
+      - name: Build wheel and sdist with the resource bundle
+        run: scripts/build_package.sh
+      - name: Install the wheel into a clean environment and run the self-check from another directory
+        env: {RT_ENV: sim}
+        run: |
+          python -m venv /tmp/venv && /tmp/venv/bin/pip install dist/rt365_robotrader-*.whl
+          cd /tmp && /tmp/venv/bin/rt365 version && /tmp/venv/bin/rt365 check && /tmp/venv/bin/rt365 probe
+          if /tmp/venv/bin/rt365 check --env production; then echo "fixture registry accepted for production"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rt365-package
+          path: dist/
+          retention-days: 30
+  exe:
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, artifact: rt365-linux-x64, bin: rt365}
+          - {os: macos-latest, artifact: rt365-macos-arm64, bin: rt365}
+          - {os: windows-latest, artifact: rt365-windows-x64, bin: rt365.exe}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install
+        run: pip install -e ".[build]"
+      - name: Build one-file executable
+        run: python -m PyInstaller --clean --noconfirm --distpath dist/bin --workpath build/pyinstaller installer/rt365.spec
+      - name: Smoke-test the executable from another directory (fail-closed rules included)
+        shell: bash
+        env: {RT_ENV: sim}
+        run: |
+          BIN="$PWD/dist/bin/${{ matrix.bin }}"
+          cd "$RUNNER_TEMP"
+          "$BIN" version
+          "$BIN" check
+          "$BIN" probe
+          if "$BIN" check --env production; then echo "fixture registry accepted for production"; exit 1; fi
+          if env -u RT_ENV "$BIN" check; then echo "unlabelled environment accepted"; exit 1; fi
+          printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | "$BIN" mcp-serve | grep -q submit_trade_intent
+      - name: Checksum
+        shell: bash
+        run: |
+          cd dist/bin
+          if command -v sha256sum >/dev/null 2>&1; then sha256sum "${{ matrix.bin }}" > "${{ matrix.bin }}.sha256"; else shasum -a 256 "${{ matrix.bin }}" > "${{ matrix.bin }}.sha256"; fi
+          cat "${{ matrix.bin }}.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            dist/bin/${{ matrix.bin }}
+            dist/bin/${{ matrix.bin }}.sha256
+          retention-days: 30
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [package, exe]
+    runs-on: ubuntu-latest
+    permissions: {contents: write}
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {path: artifacts}
+      - name: Attach artefacts to the GitHub release (unsigned; verify SHA-256 files; sim only)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          body: |
+            Dev/sim build of the Global AI-MCP RoboTrader control envelope. Nothing in this release is authorised beyond the
+            simulation environment; no market, strategy or autonomy is enabled (docs/MISSING_ACTIONS.md, docs/GATE_REPORTS/).
+            Artefacts are unsigned (O-23): verify the .sha256 files against this workflow run.

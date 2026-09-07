@@ -1,0 +1,908 @@
+{
+  "generated_by": "scripts/generate_agents.py",
+  "agents": {
+    "delivery-orchestrator": {
+      "kind": "orchestrator",
+      "line": "1st",
+      "source": "GOAL.md",
+      "allowed_paths": [
+        "docs/",
+        "goals/",
+        "README.md",
+        "CLAUDE.md"
+      ]
+    },
+    "product-owner": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/00_product_owner.md",
+      "allowed_paths": [
+        "docs/PRODUCT_OWNER.md",
+        "docs/AGENT_ROSTER.md",
+        "docs/INSTALLATION.md",
+        "docs/BACKLOG.md",
+        "docs/SESSIONS/",
+        ".claude/agents/",
+        ".mcp.json",
+        "docs/DEFINITION_OF_DONE.md",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "product-director": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/01_product_director.md",
+      "allowed_paths": [
+        "docs/PRODUCT_CHARTER.md",
+        "docs/PRD.md",
+        "docs/PERSONAS.md",
+        "docs/JOURNEYS.md",
+        "docs/SCOPE.md",
+        "docs/ROADMAP.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "program-orchestrator": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/02_program_orchestrator.md",
+      "allowed_paths": [
+        "docs/BACKLOG.md",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/RACI.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/SESSIONS/",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "trading-domain-lead": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/03_trading_domain_lead.md",
+      "allowed_paths": [
+        "docs/SEQUENCE_DIAGRAMS.md",
+        "docs/MARKET_LAUNCH_CHECKLIST.md",
+        "docs/BROKER_CERTIFICATIONS/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "quant-research-lead": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/04_quant_research_lead.md",
+      "allowed_paths": [
+        "docs/STRATEGY_CARDS/",
+        "docs/DATA_DICTIONARY.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "model-risk-lead": {
+      "kind": "role",
+      "line": "2nd",
+      "source": "goals/05_model_risk_lead.md",
+      "allowed_paths": [
+        "docs/MODEL_CARDS/",
+        "docs/PROMPT_REGISTRY.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "chief-risk-agent": {
+      "kind": "role",
+      "line": "2nd",
+      "source": "goals/06_chief_risk_agent.md",
+      "allowed_paths": [
+        "docs/RISK_POLICY.md",
+        "docs/LIMIT_MATRIX.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "compliance-agent": {
+      "kind": "role",
+      "line": "2nd",
+      "source": "goals/07_compliance_agent.md",
+      "allowed_paths": [
+        "docs/COMPLIANCE_MATRIX.md",
+        "docs/JURISDICTION_MATRIX.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "legal-agent": {
+      "kind": "role",
+      "line": "2nd",
+      "source": "goals/08_legal_agent.md",
+      "allowed_paths": [
+        "docs/JURISDICTION_MATRIX.md",
+        "docs/COMPLIANCE_MATRIX.md",
+        "docs/LEGAL/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "enterprise-architect": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/09_enterprise_architect.md",
+      "allowed_paths": [
+        "docs/CONTEXT_DIAGRAM.md",
+        "docs/CONTAINER_DIAGRAM.md",
+        "docs/COMPONENT_DIAGRAMS.md",
+        "docs/SEQUENCE_DIAGRAMS.md",
+        "docs/ADRs/",
+        "docs/NFR.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "data-architect": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/10_data_architect.md",
+      "allowed_paths": [
+        "docs/DATA_MODEL.md",
+        "docs/DATA_DICTIONARY.md",
+        "docs/DATA_FLOWS.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "cloud-architect": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/11_cloud_architect.md",
+      "allowed_paths": [
+        "infra/",
+        "docs/DR_PLAN.md",
+        "docs/CAPACITY_MODEL.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "integration-architect": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/12_integration_architect.md",
+      "allowed_paths": [
+        "contracts/api/API_OPENAPI.yaml",
+        "contracts/events/",
+        "docs/EVENT_CATALOG.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "security-architect": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/13_security_architect.md",
+      "allowed_paths": [
+        "docs/THREAT_MODEL.md",
+        "docs/SECURITY_PLAN.md",
+        "docs/SBOM.md",
+        "security/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "mcp-security-agent": {
+      "kind": "role",
+      "line": "2nd",
+      "source": "goals/14_mcp_security_agent.md",
+      "allowed_paths": [
+        "docs/MCP_TOOL_CATALOG.md",
+        "mcp/policies/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "backend-lead": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/15_backend_lead.md",
+      "allowed_paths": [
+        "services/",
+        "libs/",
+        "test/",
+        "contracts/events/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "broker-connector-lead": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/16_broker_connector_lead.md",
+      "allowed_paths": [
+        "connectors/brokers/",
+        "docs/BROKER_CERTIFICATIONS/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "frontend-mobile-lead": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/17_frontend_mobile_lead.md",
+      "allowed_paths": [
+        "apps/web/",
+        "apps/admin/",
+        "contracts/api/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "data-engineering-lead": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/18_data_engineering_lead.md",
+      "allowed_paths": [
+        "connectors/data-providers/",
+        "services/market-data/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "sre-lead": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/19_sre_lead.md",
+      "allowed_paths": [
+        "docs/SLO_SLA.md",
+        "docs/DASHBOARDS.md",
+        "docs/ALERT_CATALOG.md",
+        "docs/DEPLOYMENT_RUNBOOK.md",
+        "docs/ROLLBACK_PLAN.md",
+        "docs/INCIDENT_RESPONSE.md",
+        "observability/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "qa-lead": {
+      "kind": "role",
+      "line": "3rd",
+      "source": "goals/20_qa_lead.md",
+      "allowed_paths": [
+        "docs/TEST_STRATEGY.md",
+        "docs/TEST_CASES/",
+        "docs/UAT_PLAN.md",
+        "test/",
+        "docs/SESSIONS/REVIEW_",
+        "docs/GATE_REPORTS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "performance-chaos-lead": {
+      "kind": "role",
+      "line": "3rd",
+      "source": "goals/21_performance_chaos_lead.md",
+      "allowed_paths": [
+        "docs/PERFORMANCE_PLAN.md",
+        "docs/CHAOS_PLAN.md",
+        "test/performance/",
+        "docs/SESSIONS/REVIEW_",
+        "docs/GATE_REPORTS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "accessibility-lead": {
+      "kind": "role",
+      "line": "3rd",
+      "source": "goals/22_accessibility_lead.md",
+      "allowed_paths": [
+        "docs/ACCESSIBILITY/",
+        "docs/SESSIONS/REVIEW_",
+        "docs/GATE_REPORTS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "red-team-pentest-lead": {
+      "kind": "role",
+      "line": "3rd",
+      "source": "goals/23_red_team_pentest_lead.md",
+      "allowed_paths": [
+        "docs/RED_TEAM_PLAN.md",
+        "docs/PENTEST/",
+        "docs/SESSIONS/REVIEW_",
+        "docs/GATE_REPORTS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "privacy-lead": {
+      "kind": "role",
+      "line": "2nd",
+      "source": "goals/24_privacy_lead.md",
+      "allowed_paths": [
+        "docs/PRIVACY_IMPACT.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "finance-vendor-lead": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/25_finance_vendor_lead.md",
+      "allowed_paths": [
+        "docs/VENDOR_ASSESSMENTS/",
+        "docs/CAPACITY_MODEL.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "support-training-lead": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/26_support_training_lead.md",
+      "allowed_paths": [
+        "docs/SUPPORT_MODEL.md",
+        "docs/TRAINING_PLAN.md",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "gtm-lead": {
+      "kind": "role",
+      "line": "1st",
+      "source": "goals/27_gtm_lead.md",
+      "allowed_paths": [
+        "docs/MARKET_LAUNCH_CHECKLIST.md",
+        "docs/GTM/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "independent-validation-agent": {
+      "kind": "role",
+      "line": "3rd",
+      "source": "goals/28_independent_validation_agent.md",
+      "allowed_paths": [
+        "docs/GATE_REPORTS/",
+        "docs/SESSIONS/REVIEW_",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "build-e01": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E01_foundation_identity.md",
+      "allowed_paths": [
+        "services/identity/identity_service/",
+        "libs/core/rtcore/lines.py",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e02": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E02_market_data_instrument_master.md",
+      "allowed_paths": [
+        "services/market-data/market_data/",
+        "connectors/data-providers/data_providers/",
+        "libs/core/rtcore/schemas/market.py",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e03": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E03_broker_adapter_framework.md",
+      "allowed_paths": [
+        "connectors/brokers/broker_adapters/",
+        "scripts/certify_broker.py",
+        "docs/BROKER_CERTIFICATIONS/",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e04": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E04_portfolio_accounting.md",
+      "allowed_paths": [
+        "services/portfolio/portfolio_service/ledger.py",
+        "libs/core/rtcore/schemas/account.py",
+        "libs/core/rtcore/money.py",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e05": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E05_deterministic_risk_engine.md",
+      "allowed_paths": [
+        "services/risk/risk_engine/",
+        "services/risk/policies/",
+        "services/killswitch/killswitch_service/",
+        "services/approval/approval_service/",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e06": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E06_compliance_eligibility.md",
+      "allowed_paths": [
+        "services/compliance/compliance_engine/",
+        "libs/core/rtcore/schemas/compliance.py",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e07": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E07_oms_execution_gateway.md",
+      "allowed_paths": [
+        "services/oms/oms/",
+        "services/execution/execution_gateway/",
+        "services/reconciliation/reconciliation_service/",
+        "libs/core/rtcore/schemas/order.py",
+        "libs/core/rtcore/schemas/intent.py",
+        "libs/core/rtcore/statemachine.py",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e08": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E08_strategy_backtesting.md",
+      "allowed_paths": [
+        "services/strategy/strategy_service/",
+        "services/backtest/backtest_engine/",
+        "docs/STRATEGY_CARDS/",
+        "docs/MODEL_CARDS/",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e09": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E09_mcp_ai_governance.md",
+      "allowed_paths": [
+        "mcp/servers/mcp_servers/",
+        "scripts/sign_tool_registry.py",
+        "scripts/verify_tool_registry.py",
+        "apps/cli/rt365_cli/main.py",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e10": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E10_dashboard_mobile.md",
+      "allowed_paths": [
+        "apps/web/web_bff/",
+        "apps/web/static/",
+        "apps/admin/",
+        "contracts/api/API_OPENAPI.yaml",
+        "docs/REASON_CODES.md",
+        "docs/JOURNEYS.md",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e11": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E11_audit_surveillance_reporting.md",
+      "allowed_paths": [
+        "services/audit/audit_service/",
+        "services/compliance/compliance_engine/surveillance.py",
+        "apps/web/web_bff/app.py",
+        "observability/rtobs/",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e12": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E12_observability_sre.md",
+      "allowed_paths": [
+        "observability/",
+        "docs/ALERT_CATALOG.md",
+        "docs/SLO_SLA.md",
+        "docs/DASHBOARDS.md",
+        "docs/DEPLOYMENT_RUNBOOK.md",
+        "docs/ROLLBACK_PLAN.md",
+        "docs/INCIDENT_RESPONSE.md",
+        "apps/cli/rt365_cli/main.py",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e13": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E13_security_privacy.md",
+      "allowed_paths": [
+        "libs/core/rtcore/planes.py",
+        "libs/core/rtcore/resources.py",
+        "infra/kubernetes/network-policies/",
+        "security/",
+        "scripts/check_network_policies.py",
+        "scripts/secret_scan.py",
+        "scripts/generate_sbom.py",
+        "docs/THREAT_MODEL.md",
+        "docs/SECURITY_PLAN.md",
+        "docs/SBOM.md",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e14": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E14_billing_support_admin.md",
+      "allowed_paths": [
+        "services/tenant/",
+        "services/notification/",
+        "services/billing/",
+        "services/support/",
+        "apps/admin/",
+        "docs/SUPPORT_MODEL.md",
+        "docs/TRAINING_PLAN.md",
+        "docs/REASON_CODES.md",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "build-e15": {
+      "kind": "build",
+      "line": "1st",
+      "source": "goals/build/E15_regulatory_market_launch.md",
+      "allowed_paths": [
+        "docs/MARKET_LAUNCH_CHECKLIST.md",
+        "docs/JURISDICTION_MATRIX.md",
+        "docs/COMPLIANCE_MATRIX.md",
+        "docs/POST_LAUNCH_REVIEW.md",
+        "services/compliance/compliance_engine/jurisdiction.py",
+        "test/",
+        "contracts/events/",
+        "docs/TEST_CASES/",
+        "docs/ADRs/",
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/DECISION_LOG.md",
+        "docs/REQUIREMENTS_TRACEABILITY.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/MISSING_ACTIONS.md",
+        "docs/REPORTS/"
+      ]
+    },
+    "gate-a": {
+      "kind": "gate",
+      "line": "governance",
+      "source": "goals/gate_A_discovery.md",
+      "allowed_paths": [
+        "docs/DECISION_LOG.md",
+        "docs/RAID_LOG.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/SESSIONS/",
+        "docs/GATE_REPORTS/"
+      ]
+    },
+    "gate-b": {
+      "kind": "gate",
+      "line": "governance",
+      "source": "goals/gate_B_architecture.md",
+      "allowed_paths": [
+        "docs/DECISION_LOG.md",
+        "docs/RAID_LOG.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/SESSIONS/",
+        "docs/GATE_REPORTS/"
+      ]
+    },
+    "gate-c": {
+      "kind": "gate",
+      "line": "governance",
+      "source": "goals/gate_C_paper_readiness.md",
+      "allowed_paths": [
+        "docs/DECISION_LOG.md",
+        "docs/RAID_LOG.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/SESSIONS/",
+        "docs/GATE_REPORTS/"
+      ]
+    },
+    "gate-d": {
+      "kind": "gate",
+      "line": "governance",
+      "source": "goals/gate_D_supervised_pilot.md",
+      "allowed_paths": [
+        "docs/DECISION_LOG.md",
+        "docs/RAID_LOG.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/SESSIONS/",
+        "docs/GATE_REPORTS/"
+      ]
+    },
+    "gate-e": {
+      "kind": "gate",
+      "line": "governance",
+      "source": "goals/gate_E_capped_autonomy.md",
+      "allowed_paths": [
+        "docs/DECISION_LOG.md",
+        "docs/RAID_LOG.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/SESSIONS/",
+        "docs/GATE_REPORTS/"
+      ]
+    },
+    "gate-f": {
+      "kind": "gate",
+      "line": "governance",
+      "source": "goals/gate_F_market_release.md",
+      "allowed_paths": [
+        "docs/DECISION_LOG.md",
+        "docs/RAID_LOG.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/SESSIONS/",
+        "docs/GATE_REPORTS/"
+      ]
+    }
+  }
+}

@@ -24,6 +24,13 @@ AREAS = {
     "AUD": ("Immutable audit", "NFR-AUD-01", "SRE Lead", "IVA"),
     "BT": ("Backtest single code path and strategy lifecycle", "FR-08", "Quant Research Lead", "Model Risk Lead"),
     "E2E": ("Journeys through the BFF", "FR-16", "Frontend Lead", "QA Lead"),
+    "AGT": (
+        "Agent roster and write-scope guard (three lines of defense for agents)",
+        "NFR-SEC-02",
+        "Product Owner / Delivery Orchestrator",
+        "MCP Security Agent",
+    ),
+    "PKG": ("Distribution: rt365 CLI, resource root, installer fail-closed rules", "NFR-SEC-02", "SRE Lead", "Security Architect"),
 }
 src = ROOT / "test" / "evidence" / "evidence_index.json"
 data = json.loads(src.read_text())

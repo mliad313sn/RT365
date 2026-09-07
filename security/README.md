@@ -9,5 +9,7 @@
 | Immutable audit with hash chain | audit_service.AuditStore | TC-AUD |
 | SBOM | scripts/generate_sbom.py → security/sbom/ | CI |
 | Protected paths | .github/CODEOWNERS | branch protection (human setup) |
+| Distribution fails closed (resource root, environment label, fixture registry) | rtcore.resources, rt365_cli.main | TC-PKG-001..004; release workflow smoke tests |
+| Agent write scope (author != reviewer != approver for agents) | scripts/agent_guard.py from .claude/agents/roster.json (guard rail, not a control of record) | TC-AGT-001..004; `make agents-check` |
 
 `signing/` documents key custody; no private key material is ever committed.

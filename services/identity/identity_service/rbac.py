@@ -33,6 +33,8 @@ class Permission(str, Enum):
 
 
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
+    # Product Owner: prioritises and accepts; never approves an order, a limit, a halt or a mode (docs/PRODUCT_OWNER.md)
+    Role.PRODUCT_OWNER: frozenset({Permission.VIEW_DASHBOARD, Permission.VIEW_SUPPORT}),
     Role.TRADER: frozenset({Permission.VIEW_DASHBOARD, Permission.SUBMIT_INTENT, Permission.APPROVE_ORDER, Permission.CANCEL_ORDER}),
     Role.PORTFOLIO_MANAGER: frozenset(
         {Permission.VIEW_DASHBOARD, Permission.SUBMIT_INTENT, Permission.APPROVE_ORDER, Permission.CANCEL_ORDER, Permission.CHANGE_MODE}

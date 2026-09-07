@@ -1,9 +1,9 @@
 # Local developer entry points. CI runs the same targets (see .github/workflows/ci.yml).
 PY ?= python3
 export RT_ENV ?= sim
-export PYTHONPATH := libs/core:services/market-data:services/strategy:services/backtest:services/portfolio:services/risk:services/compliance:services/approval:services/oms:services/execution:services/reconciliation:services/audit:services/killswitch:services/identity:mcp/servers:connectors/brokers:connectors/data-providers:observability:apps/web:test
+export PYTHONPATH := libs/core:services/market-data:services/strategy:services/backtest:services/portfolio:services/risk:services/compliance:services/approval:services/oms:services/execution:services/reconciliation:services/audit:services/killswitch:services/identity:mcp/servers:connectors/brokers:connectors/data-providers:observability:apps/web:apps/cli:test
 
-.PHONY: install lint typecheck test evidence schemas policy-check sbom secret-scan certify-broker run-bff all
+.PHONY: install lint typecheck test evidence schemas policy-check agents agents-check sbom secret-scan certify-broker run-bff package exe all
 
 install:
 	$(PY) -m pip install -e ".[dev]"
@@ -29,6 +29,12 @@ policy-check:
 	$(PY) scripts/check_network_policies.py
 	$(PY) scripts/verify_tool_registry.py
 
+agents:
+	$(PY) scripts/generate_agents.py
+
+agents-check:
+	$(PY) scripts/generate_agents.py --check
+
 sbom:
 	$(PY) scripts/generate_sbom.py
 
@@ -48,4 +54,10 @@ certify-broker:
 run-bff:
 	uvicorn web_bff.app:create_app --factory --port 8080
 
-all: lint typecheck schemas policy-check secret-scan test evidence
+package:
+	scripts/build_package.sh
+
+exe:
+	scripts/build_exe.sh
+
+all: lint typecheck schemas policy-check agents-check secret-scan test evidence

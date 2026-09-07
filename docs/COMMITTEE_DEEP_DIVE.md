@@ -74,6 +74,8 @@ Rule: a role never sits in two lines for the same control. A Security Architect 
 | 26 | Finance, Vendor, Support, Training, GTM Leads | Business | Cost, vendor assessments, support model, training, launch **[00]** | VENDOR_ASSESSMENTS/, SUPPORT_MODEL, TRAINING_PLAN, MARKET_LAUNCH_CHECKLIST (commercial part) | — | GTM cannot publish return claims **[00: never imply guaranteed returns]** |
 | 27 | Independent Validation Agent | 3rd line | Evidence review; veto failed gates; no delivery ownership | Gate validation reports | **Veto** at every gate | Must have no ownership of any artefact under review |
 
+**Addendum 2026-09-07 [Committee]:** a Product Owner seat (1st line; accountable for product completeness and executability; `goals/00_product_owner.md`, `docs/PRODUCT_OWNER.md`) was added by the repository owner's instruction, acting until Executive Steering ratifies it (H-23). It holds no approval right over risk, compliance, security, models or gates.
+
 ### 1.3 Boards and decision rights **[Source: 13]**
 
 | Board | Decides | Chair | Members (minimum) |

@@ -13,3 +13,9 @@
 /docs/LIMIT_MATRIX.md  @rt365/chief-risk-agent
 /docs/COMPLIANCE_MATRIX.md @rt365/compliance-agent @rt365/legal-agent
 /docs/JURISDICTION_MATRIX.md @rt365/compliance-agent @rt365/legal-agent
+/.mcp.json             @rt365/mcp-security-agent @rt365/product-owner
+/.claude/              @rt365/product-owner @rt365/mcp-security-agent
+/installer/            @rt365/security-architect @rt365/sre-lead
+/scripts/build_package.sh @rt365/security-architect
+/scripts/build_exe.sh  @rt365/security-architect
+/.github/workflows/release.yml @rt365/security-architect @rt365/sre-lead

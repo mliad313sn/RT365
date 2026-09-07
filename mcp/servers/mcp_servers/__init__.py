@@ -8,6 +8,7 @@ execution gateway, broker adapters, the vault or the Kill Switch; its only write
 from mcp_servers.identity import AgentIdentity, IdentityIssuer
 from mcp_servers.registry import RegistryUnsigned, ToolRegistry, ToolSpec, load_registry, sign_registry
 from mcp_servers.runtime import ToolDenied, ToolResult, ToolRuntime
+from mcp_servers.stdio import StdioMcpServer, build_stdio_server
 
 __all__ = [
     "AgentIdentity",
@@ -20,4 +21,6 @@ __all__ = [
     "ToolRuntime",
     "ToolResult",
     "ToolDenied",
+    "StdioMcpServer",
+    "build_stdio_server",
 ]

@@ -22,6 +22,8 @@ jobs:
         run: make schemas
       - name: Policy invariants (planes, MCP registry) — TC-NET / TC-AI
         run: make policy-check
+      - name: Agent roster matches goals/ (ADR-016) — TC-AGT
+        run: make agents-check
       - name: Secret scan (T-05)
         run: make secret-scan
       - name: SAST (bandit) and SCA (pip-audit) — advisory until O-23 wires the gating scanners

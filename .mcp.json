@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "rt365-sim": {
+      "command": "rt365",
+      "args": ["mcp-serve", "--env", "sim", "--agent-id", "agent-claude-code"],
+      "env": {
+        "RT_ENV": "sim"
+      }
+    }
+  }
+}

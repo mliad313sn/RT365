@@ -9,7 +9,9 @@ This plan sequences every prompt in the kit so that no action needed for the fin
 ## Phase 0 — Bootstrap (week 0)
 - Run `scripts/bootstrap_repo.sh` → repository structure [Source: 16], CODEOWNERS for protected paths, CI skeleton, docs copied.
 - Load `GOAL.md` as orchestrator; register the committee (`docs/RACI.md`); name deputies (decision pack O-19).
-- **Human:** appoint accountable people to the 27 roles; ratify D-001..D-004 at Executive Steering.
+- Appoint the Product Owner (`docs/PRODUCT_OWNER.md`; acting from 2026-09-07); generate the agent roster (`make agents`; `.claude/agents/`, `docs/AGENT_ROSTER.md`) and enable the only MCP server (`.mcp.json` → `rt365-sim`).
+- Prove executability from a clean machine: `make install && make all`, `rt365 check --env sim`, `make package`, release workflow (`docs/INSTALLATION.md`).
+- **Human:** appoint accountable people to the 27 roles; ratify D-001..D-004 and the Product Owner appointment (H-23) at Executive Steering.
 - Exit: RACI complete; `docs/MISSING_ACTIONS.md` initialised.
 
 ## Phase 1 — Discovery → Gate A

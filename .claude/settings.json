@@ -1,0 +1,18 @@
+{
+  "enabledMcpjsonServers": ["rt365-sim"],
+  "permissions": {
+    "allow": [
+      "Bash(make all)",
+      "Bash(make test)",
+      "Bash(make lint)",
+      "Bash(python3 scripts/generate_agents.py --check)",
+      "Bash(rt365 check --env sim)",
+      "Bash(rt365 probe --env sim)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/*.pem)",
+      "Read(./**/secrets/**)"
+    ]
+  }
+}

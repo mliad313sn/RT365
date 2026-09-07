@@ -26,13 +26,13 @@ from rtcore.clock import utc_now
 from rtcore.errors import ControlDenied, PlaneViolation, RTError, SchemaViolation, TransitionError
 from rtcore.lines import Actor, ActorKind, Role
 from rtcore.planes import Plane, enter
+from rtcore.resources import resource_root
 from rtobs.correlation import correlation
 from rtobs.logging import get_logger
 
 from web_bff.platform import ACCOUNT, TENANT, SimPlatform, build_sim_platform
 from web_bff.reason_codes import REASON_CODES, explain
 
-STATIC = Path(__file__).resolve().parent.parent / "static"
 log = get_logger("web_bff")
 
 # Roles that can never be asserted by a human principal: they are system/agent identities [Source: 00].
@@ -82,6 +82,7 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
             "Header-asserted principals are refused outside the simulation environment."
         )
     p = platform or build_sim_platform()
+    static: Path = resource_root() / "apps" / "web" / "static"
     app = FastAPI(title="Global AI-MCP RoboTrader — Control & Execution contracts", version="0.1.0-draft")
     app.state.platform = p
     log.warning(
@@ -414,7 +415,7 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
 
     @app.get("/")
     async def index() -> FileResponse:
-        return FileResponse(STATIC / "index.html")
+        return FileResponse(static / "index.html")
 
-    app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
+    app.mount("/static", StaticFiles(directory=str(static)), name="static")
     return app

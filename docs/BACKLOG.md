@@ -23,6 +23,19 @@
 | E14 Billing, support, admin | Backend Lead | Finance / Support | F | Billing scope [Open: O-02], support console, training |
 | E15 Regulatory & market launch | Compliance Agent | Legal Agent | F | Launch matrix, disclosures, dual-key enablement, post-launch review |
 
+## Product Owner priority (2026-09-07, acting; docs/PRODUCT_OWNER.md) [Committee]
+Ordered by gate dependency; a story is Ready only with the template fields and an RTM row (DEFINITION_OF_READY.md).
+| # | Story / act | Epic | Blocks | Owner |
+|---|---|---|---|---|
+| P0 | Keep the build executable: `make all`, `rt365 check/probe --env sim`, `make package`, release workflow green on every push | E13 | everything | Backend Lead, SRE Lead |
+| P1 | Human acts on the critical path to Gate A/B: H-01, H-02, H-03, H-22, H-23 | — | Gates A, B | Executive Steering, Committee chair |
+| P2 | MCP Security Agent registration review of the six tools and the stdio transport (O-35; REVIEW_C3) | E09 | Gate D | MCP Security Agent |
+| P3 | KMS/HSM key and WORM anchor (H-20, H-21; O-53, O-54) | E13, E11 | Gate C | Security Architect, SRE Lead |
+| P4 | Durable stores for lease/outbox/inbox/decision index/nonce journal (R-05, O-55) | E07, E09 | Gate C (shadow) | Backend Lead |
+| P5 | Trading Risk Committee numbers (H-09, O-07) and broker/data contracts (H-07, H-08) | E05, E03, E02 | Gate C | Trading Risk Committee, Finance |
+| P6 | Accessibility evidence and PWA (NFR-A11Y-01, ADR-012, O-51) | E10 | Gate F | Frontend Lead, Accessibility Lead |
+| P7 | E14 scope decision (O-02) and services `tenant/notification/billing/support` (O-31) | E14 | Gate F | Product Director, Finance |
+
 ## Story template [Source: 14] + [Committee]
 ```
 Story ID / Epic / FR link / RTM row

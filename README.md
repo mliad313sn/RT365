@@ -9,9 +9,13 @@
 | Path | Content |
 |---|---|
 | `GOAL.md` | Master Delivery Orchestrator /goal prompt |
+| `goals/00_product_owner.md`, `docs/PRODUCT_OWNER.md` | Product Owner role prompt and appointment record (acting from 2026-09-07; ratification H-23) |
 | `goals/01..28_*.md` | One /goal prompt per committee role |
 | `goals/gate_A..F_*.md` | One /goal prompt per release gate |
-| `goals/build/E01..E15_*.md` | Build-agent prompts per epic (for Claude Code): scope, requirements, test IDs, build rules |
+| `goals/build/E01..E15_*.md` | Build-agent prompts per epic (for Claude Code): scope, requirements, test IDs, current state, open items, build rules |
+| `.claude/agents/`, `docs/AGENT_ROSTER.md` | 51 agents generated from the prompts above (`make agents`; drift-checked in CI) with a write-scope guard per line of defense |
+| `.mcp.json` | The only MCP server agents may use: `rt365-sim` (six registered tools over stdio, sim identity) |
+| `apps/cli/rt365_cli`, `installer/`, `scripts/build_package.sh`, `scripts/build_exe.sh`, `.github/workflows/release.yml` | `rt365` CLI, installation package (wheel/sdist), one-file executables (Linux/macOS locally, Windows `rt365.exe` from the release workflow), installers; guide in `docs/INSTALLATION.md` |
 | `goals/decisions/O-01..O-19_*.md` | Decision packs that prepare every open item for its human owner |
 | `goals/external/*.md` | Workflows for brokers, data licences, legal, model providers, pen-test, drills, operators, infrastructure |
 | `docs/` | Every artefact in blueprint §15 catalogue, pre-filled; `docs/SESSIONS/` holds the session packets and independent reviews; `docs/GATE_REPORTS/` the IVA gate validation reports |
@@ -23,6 +27,7 @@
 | `services/*` | One package per bounded context (risk, compliance, approval, oms, execution, reconciliation, audit, killswitch, identity, market-data, strategy, backtest, portfolio) |
 | `mcp/servers`, `connectors/brokers`, `connectors/data-providers` | MCP sandbox runtime and the six tools; broker adapter contract + simulated sandbox broker + certification harness; simulated feed |
 | `apps/web` | FastAPI BFF (`web_bff.app`), dev/sim composition root (`web_bff.platform`), risk-first dashboard |
+| `apps/cli` | `rt365` command: `version`, `check`, `probe`, `serve`, `mcp-serve`, `certify-broker` (environment label mandatory; only `sim` is servable) |
 | `observability/` | Correlation, redacting JSON logs, metrics, tracer, SLI catalogue (targets unset), alert catalogue |
 | `infra/` | Namespaces and network policies for the three planes; docker-compose; Dockerfile |
 | `security/` | Security controls index, signing policy, SBOM output, secret-scan allowlist |
@@ -33,7 +38,7 @@
 Market Data → Feature/Signal → Strategy Agent → Trade Intent → Schema Validation → Compliance Eligibility → Deterministic Risk → Optional Human Approval → Execution Gateway → Broker → Reconciliation → Surveillance → Immutable Audit. Analytics plane reaches the Control plane only through the intent queue; only the Execution Gateway has a broker route (`rtcore.planes`, `infra/kubernetes/network-policies`, TC-NET-001..004).
 
 ## Status (2026-09-07, dev/sim only)
-151 tests passing (control quartets for 15 areas, property and contract tests) at the head of `claude/attachment-solution-dev-52k8u0`; lint, typecheck, schema-drift, network-policy, registry and secret-scan checks green. Committee challenge cycle 1, the Independent Validation Agent's Gate A/B/C reports and its re-validation of the first remediation are in `docs/SESSIONS/REVIEW_*.md` and `docs/GATE_REPORTS/` (verdicts: A REJECT on human decisions, B ACCEPT WITH CONDITIONS, C REJECT; all recommendations with the human approver pending). Nothing in this repository is approved, certified or authorised beyond dev/sim; see `docs/RAID_LOG.md` and `docs/MISSING_ACTIONS.md` for what humans must decide.
+163 tests passing (control quartets for 17 areas, property and contract tests) at the head of `claude/project-owner-agent-setup-hi3xqu`; lint, typecheck, schema-drift, network-policy, registry, agent-roster and secret-scan checks green. Product Owner appointed (acting, H-23); 51 agents generated from the prompts; `rt365-sim` MCP server; wheel and Linux executable built and self-checked, Windows `rt365.exe` from the release workflow (H-24). Committee challenge cycle 1, the Independent Validation Agent's Gate A/B/C reports and its re-validation of the first remediation are in `docs/SESSIONS/REVIEW_*.md` and `docs/GATE_REPORTS/` (verdicts: A REJECT on human decisions, B ACCEPT WITH CONDITIONS, C REJECT; all recommendations with the human approver pending). Nothing in this repository is approved, certified or authorised beyond dev/sim; see `docs/RAID_LOG.md` and `docs/MISSING_ACTIONS.md` for what humans must decide.
 
 ## Run the dev/sim build
 ```bash

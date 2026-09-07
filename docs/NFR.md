@@ -24,3 +24,5 @@ Targets marked [Open: O-03] are set after measured baselines and business approv
 | NFR-A11Y-01 | Accessibility | WCAG 2.2 AA [Committee] | 09 | Verified by Accessibility Lead |
 | NFR-PRV-01 | Privacy | Redaction at emission; residency per tenant; retention schedules | 06 | DPIA per jurisdiction |
 | NFR-DR-01 | Recoverability | RPO/RTO per cell | 10 | [Open: O-18 set with DR_PLAN] |
+| NFR-DIST-01 | Executability | The product installs and runs from a clean machine (wheel, one-file executable) with the same fail-closed rules as the source tree: unlabelled environment refused, only sim servable, missing or tampered signed registry refused, resource root never silently substituted [Committee, ADR-016] | 16 | TC-PKG-001..004; release workflow smoke tests |
+| NFR-GOV-01 | Governance | Every delivery agent is generated from its goals/ prompt, sits in one line of defense per control and can edit only what its prompt owns [Committee, ADR-016] | 13 | TC-AGT-001..004; `make agents-check` |
