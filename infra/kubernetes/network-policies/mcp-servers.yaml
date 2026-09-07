@@ -1,0 +1,19 @@
+# MCP servers run inside the analytics plane with a tighter egress: analytics services + intent queue only [Source: 04].
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: mcp-servers-egress, namespace: analytics}
+spec:
+  podSelector: {matchLabels: {component: mcp-server}}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {plane: analytics}}
+          podSelector: {matchExpressions: [{key: app, operator: In, values: [market-data, strategy, backtest]}]}
+    - to:
+        - namespaceSelector: {matchLabels: {plane: control}}
+          podSelector: {matchLabels: {app: intent-queue}}
+      ports: [{protocol: TCP, port: 8443}]
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{protocol: UDP, port: 53}]

@@ -1,0 +1,57 @@
+{
+  "$id": "https://rt365.example/contracts/events/model.drift.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "metric": {
+      "title": "Metric",
+      "type": "string"
+    },
+    "model_id": {
+      "title": "Model Id",
+      "type": "string"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "threshold": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        }
+      ],
+      "title": "Threshold"
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        }
+      ],
+      "title": "Value"
+    }
+  },
+  "required": [
+    "model_id",
+    "model_version",
+    "metric",
+    "value",
+    "threshold",
+    "observed_at"
+  ],
+  "title": "model.drift.v1",
+  "type": "object"
+}

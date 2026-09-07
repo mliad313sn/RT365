@@ -1,0 +1,13 @@
+# Egress allowlist for MCP servers [Source: 04]: Analytics-plane services only.
+# No vault, no brokers, no arbitrary web. Enforced by network policy (infra/kubernetes) and by
+# mcp_servers.egress.EgressPolicy in-process.
+allowed_hosts:
+  - market-data.analytics.svc.cluster.local
+  - strategy.analytics.svc.cluster.local
+  - backtest.analytics.svc.cluster.local
+  - intent-queue.control.svc.cluster.local   # write-class target: Control-plane intake only
+denied_examples:
+  - vault.security.svc.cluster.local
+  - execution-gateway.execution.svc.cluster.local
+  - "*.broker.example"
+  - "*"  # arbitrary web

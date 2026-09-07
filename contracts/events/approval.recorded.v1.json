@@ -1,0 +1,51 @@
+{
+  "$id": "https://rt365.example/contracts/events/approval.recorded.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "title": "Approval Id",
+      "type": "string"
+    },
+    "approved_at": {
+      "format": "date-time",
+      "title": "Approved At",
+      "type": "string"
+    },
+    "approver_id": {
+      "title": "Approver Id",
+      "type": "string"
+    },
+    "approver_role": {
+      "title": "Approver Role",
+      "type": "string"
+    },
+    "decision_id": {
+      "title": "Decision Id",
+      "type": "string"
+    },
+    "intent_id": {
+      "title": "Intent Id",
+      "type": "string"
+    },
+    "maker_id": {
+      "title": "Maker Id",
+      "type": "string"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "approval_id",
+    "intent_id",
+    "decision_id",
+    "approver_id",
+    "approver_role",
+    "maker_id",
+    "approved_at",
+    "reason"
+  ],
+  "title": "approval.recorded.v1",
+  "type": "object"
+}

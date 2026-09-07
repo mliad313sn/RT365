@@ -1,0 +1,106 @@
+{
+  "$defs": {
+    "Side": {
+      "enum": [
+        "BUY",
+        "SELL",
+        "SELL_SHORT",
+        "BUY_TO_COVER"
+      ],
+      "title": "Side",
+      "type": "string"
+    }
+  },
+  "$id": "https://rt365.example/contracts/events/strategy.signal.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "confidence": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "data_provenance": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Data Provenance",
+      "type": "array"
+    },
+    "evidence_refs": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "instrument_id": {
+      "title": "Instrument Id",
+      "type": "string"
+    },
+    "market_ts": {
+      "format": "date-time",
+      "title": "Market Ts",
+      "type": "string"
+    },
+    "model_id": {
+      "title": "Model Id",
+      "type": "string"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "side": {
+      "$ref": "#/$defs/Side"
+    },
+    "strategy_id": {
+      "title": "Strategy Id",
+      "type": "string"
+    },
+    "strategy_version": {
+      "title": "Strategy Version",
+      "type": "string"
+    },
+    "target_notional": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        }
+      ],
+      "title": "Target Notional"
+    },
+    "thesis_code": {
+      "title": "Thesis Code",
+      "type": "string"
+    },
+    "venue": {
+      "title": "Venue",
+      "type": "string"
+    }
+  },
+  "required": [
+    "strategy_id",
+    "strategy_version",
+    "model_id",
+    "model_version",
+    "instrument_id",
+    "venue",
+    "side",
+    "thesis_code",
+    "evidence_refs",
+    "confidence",
+    "market_ts",
+    "data_provenance",
+    "target_notional"
+  ],
+  "title": "strategy.signal.v1",
+  "type": "object"
+}

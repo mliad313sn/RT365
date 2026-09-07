@@ -1,0 +1,139 @@
+{
+  "$defs": {
+    "KillSwitchLevel": {
+      "enum": [
+        "PLATFORM",
+        "TENANT",
+        "ACCOUNT",
+        "STRATEGY",
+        "ASSET",
+        "VENUE"
+      ],
+      "title": "KillSwitchLevel",
+      "type": "string"
+    }
+  },
+  "$id": "https://rt365.example/contracts/events/killswitch.activated.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "activated_at": {
+      "format": "date-time",
+      "title": "Activated At",
+      "type": "string"
+    },
+    "activation_id": {
+      "title": "Activation Id",
+      "type": "string"
+    },
+    "active": {
+      "default": true,
+      "title": "Active",
+      "type": "boolean"
+    },
+    "actor_id": {
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "actor_role": {
+      "title": "Actor Role",
+      "type": "string"
+    },
+    "cancelled_orders": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Cancelled Orders",
+      "type": "array"
+    },
+    "deactivated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deactivated At"
+    },
+    "deactivation_first_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deactivation First By"
+    },
+    "deactivation_first_line": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deactivation First Line"
+    },
+    "deactivation_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deactivation Reason"
+    },
+    "emergency_policy_applied": {
+      "title": "Emergency Policy Applied",
+      "type": "string"
+    },
+    "evidence_hash": {
+      "title": "Evidence Hash",
+      "type": "string"
+    },
+    "level": {
+      "$ref": "#/$defs/KillSwitchLevel"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    },
+    "revoked_identities": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Revoked Identities",
+      "type": "array"
+    },
+    "target_id": {
+      "title": "Target Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "activation_id",
+    "level",
+    "target_id",
+    "reason",
+    "actor_id",
+    "actor_role",
+    "activated_at",
+    "evidence_hash",
+    "emergency_policy_applied",
+    "cancelled_orders",
+    "revoked_identities"
+  ],
+  "title": "killswitch.activated.v1",
+  "type": "object"
+}

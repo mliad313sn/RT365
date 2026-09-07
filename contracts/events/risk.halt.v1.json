@@ -1,0 +1,41 @@
+{
+  "$id": "https://rt365.example/contracts/events/risk.halt.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "level": {
+      "title": "Level",
+      "type": "string"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "reason_code": {
+      "title": "Reason Code",
+      "type": "string"
+    },
+    "target_id": {
+      "title": "Target Id",
+      "type": "string"
+    },
+    "threshold": {
+      "title": "Threshold",
+      "type": "string"
+    },
+    "value": {
+      "title": "Value",
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason_code",
+    "level",
+    "target_id",
+    "value",
+    "threshold",
+    "observed_at"
+  ],
+  "title": "risk.halt.v1",
+  "type": "object"
+}

@@ -1,0 +1,20 @@
+# Three planes as namespaces [Source: 03; ADR-001]. Labels drive the network policies.
+apiVersion: v1
+kind: Namespace
+metadata: {name: analytics, labels: {plane: analytics}}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: control, labels: {plane: control}}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: execution, labels: {plane: execution}}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: security, labels: {plane: security}}   # vault / KMS
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: edge, labels: {plane: edge}}

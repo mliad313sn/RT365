@@ -1,0 +1,137 @@
+{
+  "$defs": {
+    "CheckResult": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_EVALUATED"
+      ],
+      "title": "CheckResult",
+      "type": "string"
+    },
+    "EvaluatedCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "check": {
+          "title": "Check",
+          "type": "string"
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason Code"
+        },
+        "result": {
+          "$ref": "#/$defs/CheckResult"
+        },
+        "threshold": {
+          "title": "Threshold",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check",
+        "value",
+        "threshold",
+        "result"
+      ],
+      "title": "EvaluatedCheck",
+      "type": "object"
+    },
+    "Outcome": {
+      "enum": [
+        "APPROVED",
+        "REJECTED",
+        "REQUIRES_HUMAN_APPROVAL",
+        "HALTED"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    }
+  },
+  "$id": "https://rt365.example/contracts/events/risk.decided.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "account_snapshot_id": {
+      "title": "Account Snapshot Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "decided_at": {
+      "format": "date-time",
+      "title": "Decided At",
+      "type": "string"
+    },
+    "decision_id": {
+      "title": "Decision Id",
+      "type": "string"
+    },
+    "engine_build_hash": {
+      "title": "Engine Build Hash",
+      "type": "string"
+    },
+    "evaluated": {
+      "items": {
+        "$ref": "#/$defs/EvaluatedCheck"
+      },
+      "title": "Evaluated",
+      "type": "array"
+    },
+    "intent_hash": {
+      "title": "Intent Hash",
+      "type": "string"
+    },
+    "intent_id": {
+      "title": "Intent Id",
+      "type": "string"
+    },
+    "market_snapshot_id": {
+      "title": "Market Snapshot Id",
+      "type": "string"
+    },
+    "outcome": {
+      "$ref": "#/$defs/Outcome"
+    },
+    "policy_version": {
+      "title": "Policy Version",
+      "type": "string"
+    },
+    "reason_codes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "decision_id",
+    "intent_id",
+    "outcome",
+    "policy_version",
+    "reason_codes",
+    "evaluated",
+    "account_snapshot_id",
+    "market_snapshot_id",
+    "decided_at",
+    "engine_build_hash",
+    "correlation_id",
+    "intent_hash"
+  ],
+  "title": "risk.decided.v1",
+  "type": "object"
+}

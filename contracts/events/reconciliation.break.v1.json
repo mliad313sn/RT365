@@ -1,0 +1,91 @@
+{
+  "$defs": {
+    "BreakSeverity": {
+      "enum": [
+        "S1",
+        "S2"
+      ],
+      "title": "BreakSeverity",
+      "type": "string"
+    },
+    "BreakType": {
+      "enum": [
+        "TIMING",
+        "MISSING_FILL",
+        "DUPLICATE",
+        "PRICE",
+        "QUANTITY",
+        "CASH"
+      ],
+      "title": "BreakType",
+      "type": "string"
+    }
+  },
+  "$id": "https://rt365.example/contracts/events/reconciliation.break.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "title": "Account Id",
+      "type": "string"
+    },
+    "break_id": {
+      "title": "Break Id",
+      "type": "string"
+    },
+    "break_type": {
+      "$ref": "#/$defs/BreakType"
+    },
+    "broker_value": {
+      "title": "Broker Value",
+      "type": "string"
+    },
+    "correlation_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Correlation Ids",
+      "type": "array"
+    },
+    "detail": {
+      "title": "Detail",
+      "type": "string"
+    },
+    "detected_at": {
+      "format": "date-time",
+      "title": "Detected At",
+      "type": "string"
+    },
+    "instrument_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Instrument Id"
+    },
+    "internal_value": {
+      "title": "Internal Value",
+      "type": "string"
+    },
+    "severity": {
+      "$ref": "#/$defs/BreakSeverity"
+    }
+  },
+  "required": [
+    "break_id",
+    "account_id",
+    "break_type",
+    "severity",
+    "instrument_id",
+    "internal_value",
+    "broker_value",
+    "correlation_ids",
+    "detected_at",
+    "detail"
+  ],
+  "title": "reconciliation.break.v1",
+  "type": "object"
+}

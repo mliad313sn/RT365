@@ -1,0 +1,81 @@
+{
+  "$id": "https://rt365.example/contracts/events/envelope.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Account"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "emitted_ts": {
+      "format": "date-time",
+      "title": "Emitted Ts",
+      "type": "string"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_name": {
+      "title": "Event Name",
+      "type": "string"
+    },
+    "market_ts": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Market Ts"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    },
+    "payload_hash": {
+      "title": "Payload Hash",
+      "type": "string"
+    },
+    "producer": {
+      "title": "Producer",
+      "type": "string"
+    },
+    "schema_version": {
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "tenant": {
+      "title": "Tenant",
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_name",
+    "schema_version",
+    "correlation_id",
+    "tenant",
+    "account",
+    "market_ts",
+    "emitted_ts",
+    "producer",
+    "payload_hash"
+  ],
+  "title": "envelope.v1",
+  "type": "object"
+}

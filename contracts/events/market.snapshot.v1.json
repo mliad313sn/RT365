@@ -1,0 +1,276 @@
+{
+  "$defs": {
+    "DataQuality": {
+      "enum": [
+        "OK",
+        "SUSPECT",
+        "STALE",
+        "MISSING"
+      ],
+      "title": "DataQuality",
+      "type": "string"
+    },
+    "InstrumentAttributes": {
+      "additionalProperties": false,
+      "description": "Point-in-time instrument master row [Source: 08; DATA_MODEL].",
+      "properties": {
+        "asset_class": {
+          "title": "Asset Class",
+          "type": "string"
+        },
+        "country": {
+          "default": "UNKNOWN",
+          "title": "Country",
+          "type": "string"
+        },
+        "currency": {
+          "title": "Currency",
+          "type": "string"
+        },
+        "identifiers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Identifiers",
+          "type": "object"
+        },
+        "instrument_id": {
+          "title": "Instrument Id",
+          "type": "string"
+        },
+        "lot_size": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "title": "Lot Size"
+        },
+        "sector": {
+          "default": "UNKNOWN",
+          "title": "Sector",
+          "type": "string"
+        },
+        "shortable": {
+          "default": false,
+          "title": "Shortable",
+          "type": "boolean"
+        },
+        "tick_size": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "title": "Tick Size"
+        },
+        "tradable": {
+          "default": true,
+          "title": "Tradable",
+          "type": "boolean"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_to": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valid To"
+        },
+        "venue": {
+          "title": "Venue",
+          "type": "string"
+        }
+      },
+      "required": [
+        "instrument_id",
+        "venue",
+        "asset_class",
+        "currency",
+        "tick_size",
+        "lot_size",
+        "valid_from"
+      ],
+      "title": "InstrumentAttributes",
+      "type": "object"
+    },
+    "Provenance": {
+      "enum": [
+        "licensed_feed",
+        "news_adapter",
+        "user_text",
+        "internal_doc",
+        "simulated"
+      ],
+      "title": "Provenance",
+      "type": "string"
+    },
+    "SessionState": {
+      "enum": [
+        "OPEN",
+        "PRE_OPEN",
+        "AUCTION",
+        "CLOSED",
+        "HALTED"
+      ],
+      "title": "SessionState",
+      "type": "string"
+    }
+  },
+  "$id": "https://rt365.example/contracts/events/market.snapshot.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "ask": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ask"
+    },
+    "average_daily_volume": {
+      "anyOf": [
+        {
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        }
+      ],
+      "title": "Average Daily Volume"
+    },
+    "bid": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Bid"
+    },
+    "ingest_ts": {
+      "format": "date-time",
+      "title": "Ingest Ts",
+      "type": "string"
+    },
+    "instrument": {
+      "$ref": "#/$defs/InstrumentAttributes"
+    },
+    "last_price": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        }
+      ],
+      "title": "Last Price"
+    },
+    "market_ts": {
+      "format": "date-time",
+      "title": "Market Ts",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "quality": {
+      "$ref": "#/$defs/DataQuality",
+      "default": "OK"
+    },
+    "realized_volatility_pct": {
+      "anyOf": [
+        {
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        }
+      ],
+      "title": "Realized Volatility Pct"
+    },
+    "reference_price": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        }
+      ],
+      "title": "Reference Price"
+    },
+    "session_state": {
+      "$ref": "#/$defs/SessionState",
+      "default": "OPEN"
+    },
+    "snapshot_id": {
+      "title": "Snapshot Id",
+      "type": "string"
+    },
+    "venue_healthy": {
+      "default": true,
+      "title": "Venue Healthy",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "snapshot_id",
+    "instrument",
+    "market_ts",
+    "ingest_ts",
+    "provenance",
+    "last_price",
+    "reference_price",
+    "average_daily_volume",
+    "realized_volatility_pct"
+  ],
+  "title": "market.snapshot.v1",
+  "type": "object"
+}

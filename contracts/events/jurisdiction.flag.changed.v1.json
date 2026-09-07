@@ -1,0 +1,106 @@
+{
+  "$defs": {
+    "CustomerType": {
+      "enum": [
+        "RETAIL",
+        "PROFESSIONAL",
+        "ELIGIBLE_COUNTERPARTY",
+        "INSTITUTIONAL"
+      ],
+      "title": "CustomerType",
+      "type": "string"
+    }
+  },
+  "$id": "https://rt365.example/contracts/events/jurisdiction.flag.changed.v1.json",
+  "additionalProperties": false,
+  "description": "One row of COMPLIANCE_MATRIX. Live only with legal record AND technical flag by different persons.",
+  "properties": {
+    "activated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated At"
+    },
+    "asset_class": {
+      "title": "Asset Class",
+      "type": "string"
+    },
+    "broker": {
+      "title": "Broker",
+      "type": "string"
+    },
+    "country": {
+      "title": "Country",
+      "type": "string"
+    },
+    "customer_type": {
+      "$ref": "#/$defs/CustomerType"
+    },
+    "feature": {
+      "title": "Feature",
+      "type": "string"
+    },
+    "flag_activated_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Flag Activated By"
+    },
+    "legal_record_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Legal Record Ref"
+    },
+    "legal_signed_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Legal Signed By"
+    },
+    "technical_flag": {
+      "default": false,
+      "title": "Technical Flag",
+      "type": "boolean"
+    },
+    "venue": {
+      "title": "Venue",
+      "type": "string"
+    }
+  },
+  "required": [
+    "country",
+    "customer_type",
+    "broker",
+    "venue",
+    "asset_class",
+    "feature"
+  ],
+  "title": "jurisdiction.flag.changed.v1",
+  "type": "object"
+}

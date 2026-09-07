@@ -1,0 +1,36 @@
+# Execution plane: the only plane with a broker route (egress to broker CIDRs via the egress gateway) and vault broker-credential access.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: execution-default-deny, namespace: execution}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: execution-allow, namespace: execution}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector: {matchLabels: {plane: control}}
+        - namespaceSelector: {matchLabels: {plane: execution}}
+    - from:
+        - namespaceSelector: {matchLabels: {plane: edge}}
+      ports: [{protocol: TCP, port: 8444}]   # read-only order/position queries
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {plane: execution}}
+        - namespaceSelector: {matchLabels: {plane: control}}   # events, audit
+    - to:
+        - namespaceSelector: {matchLabels: {plane: security}}
+          podSelector: {matchLabels: {app: vault}}
+      ports: [{protocol: TCP, port: 8200}]
+    - to:
+        - ipBlock: {cidr: 0.0.0.0/0, except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16]}   # broker endpoints via egress gateway; allowlisted per adapter [Committee]
+      ports: [{protocol: TCP, port: 443}]
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{protocol: UDP, port: 53}]

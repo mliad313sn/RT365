@@ -1,0 +1,10 @@
+# MCP server runtime constraints [Source: 04]: forbidden = structurally impossible.
+filesystem: read-only
+shell: absent            # no /bin/sh in the image; no subprocess capability
+secrets_mount: none      # no vault token, no broker credentials
+network_egress: mcp/policies/egress.yaml
+identity: short-lived workload identity (default ttl 300 s); every call signed
+quotas: per tool_registry.json
+dynamic_install: forbidden in production
+registry_signature_required: true
+revocation: revoke registry signature -> all servers refuse at next call; drill quarterly

@@ -1,0 +1,19 @@
+# Mirrors docs/ALERT_CATALOG.md. auto_action names are resolved by rtobs.alerts.AlertRouter hooks.
+alerts:
+  - {name: execution.duplicate_order, condition: ">0", severity: S1, auto_action: killswitch_account, runbook: duplicate order}
+  - {name: risk.fail_open_attempt, condition: "any APPROVED without decision record", severity: S1, auto_action: killswitch_platform, runbook: risk engine unavailable}
+  - {name: plane.deny, condition: "network deny event", severity: S1, auto_action: revoke_agent_identity, runbook: credential compromise}
+  - {name: mcp.non_allowlisted_tool, condition: "deny event", severity: S2, auto_action: revoke_tool_for_tenant, runbook: "-"}
+  - {name: mcp.canary_in_output, condition: "canary token in output", severity: S1, auto_action: revoke_agent_identity, runbook: credential compromise}
+  - {name: mcp.canary_in_input, condition: "canary token in input", severity: S2, auto_action: revoke_tool_for_tenant, runbook: "-"}
+  - {name: killswitch.agent_attempt, condition: "agent attempted Kill Switch", severity: S1, auto_action: revoke_agent_identity, runbook: credential compromise}
+  - {name: slo.freshness_breach, condition: "per SLO", severity: S2, auto_action: autonomy_to_supervised, runbook: data stale}
+  - {name: slo.decision_latency_breach, condition: "per SLO", severity: S2, auto_action: autonomy_to_supervised, runbook: "-"}
+  - {name: reconciliation.break, condition: "any", severity: S2, auto_action: account_to_supervised, runbook: reconciliation break}
+  - {name: model.drift, condition: "per model card", severity: S2, auto_action: suspend_signals, runbook: model drift}
+  - {name: broker.unavailable, condition: "health check", severity: S2, auto_action: cancel_only, runbook: broker disconnected}
+  - {name: audit.chain_verification_failed, condition: "hash mismatch", severity: S1, auto_action: killswitch_platform, runbook: Kill Switch activation}
+  - {name: execution.stale_fencing_token, condition: "stale token submission", severity: S1, auto_action: none, runbook: duplicate order}
+  - {name: execution.unknown_fill, condition: "fill without internal order", severity: S1, auto_action: none, runbook: duplicate order}
+  - {name: risk.integrity_violation, condition: "RK-INTEG decision", severity: S1, auto_action: revoke_agent_identity, runbook: credential compromise}
+  - {name: limit.changed, condition: "any", severity: info, auto_action: none, runbook: "-"}

@@ -1,0 +1,108 @@
+{
+  "$defs": {
+    "ChangeStatus": {
+      "enum": [
+        "PENDING",
+        "CHECKED",
+        "EFFECTIVE",
+        "REJECTED"
+      ],
+      "title": "ChangeStatus",
+      "type": "string"
+    }
+  },
+  "$id": "https://rt365.example/contracts/events/limit.changed.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "change_id": {
+      "title": "Change Id",
+      "type": "string"
+    },
+    "checked_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Checked At"
+    },
+    "checker_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Checker Id"
+    },
+    "effective_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Effective At"
+    },
+    "kind": {
+      "title": "Kind",
+      "type": "string"
+    },
+    "maker_id": {
+      "title": "Maker Id",
+      "type": "string"
+    },
+    "maker_line": {
+      "title": "Maker Line",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    },
+    "proposed_at": {
+      "format": "date-time",
+      "title": "Proposed At",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    },
+    "status": {
+      "$ref": "#/$defs/ChangeStatus"
+    }
+  },
+  "required": [
+    "change_id",
+    "kind",
+    "payload",
+    "maker_id",
+    "maker_line",
+    "status",
+    "proposed_at"
+  ],
+  "title": "limit.changed.v1",
+  "type": "object"
+}

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoboTrader Control Console (simulation)</title>
+<link rel="manifest" href="/static/manifest.webmanifest">
+<style>
+  :root { --bg:#101418; --fg:#e8edf2; --muted:#9aa7b4; --ok:#2e9e6b; --warn:#d99a2b; --bad:#d64545; --card:#182028; --border:#2a3540; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--fg); line-height:1.4; }
+  header { padding:1rem 1.5rem; border-bottom:1px solid var(--border); display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:1.1rem; margin:0; }
+  .banner { padding:.4rem .8rem; border-radius:.4rem; font-weight:600; }
+  .banner.ok { background:var(--ok); color:#fff; } .banner.bad { background:var(--bad); color:#fff; } .banner.warn { background:var(--warn); color:#111; }
+  main { padding:1rem 1.5rem; display:grid; gap:1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  section { background:var(--card); border:1px solid var(--border); border-radius:.6rem; padding:1rem; }
+  section h2 { font-size:.95rem; margin:0 0 .6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  dl { display:grid; grid-template-columns: 1fr auto; gap:.25rem .8rem; margin:0; } dt { color:var(--muted); } dd { margin:0; font-variant-numeric: tabular-nums; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; } th, td { text-align:left; padding:.3rem .4rem; border-bottom:1px solid var(--border); }
+  button { background:#22303c; color:var(--fg); border:1px solid var(--border); border-radius:.4rem; padding:.4rem .7rem; cursor:pointer; }
+  button:focus-visible, input:focus-visible { outline:3px solid #7fb3ff; outline-offset:2px; }
+  button.danger { background:var(--bad); border-color:var(--bad); color:#fff; }
+  .muted { color:var(--muted); font-size:.85rem; }
+  .sr-only { position:absolute; left:-9999px; }
+  input { background:#0d1216; color:var(--fg); border:1px solid var(--border); border-radius:.4rem; padding:.35rem .5rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>RoboTrader Control Console <span class="muted">simulation environment — no market, strategy or autonomy is enabled</span></h1>
+  <div id="ks-banner" class="banner ok" role="status" aria-live="assertive">Kill Switch: inactive</div>
+  <div id="mode-banner" class="banner warn" role="status" aria-live="polite">Mode: —</div>
+</header>
+<main>
+  <section aria-labelledby="h1"><h2 id="h1">1 · Global status &amp; Kill Switch</h2>
+    <dl id="global"></dl>
+    <form id="ks-form" style="margin-top:.8rem">
+      <label for="ks-level">Level</label>
+      <select id="ks-level"><option>ACCOUNT</option><option>STRATEGY</option><option>ASSET</option><option>VENUE</option><option>TENANT</option><option>PLATFORM</option></select>
+      <label for="ks-target">Target</label><input id="ks-target" value="acct-sim-001" required>
+      <label for="ks-reason">Reason</label><input id="ks-reason" placeholder="documented reason" required>
+      <label for="ks-confirm">Type ACTIVATE to confirm (irreversible without two persons)</label><input id="ks-confirm" required aria-describedby="ks-help">
+      <button type="submit" class="danger">Activate Kill Switch</button>
+      <p id="ks-help" class="muted">Activation is unilateral for authorised roles; deactivation needs two persons from different lines of defense.</p>
+    </form>
+  </section>
+  <section aria-labelledby="h2"><h2 id="h2">2 · Capital at risk &amp; drawdown</h2><dl id="capital"></dl></section>
+  <section aria-labelledby="h3"><h2 id="h3">3 · Exposure vs limits</h2><dl id="exposure"></dl></section>
+  <section aria-labelledby="h4"><h2 id="h4">4 · Positions, orders &amp; approval queue</h2>
+    <table id="positions"><caption class="sr-only">Positions</caption><thead><tr><th>Instrument</th><th>Qty</th><th>Avg</th><th>MV</th></tr></thead><tbody></tbody></table>
+    <h3 class="muted">Approval queue (maker ≠ checker)</h3>
+    <table id="approvals"><caption class="sr-only">Pending approvals</caption><thead><tr><th>Intent</th><th>Order</th><th>Why approval</th><th>Actions</th></tr></thead><tbody></tbody></table>
+  </section>
+  <section aria-labelledby="h5"><h2 id="h5">5 · PnL (outcome, never a promise)</h2><dl id="pnl"></dl></section>
+  <section aria-labelledby="h6"><h2 id="h6">6 · Alerts</h2><ul id="alerts"></ul></section>
+  <section aria-labelledby="h7"><h2 id="h7">7 · Data freshness &amp; provenance</h2><dl id="fresh"></dl></section>
+  <section aria-labelledby="h8"><h2 id="h8">Reason-code dictionary</h2>
+    <label for="rc">Look up a reason code</label> <input id="rc" list="rc-list" placeholder="RK-CAP"><datalist id="rc-list"></datalist>
+    <p id="rc-out" aria-live="polite" class="muted"></p>
+  </section>
+</main>
+<script>
+const H = { 'X-Actor-Id': localStorage.getItem('actor') || 'risk-officer.demo', 'X-Actor-Role': localStorage.getItem('role') || 'risk_officer', 'X-MFA': 'verified', 'Content-Type': 'application/json' };
+const api = (path, opts={}) => fetch(path, { headers: H, ...opts }).then(async r => { const j = await r.json().catch(()=>({})); if (!r.ok) throw new Error(j.detail?.error || j.detail || j.error || r.status); return j; });
+function fill(id, obj) { const dl = document.getElementById(id); dl.innerHTML = ''; for (const [k,v] of Object.entries(obj)) { if (typeof v === 'object' && v !== null) continue; dl.insertAdjacentHTML('beforeend', `<dt>${k.replace(/_/g,' ')}</dt><dd>${v}</dd>`); } }
+async function refresh() {
+  try {
+    const s = await api('/v1/status');
+    const g = s['1_global_status'];
+    const ks = document.getElementById('ks-banner'); const active = g.kill_switch_active.length;
+    ks.className = 'banner ' + (active ? 'bad' : 'ok'); ks.textContent = active ? `Kill Switch ACTIVE: ${g.kill_switch_active.map(a=>a.level+':'+a.target_id).join(', ')}` : 'Kill Switch: inactive';
+    const mb = document.getElementById('mode-banner'); mb.textContent = `Mode: ${g.account_mode}${g.autonomy_suspended ? ' (autonomy suspended)' : ''}`; mb.className = 'banner ' + (g.account_mode === 'HALTED' ? 'bad' : 'warn');
+    fill('global', g); fill('capital', s['2_capital_at_risk']); fill('exposure', s['3_exposure_vs_limits']); fill('pnl', s['5_pnl']); fill('fresh', s['7_data_freshness']);
+    const tb = document.querySelector('#positions tbody'); tb.innerHTML = s['4_positions_orders'].positions.map(p=>`<tr><td>${p.instrument_id}</td><td>${p.quantity}</td><td>${p.average_price}</td><td>${p.market_value}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">no positions</td></tr>';
+    document.getElementById('alerts').innerHTML = s['6_alerts'].map(a=>`<li><strong>${a.severity}</strong> ${a.name} → ${a.auto_action}</li>`).join('') || '<li class="muted">none</li>';
+    const ap = await api('/v1/approvals'); const at = document.querySelector('#approvals tbody');
+    at.innerHTML = ap.map(a=>`<tr><td>${a.intent_id.slice(0,8)}…<br><span class="muted">maker ${a.maker_id}</span></td><td>${a.side} ${a.quantity} ${a.instrument_id}</td><td>${a.reasons_explained.map(r=>`<div><code>${r.code}</code> ${r.explanation}</div>`).join('')}</td><td><button data-id="${a.approval_id}" data-act="approve">Approve</button> <button data-id="${a.approval_id}" data-act="decline">Decline</button></td></tr>`).join('') || '<tr><td colspan="4" class="muted">queue empty</td></tr>';
+    at.querySelectorAll('button').forEach(b => b.onclick = async () => { const reason = prompt(`Reason to ${b.dataset.act} (recorded in audit):`); if (!reason) return; try { await api(`/v1/approvals/${b.dataset.id}/${b.dataset.act}`, { method:'POST', body: JSON.stringify({ reason }) }); } catch (e) { alert('Denied: ' + e.message); } refresh(); });
+  } catch (e) { document.getElementById('global').innerHTML = `<dt>error</dt><dd>${e.message}</dd>`; }
+}
+document.getElementById('ks-form').onsubmit = async (ev) => { ev.preventDefault(); if (document.getElementById('ks-confirm').value !== 'ACTIVATE') { alert('Type ACTIVATE to confirm.'); return; }
+  try { await api('/v1/killswitch', { method:'POST', body: JSON.stringify({ level: document.getElementById('ks-level').value, target_id: document.getElementById('ks-target').value, reason: document.getElementById('ks-reason').value, actor: H['X-Actor-Id'] }) }); } catch (e) { alert('Denied: ' + e.message); } refresh(); };
+api('/v1/reason-codes').then(list => { const dl = document.getElementById('rc-list'); list.forEach(r => dl.insertAdjacentHTML('beforeend', `<option value="${r.code}">`)); const map = Object.fromEntries(list.map(r=>[r.code, r]));
+  document.getElementById('rc').oninput = (e) => { const r = map[e.target.value.toUpperCase()]; document.getElementById('rc-out').textContent = r ? `${r.family}: ${r.explanation} What you can do: ${r.what_you_can_do}` : ''; }; });
+refresh(); setInterval(refresh, 5000);
+</script>
+</body>
+</html>

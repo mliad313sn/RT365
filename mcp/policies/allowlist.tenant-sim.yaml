@@ -1,0 +1,9 @@
+# Per-tenant / account / strategy tool grants [Source: 04]. Dev/sim tenant only [Committee].
+tenant_id: tenant-sim
+accounts:
+  acct-sim-001:
+    strategies:
+      strat-sma-xover:
+        tools: [read_market_snapshot, read_account_state, calculate_indicator, run_simulation, get_strategy_docs, submit_trade_intent]
+      strat-research-only:
+        tools: [read_market_snapshot, calculate_indicator, get_strategy_docs]

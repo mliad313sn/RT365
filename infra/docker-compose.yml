@@ -1,0 +1,19 @@
+# Dev/sim stack [Committee; ADR-010]. In-process stores are default; these services are the targets for the
+# Postgres / Kafka-compatible adapters that replace them before Gate C. Nothing here connects to a broker.
+services:
+  bff:
+    build: {context: .., dockerfile: infra/Dockerfile.bff}
+    environment:
+      RT_ENV: sim
+      RT_MCP_REGISTRY_KEY: ${RT_MCP_REGISTRY_KEY:-}
+    ports: ["8080:8080"]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+  postgres:
+    image: postgres:16
+    environment: {POSTGRES_PASSWORD: sim-only, POSTGRES_DB: rt365}
+    ports: ["5432:5432"]
+  redpanda:
+    image: redpandadata/redpanda:v24.1.1
+    command: [redpanda, start, --overprovisioned, --smp, "1", --memory, 512M, --node-id, "0", --kafka-addr, PLAINTEXT://0.0.0.0:9092]
+    ports: ["9092:9092"]

@@ -1,0 +1,43 @@
+# SLI definitions fixed now; targets deferred until measured baselines and business approval [Source: 10] [Open: O-03].
+# safety_semantic: what the platform does automatically on breach [Committee C9 §3].
+slis:
+  - name: control_plane_availability
+    definition: successful control-plane decisions / total decision requests
+    measurement_point: risk_engine
+    target: null
+    safety_semantic: fail_closed
+  - name: market_data_freshness_s
+    definition: market_ts age at snapshot use (seconds)
+    measurement_point: risk_engine.RK-FRESH
+    target: null
+    safety_semantic: suspend_autonomy
+  - name: signal_latency_ms
+    definition: snapshot -> signal
+    measurement_point: strategy_service
+    target: null
+    safety_semantic: informational
+  - name: risk_decision_latency_ms_p99
+    definition: intent enqueue -> decision record write, p99 per cell
+    measurement_point: oms.pipeline
+    target: null
+    safety_semantic: suspend_autonomy
+  - name: order_ack_latency_ms
+    definition: order command -> broker ack
+    measurement_point: execution_gateway
+    target: null
+    safety_semantic: cancel_only_review
+  - name: event_lag_ms
+    definition: produce -> consume
+    measurement_point: bus
+    target: null
+    safety_semantic: autoscale
+  - name: reconciliation_completeness_pct
+    definition: reconciled positions / total by EOD+T
+    measurement_point: reconciliation_service
+    target: null
+    safety_semantic: supervised_on_break
+  - name: alert_delivery_s
+    definition: alert -> operator ack
+    measurement_point: notification
+    target: null
+    safety_semantic: tested_daily

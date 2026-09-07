@@ -1,0 +1,92 @@
+openapi: 3.1.0
+info:
+  title: Global AI-MCP RoboTrader — Control & Execution contracts
+  version: 0.1.0-draft
+  description: >
+    Schema-first contracts [Source: 03]. Trade intent schema is strict [Source: 00];
+    unknown fields rejected. Owner: Integration Architect. Reviewer: Chief Risk Agent.
+paths:
+  /v1/intents:
+    post:
+      summary: Submit a trade intent (write-class MCP tool target; writes to Control-plane queue only)
+      security: [{ agentIdentity: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/TradeIntent' } } }
+      responses:
+        '202': { description: Accepted for validation }
+        '400': { description: Schema violation (unknown field, stale data, invalid symbol) }
+        '403': { description: Tool not allowlisted for this tenant/account/strategy }
+  /v1/decisions/{decisionId}:
+    get:
+      summary: Read a risk/eligibility decision record
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRecord' } } } }
+  /v1/killswitch:
+    post:
+      summary: Activate Kill Switch at a level (activation unilateral; deactivation two-person)
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/KillSwitchRequest' } } }
+      responses: { '202': { description: Applied } }
+components:
+  securitySchemes:
+    agentIdentity: { type: http, scheme: bearer, description: Short-lived workload identity; tool call signed }
+  schemas:
+    TradeIntent:
+      type: object
+      additionalProperties: false
+      required: [intent_id, strategy_id, strategy_version, model_id, model_version, account_id, venue, instrument_id, side, order_type, quantity, time_in_force, thesis_code, confidence, market_ts, data_provenance, expiry]
+      properties:
+        intent_id: { type: string, format: uuid }
+        strategy_id: { type: string }
+        strategy_version: { type: string }
+        model_id: { type: string }
+        model_version: { type: string }
+        account_id: { type: string }
+        venue: { type: string }
+        instrument_id: { type: string }
+        side: { type: string, enum: [BUY, SELL, SELL_SHORT, BUY_TO_COVER] }
+        order_type: { type: string, enum: [MARKET, LIMIT, STOP, STOP_LIMIT, TRAILING_STOP, CONDITIONAL] }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        notional: { type: number }
+        limit_price: { type: number }
+        stop_price: { type: number }
+        time_in_force: { type: string, enum: [DAY, GTC, IOC, FOK, GTD] }
+        thesis_code: { type: string }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        market_ts: { type: string, format: date-time }
+        data_provenance: { type: array, items: { type: string } }
+        expiry: { type: string, format: date-time }
+        protective_stop: { type: number, description: Required by policy where stop-loss policy applies }
+        evidence_refs: { type: array, items: { type: string }, maxItems: 64, description: "Explainability contract [Source: 00; Committee C3 §6]: evidence references carried with the intent (proposed v0.1.1, Integration Architect review pending)" }
+    DecisionRecord:
+      type: object
+      required: [decision_id, intent_id, outcome, policy_version, reason_codes, evaluated, account_snapshot_id, market_snapshot_id, decided_at, engine_build_hash]
+      properties:
+        decision_id: { type: string }
+        intent_id: { type: string }
+        outcome: { type: string, enum: [APPROVED, REJECTED, REQUIRES_HUMAN_APPROVAL, HALTED] }
+        policy_version: { type: string }
+        reason_codes: { type: array, items: { type: string } }
+        evaluated:
+          type: array
+          items:
+            type: object
+            required: [check, value, threshold, result]
+            properties:
+              check: { type: string }
+              value: { type: string }
+              threshold: { type: string }
+              result: { type: string, enum: [PASS, FAIL, NOT_EVALUATED] }
+        account_snapshot_id: { type: string }
+        market_snapshot_id: { type: string }
+        decided_at: { type: string, format: date-time }
+        engine_build_hash: { type: string }
+    KillSwitchRequest:
+      type: object
+      required: [level, target_id, reason, actor]
+      properties:
+        level: { type: string, enum: [PLATFORM, TENANT, ACCOUNT, STRATEGY, ASSET, VENUE] }
+        target_id: { type: string }
+        reason: { type: string }
+        actor: { type: string }

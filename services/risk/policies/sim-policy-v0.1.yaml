@@ -1,0 +1,49 @@
+# Simulation risk policy.
+# [Committee] STRUCTURE is fixed by RISK_POLICY.md / LIMIT_MATRIX.md [Source: 05].
+# [Open: O-07] NUMERIC VALUES below are dev/sim fixtures chosen so that the control quartet can
+# exercise every check. They are NOT proposed production thresholds; the Trading Risk Committee
+# sets those per asset class and jurisdiction before Gate C. approved_for_production stays false.
+policy_version: sim-policy-v0.1
+environment_tag: sim
+approved_for_production: false
+maker: chief_risk_agent:fixture
+checker: trading_domain_lead:fixture
+concentration_action: REJECT
+liquidity_action: REQUIRE_APPROVAL
+protective_stop_required: true
+protective_stop_action: REJECT
+allow_pre_open_limit_orders: false
+freshness_budget_s_by_asset_class:
+  EQUITY: 5
+  ETF: 5
+  FX: 2
+  FUTURE: 2
+  OPTION: 5
+  CRYPTO: 5
+  DEFAULT: 5
+limits:
+  - {level: PLATFORM, scope_id: "*", metric: max_notional_per_order, threshold: 1000000, unit: ccy}
+  - {level: PLATFORM, scope_id: "*", metric: max_position_per_instrument, threshold: 2000000, unit: ccy}
+  - {level: PLATFORM, scope_id: "*", metric: gross_exposure_pct_nav, threshold: 200, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: net_exposure_pct_nav, threshold: 150, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: concentration_single_name_pct, threshold: 25, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: concentration_sector_pct, threshold: 60, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: concentration_country_pct, threshold: 90, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: concentration_currency_pct, threshold: 100, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: leverage_x, threshold: 2, unit: x}
+  - {level: PLATFORM, scope_id: "*", metric: daily_loss_limit_pct, threshold: 3, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: weekly_loss_limit_pct, threshold: 6, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: monthly_loss_limit_pct, threshold: 10, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: max_drawdown_pct, threshold: 15, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: orders_per_minute, threshold: 30, unit: n}
+  - {level: PLATFORM, scope_id: "*", metric: open_order_count, threshold: 50, unit: n}
+  - {level: PLATFORM, scope_id: "*", metric: price_collar_pct, threshold: 5, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: max_order_pct_adv, threshold: 5, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: volatility_regime_pct, threshold: 60, unit: pct}
+  - {level: PLATFORM, scope_id: "*", metric: correlated_group_pct_nav, threshold: 40, unit: pct}
+  # Tenant / account / strategy / instrument overrides used by tests to prove effective = min
+  - {level: TENANT, scope_id: tenant-sim, metric: max_notional_per_order, threshold: 250000, unit: ccy}
+  - {level: ACCOUNT, scope_id: acct-sim-001, metric: max_notional_per_order, threshold: 100000, unit: ccy}
+  - {level: STRATEGY, scope_id: strat-sma-xover, metric: max_notional_per_order, threshold: 50000, unit: ccy}
+  - {level: ACCOUNT, scope_id: acct-sim-001, metric: orders_per_minute, threshold: 10, unit: n}
+  - {level: ACCOUNT, scope_id: acct-sim-001, metric: open_order_count, threshold: 5, unit: n}

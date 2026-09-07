@@ -1,0 +1,15 @@
+# Protected paths [Committee, blueprint 16]: 2nd-line CODEOWNER approval is required before merge.
+# Builder is never the sole approver [Source: 13]. Team handles are placeholders until the
+# organisation maps committee roles to GitHub teams [Open: O-20].
+/services/risk/        @rt365/chief-risk-agent @rt365/independent-validation
+/services/compliance/  @rt365/compliance-agent @rt365/independent-validation
+/services/execution/   @rt365/trading-domain-lead @rt365/independent-validation
+/services/killswitch/  @rt365/chief-risk-agent @rt365/independent-validation
+/mcp/policies/         @rt365/mcp-security-agent
+/security/             @rt365/security-privacy-board
+/contracts/            @rt365/integration-architect @rt365/chief-risk-agent
+/infra/kubernetes/network-policies/ @rt365/security-architect @rt365/cloud-architect
+/docs/RISK_POLICY.md   @rt365/chief-risk-agent
+/docs/LIMIT_MATRIX.md  @rt365/chief-risk-agent
+/docs/COMPLIANCE_MATRIX.md @rt365/compliance-agent @rt365/legal-agent
+/docs/JURISDICTION_MATRIX.md @rt365/compliance-agent @rt365/legal-agent

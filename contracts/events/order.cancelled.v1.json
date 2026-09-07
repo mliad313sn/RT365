@@ -1,0 +1,123 @@
+{
+  "$id": "https://rt365.example/contracts/events/order.cancelled.v1.json",
+  "additionalProperties": false,
+  "properties": {
+    "broker_dedupe": {
+      "default": false,
+      "title": "Broker Dedupe",
+      "type": "boolean"
+    },
+    "broker_order_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Broker Order Ref"
+    },
+    "client_order_id": {
+      "title": "Client Order Id",
+      "type": "string"
+    },
+    "decision_id": {
+      "title": "Decision Id",
+      "type": "string"
+    },
+    "fencing_token": {
+      "title": "Fencing Token",
+      "type": "integer"
+    },
+    "fill_price": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fill Price"
+    },
+    "fill_quantity": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fill Quantity"
+    },
+    "fill_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fill Ref"
+    },
+    "idempotency_key": {
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "intent_id": {
+      "title": "Intent Id",
+      "type": "string"
+    },
+    "order_id": {
+      "title": "Order Id",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    },
+    "retry": {
+      "default": false,
+      "title": "Retry",
+      "type": "boolean"
+    },
+    "state": {
+      "title": "State",
+      "type": "string"
+    }
+  },
+  "required": [
+    "order_id",
+    "client_order_id",
+    "state",
+    "fencing_token",
+    "idempotency_key",
+    "intent_id",
+    "decision_id"
+  ],
+  "title": "order.cancelled.v1",
+  "type": "object"
+}

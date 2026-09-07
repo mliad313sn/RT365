@@ -1,0 +1,278 @@
+{
+  "$defs": {
+    "OrderType": {
+      "enum": [
+        "MARKET",
+        "LIMIT",
+        "STOP",
+        "STOP_LIMIT",
+        "TRAILING_STOP",
+        "CONDITIONAL"
+      ],
+      "title": "OrderType",
+      "type": "string"
+    },
+    "Side": {
+      "enum": [
+        "BUY",
+        "SELL",
+        "SELL_SHORT",
+        "BUY_TO_COVER"
+      ],
+      "title": "Side",
+      "type": "string"
+    },
+    "TimeInForce": {
+      "enum": [
+        "DAY",
+        "GTC",
+        "IOC",
+        "FOK",
+        "GTD"
+      ],
+      "title": "TimeInForce",
+      "type": "string"
+    },
+    "TradeIntent": {
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Account Id",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "data_provenance": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Data Provenance",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "expiry": {
+          "format": "date-time",
+          "title": "Expiry",
+          "type": "string"
+        },
+        "instrument_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Instrument Id",
+          "type": "string"
+        },
+        "intent_id": {
+          "format": "uuid",
+          "title": "Intent Id",
+          "type": "string"
+        },
+        "limit_price": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Limit Price"
+        },
+        "market_ts": {
+          "format": "date-time",
+          "title": "Market Ts",
+          "type": "string"
+        },
+        "model_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Model Id",
+          "type": "string"
+        },
+        "model_version": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Model Version",
+          "type": "string"
+        },
+        "notional": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notional"
+        },
+        "order_type": {
+          "$ref": "#/$defs/OrderType"
+        },
+        "protective_stop": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protective Stop"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "title": "Quantity"
+        },
+        "side": {
+          "$ref": "#/$defs/Side"
+        },
+        "stop_price": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stop Price"
+        },
+        "strategy_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Strategy Id",
+          "type": "string"
+        },
+        "strategy_version": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Strategy Version",
+          "type": "string"
+        },
+        "thesis_code": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Thesis Code",
+          "type": "string"
+        },
+        "time_in_force": {
+          "$ref": "#/$defs/TimeInForce"
+        },
+        "venue": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Venue",
+          "type": "string"
+        }
+      },
+      "required": [
+        "intent_id",
+        "strategy_id",
+        "strategy_version",
+        "model_id",
+        "model_version",
+        "account_id",
+        "venue",
+        "instrument_id",
+        "side",
+        "order_type",
+        "quantity",
+        "time_in_force",
+        "thesis_code",
+        "confidence",
+        "market_ts",
+        "data_provenance",
+        "expiry"
+      ],
+      "title": "TradeIntent",
+      "type": "object"
+    }
+  },
+  "$id": "https://rt365.example/contracts/events/intent.submitted.v1.json",
+  "additionalProperties": false,
+  "description": "Intent after SCHEMA_VALIDATED (P1). ``intent_hash`` is recomputed by every downstream engine.",
+  "properties": {
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "intent": {
+      "$ref": "#/$defs/TradeIntent"
+    },
+    "intent_hash": {
+      "title": "Intent Hash",
+      "type": "string"
+    },
+    "submitted_by": {
+      "title": "Submitted By",
+      "type": "string"
+    },
+    "tenant_id": {
+      "title": "Tenant Id",
+      "type": "string"
+    },
+    "validated_at": {
+      "format": "date-time",
+      "title": "Validated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "intent",
+    "intent_hash",
+    "correlation_id",
+    "tenant_id",
+    "submitted_by",
+    "validated_at"
+  ],
+  "title": "intent.submitted.v1",
+  "type": "object"
+}

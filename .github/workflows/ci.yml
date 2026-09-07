@@ -1,0 +1,42 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main, "claude/**"]
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Lint and format
+        run: make lint
+      - name: Typecheck
+        run: make typecheck
+      - name: Contract schemas match models (ADR-005)
+        run: make schemas
+      - name: Policy invariants (planes, MCP registry) — TC-NET / TC-AI
+        run: make policy-check
+      - name: Secret scan (T-05)
+        run: make secret-scan
+      - name: Unit, property, contract, integration, e2e tests with evidence index
+        run: make test
+      - name: Determinism gate (TC-RK-001..004 must pass; fail on any divergence)
+        run: python -m pytest test/quartets/test_tc_rk_determinism.py test/property -q
+      - name: Evidence report
+        run: python scripts/evidence_report.py
+      - name: Broker sandbox certification harness (sim)
+        run: make certify-broker
+      - name: SBOM (CycloneDX)
+        run: make sbom
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evidence
+          path: |
+            test/evidence/
+            docs/TEST_CASES/EVIDENCE_REPORT.md
+            docs/BROKER_CERTIFICATIONS/sim-broker.md
+            security/sbom/sbom.cdx.json
