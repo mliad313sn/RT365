@@ -27,3 +27,6 @@ Rule: an action stays here until its evidence file exists. The orchestrator prep
 | H-17 | Activate technical jurisdiction flag (second person) | Compliance | named second approver | F | C6 session | jurisdiction.flag.changed event | | Open |
 | H-18 | Launch decision | Governance | Executive Steering | F | gate_F | DECISION_LOG entry | | Open |
 | H-19 | Perform DR, rollback and Kill Switch drills with named operators | Operations | SRE Lead | D/E/F | external/dr_and_halt_drills | drill logs | | Open |
+| H-20 | Provision KMS/HSM-held asymmetric key for order-command authorisation and registry signing, with rotation (replaces dev/sim shared HMAC and dev registry key) | Security | Security Architect + Cloud Architect | C | O-22, O-53 packs; ADR-015 | key ceremony record; `verify_tool_registry.py --production` passes | | Open |
+| H-21 | Provision a WORM/replica anchor store for the audit `ChainHead`, written by a principal separate from the audit service | Operations | SRE Lead + Internal Audit | C | O-54; ADR-004 | anchor store attestation; TC-AUD anchor test against the external store | | Open |
+| H-22 | Convene the Committee to receive GATE_A/B/C_2026-09-07 and the re-validation report; record the human approver of record for each verdict | Governance | Committee chair | B | docs/GATE_REPORTS/ | DECISION_LOG entries with approver ≠ author | | Open |
