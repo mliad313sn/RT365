@@ -2,7 +2,7 @@
 
 Control: Market data provenance, freshness, look-ahead — Requirement: FR-03 — RTM row: FR-03 — Owner: Data Engineering Lead — Reviewer (≠ owner): Data Architect — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-07T18:09:37.793153+00:00 at `78742a240edbfb535d75ff8c942a4b2a9b6a2bb1`
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-07T18:41:56.053654+00:00 at `2070d9318506064c7e3a1339cb8d6966b6aca8dc`
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|

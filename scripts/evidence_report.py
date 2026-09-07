@@ -21,7 +21,7 @@ for r in data["records"]:
 lines = [
     "# TEST_CASES — Evidence report (generated)",
     "",
-    f"Generated {data['generated_at']} at commit `{data['git_sha']}`; pytest exit status {data['exit_status']}. Environment tag: dev/sim. Data version: `{data['records'][0]['data_version'] if data['records'] else '-'}`.",
+    f"Generated {data['generated_at']} at base commit `{data['git_sha']}` (the working tree at generation time; CI regenerates this report at the pushed commit); pytest exit status {data['exit_status']}. Environment tag: dev/sim. Data version: `{data['records'][0]['data_version'] if data['records'] else '-'}`.",
     "",
     "Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.",
     "",

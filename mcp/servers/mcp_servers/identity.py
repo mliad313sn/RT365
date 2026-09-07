@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import hmac
+import json
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from hashlib import sha256
+from pathlib import Path
 
 from rtcore.errors import ControlDenied
 from rtcore.ids import hash_of, new_id
@@ -64,12 +66,32 @@ class IdentityIssuer:
         default_ttl: timedelta = timedelta(minutes=5),
         revocations: RevocationList | None = None,
         audit: Callable[[str, dict[str, object]], object] | None = None,
+        nonce_path: Path | None = None,
     ) -> None:
         self._ttl = default_ttl
         self._tokens: dict[str, AgentIdentity] = {}
         self._revocations = revocations or RevocationList()
         self._audit = audit or (lambda action, payload: None)
+        # nonces are keyed per agent (not per token) and journalled, so a replay survives neither a token
+        # re-issue nor a process restart (IVA-08). Deployment target: replicated store [Open: R-05].
         self._seen_nonces: dict[str, set[str]] = {}
+        self._nonce_path = nonce_path
+        if nonce_path is not None and nonce_path.exists():
+            for line in nonce_path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    rec = json.loads(line)
+                    self._seen_nonces.setdefault(str(rec["agent_id"]), set()).add(str(rec["nonce"]))
+
+    def adopt(self, ident: AgentIdentity) -> None:
+        """Re-register an identity restored from a durable token store after a restart [Open: R-05]."""
+        self._tokens[ident.token_id] = ident
+
+    def _remember_nonce(self, ident: AgentIdentity, nonce: str, issued_at: datetime) -> None:
+        self._seen_nonces.setdefault(ident.agent_id, set()).add(nonce)
+        if self._nonce_path is not None:
+            self._nonce_path.parent.mkdir(parents=True, exist_ok=True)
+            with self._nonce_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"agent_id": ident.agent_id, "nonce": nonce, "issued_at": issued_at.isoformat()}) + "\n")
 
     def issue(
         self,
@@ -149,10 +171,9 @@ class IdentityIssuer:
             raise ControlDenied("tool call signature invalid")
         if abs((now - call.issued_at).total_seconds()) > CALL_MAX_AGE.total_seconds():
             raise ControlDenied("tool call signature too old (replay window)")
-        seen = self._seen_nonces.setdefault(token_id, set())
-        if call.nonce in seen:
+        if call.nonce in self._seen_nonces.get(ident.agent_id, set()):
             raise ControlDenied("tool call replayed (nonce already used)")
-        seen.add(call.nonce)
+        self._remember_nonce(ident, call.nonce, call.issued_at)
         return ident
 
     def revoke_agent(self, agent_id: str, *, by: str = "system", now: datetime | None = None, reason: str = "") -> None:

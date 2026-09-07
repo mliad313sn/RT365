@@ -13,6 +13,8 @@ from rtcore.errors import ControlDenied, TransitionError
 from rtcore.lines import Role
 from rtcore.schemas.account import AccountMode
 
+RISK_OFFICER_NOW = __import__("datetime").datetime(2026, 9, 7, 14, 0, tzinfo=__import__("datetime").UTC)
+
 
 @pytest.mark.tc("TC-ID-001")
 @pytest.mark.req("FR-01")
@@ -138,3 +140,20 @@ def test_return_from_halted_requires_two_persons_different_lines(platform):  # t
     with pytest.raises(ControlDenied):
         p.accounts.halt(ACCOUNT, agent(), reason="rogue", now=p.now)
     assert p.audit.by_action("account.restored")
+
+
+@pytest.mark.tc("TC-ID-005")
+@pytest.mark.req("FR-01")
+@pytest.mark.quartet("abuse")
+def test_reject_requires_human_and_pending_change():  # type: ignore[no-untyped-def]
+    """Agents cannot reject (or otherwise touch) controlled changes; a decided change cannot be re-decided (IVA-05)."""
+    mc = MakerChecker(cooling_period=timedelta(minutes=1), require_different_line=True)
+    change = mc.propose("limit.changed", {"threshold": "1"}, RISK_OFFICER, now=RISK_OFFICER_NOW)
+    with pytest.raises(ControlDenied):
+        mc.reject(change.change_id, agent(), now=RISK_OFFICER_NOW, reason="agent says no")
+    rejected = mc.reject(change.change_id, PM, now=RISK_OFFICER_NOW, reason="not justified")
+    assert rejected.status.value == "REJECTED"
+    with pytest.raises(ControlDenied):
+        mc.check(change.change_id, PM, now=RISK_OFFICER_NOW)
+    with pytest.raises(ControlDenied):
+        mc.reject(change.change_id, PM, now=RISK_OFFICER_NOW, reason="again")

@@ -47,6 +47,14 @@ class StaleFencingToken(RTError):
     """Submission carried a fencing token that is not the current lease (ADR-002)."""
 
 
+class CommandNotAuthorised(ControlDenied):
+    """The command does not carry a valid control-plane authorisation (IVA V-C2)."""
+
+
+class ExecutionBlocked(ControlDenied):
+    """Kill Switch / halt / mode forbids execution at submission time, whatever the decision said (IVA V-C1)."""
+
+
 class DuplicateIntentOrder(ControlDenied):
     """A live order already exists for this intent: at most one live broker order per intent (review OBJ-1)."""
 
@@ -62,10 +70,15 @@ class ExecutionGateway:
         alert: Callable[[str, dict[str, Any]], object] | None = None,
         broker_for_account: Callable[[str], str],
         guard: PlaneGuard = GUARD,
+        verify_command: Callable[[OrderCommand], str | None] | None = None,
+        execution_permitted: Callable[[OrderCommand, datetime], str | None] | None = None,
     ) -> None:
         self._adapters = adapters
         self._leases = lease_store
         self._guard = guard
+        # Both hooks fail closed when absent: a gateway without an authoriser or a permission oracle submits nothing.
+        self._verify_command = verify_command
+        self._execution_permitted = execution_permitted
         self._by_intent: dict[str, list[str]] = {}
         self._audit = audit  # (action, correlation_id, tenant, account, payload)
         self._publish = publish
@@ -110,6 +123,42 @@ class ExecutionGateway:
             )
         return rec
 
+    def _assert_executable(self, command: OrderCommand, now: datetime, *, stage: str) -> None:
+        """Kill Switch, halt, trading status and mode are consulted at the moment of submission (IVA V-C1)."""
+        if self._execution_permitted is None:
+            reason: str | None = "no execution permission oracle configured (fail closed)"
+        else:
+            reason = self._execution_permitted(command, now)
+        if reason is not None:
+            self._alert(
+                "execution.blocked_at_gateway",
+                {"account": command.account_id, "intent_id": command.intent_id, "reason": reason, "stage": stage},
+            )
+            self._audit(
+                "order.command.blocked",
+                command.correlation_id,
+                command.tenant_id,
+                command.account_id,
+                {"intent_id": command.intent_id, "decision_id": command.decision_id, "reason": reason, "stage": stage},
+            )
+            raise ExecutionBlocked(f"execution blocked at {stage}: {reason}")
+
+    def _assert_authorised(self, command: OrderCommand) -> None:
+        if self._verify_command is None:
+            reason: str | None = "no command authoriser configured (fail closed)"
+        else:
+            reason = self._verify_command(command)
+        if reason is not None:
+            self._alert("execution.unauthorised_command", {"account": command.account_id, "intent_id": command.intent_id, "reason": reason})
+            self._audit(
+                "order.command.unauthorised",
+                command.correlation_id,
+                command.tenant_id,
+                command.account_id,
+                {"intent_id": command.intent_id, "decision_id": command.decision_id, "reason": reason},
+            )
+            raise CommandNotAuthorised(reason)
+
     def _live_orders_for_intent(self, intent_id: str) -> list[OrderRecord]:
         return [
             self._orders[o]
@@ -137,6 +186,8 @@ class ExecutionGateway:
                 {"idempotency_key": command.idempotency_key, "order_id": existing_id},
             )
             return existing
+        # Authentication and permission before anything reaches a broker (IVA V-C1, V-C2)
+        self._assert_authorised(command)
         # Per-intent invariant: one live order per intent regardless of policy version (Trading review C2)
         live = self._live_orders_for_intent(command.intent_id)
         if live:
@@ -168,6 +219,7 @@ class ExecutionGateway:
                 {"executor": executor_id, "token": fencing_token},
             )
             raise StaleFencingToken(f"executor {executor_id} token {fencing_token} is not the current lease for {command.account_id}")
+        self._assert_executable(command, now, stage="submit")  # last gate before the broker (IVA V-C1)
         broker = self._broker_for_account(command.account_id)
         adapter = self._adapters.get(broker)
         if adapter is None:
@@ -251,6 +303,7 @@ class ExecutionGateway:
                 return self._save(rec, "order.cancelled.v1", now, {"retry": True})
             rec = self._transition(rec, OrderState.BROKER_REJECTED, now, reject_reason="rejected at broker", fencing_token=fencing_token)
             return self._save(rec, "order.rejected.v1", now, {"retry": True})
+        self._assert_executable(c, now, stage="retry")  # the world may have changed during the outage
         req = SubmitRequest(
             client_order_id=rec.client_order_id,
             account_id=c.account_id,

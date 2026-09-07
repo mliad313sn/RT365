@@ -41,7 +41,7 @@ NON_HUMAN_ROLES = frozenset({Role.STRATEGY_AGENT, Role.RUNTIME_MONITOR, Role.SYS
 
 def dev_header_auth_allowed() -> bool:
     """Header-asserted principals exist only in the sim environment (RAID R-06). Any other value refuses to start."""
-    return os.environ.get("RT_ENV", "sim") == "sim"
+    return os.environ.get("RT_ENV") == "sim"  # unset is NOT sim: an unlabelled environment fails closed (IVA-06)
 
 
 class KillSwitchRequest(BaseModel):

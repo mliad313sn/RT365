@@ -123,9 +123,13 @@ def current_env() -> str | None:
 def signing_key() -> tuple[str, bool]:
     """Configured key, or the dev key only in an explicit dev/sim environment. Anything else fails closed."""
     key = os.environ.get(KEY_ENV)
-    if key:
-        return key, False
     env = current_env()
+    if key:
+        if key == DEV_KEY:
+            if env in DEV_ENVIRONMENTS:
+                return DEV_KEY, True
+            raise RegistryUnsigned(f"the published dev key is black-listed outside dev/sim ({ENV_VAR}={env!r})")
+        return key, False
     if env in DEV_ENVIRONMENTS:
         return DEV_KEY, True
     raise RegistryUnsigned(f"no {KEY_ENV} configured and {ENV_VAR}={env!r} is not a dev/sim environment; refusing the dev key")
@@ -174,6 +178,8 @@ def load_registry(path: Path, key: str | None = None) -> ToolRegistry:
         raise RegistryUnsigned(f"registry schema violation: {exc.message}") from exc
     if key is not None:
         k, dev = key, key == DEV_KEY
+        if dev and current_env() not in DEV_ENVIRONMENTS:
+            raise RegistryUnsigned(f"the published dev key is black-listed outside dev/sim ({ENV_VAR}={current_env()!r})")
     else:
         k, dev = signing_key()
     fixture = bool(raw.get("fixture", False))

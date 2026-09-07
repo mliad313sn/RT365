@@ -61,6 +61,11 @@
       ],
       "title": "Approval Id"
     },
+    "authorisation": {
+      "default": "",
+      "title": "Authorisation",
+      "type": "string"
+    },
     "authorised_at": {
       "format": "date-time",
       "title": "Authorised At",

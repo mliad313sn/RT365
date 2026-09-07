@@ -2,7 +2,7 @@
 
 Control: MCP governance and injection defence — Requirement: FR-09 — RTM row: FR-09 — Owner: Backend Lead — Reviewer (≠ owner): MCP Security Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-07T18:09:37.793153+00:00 at `78742a240edbfb535d75ff8c942a4b2a9b6a2bb1`
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-07T18:41:56.053654+00:00 at `2070d9318506064c7e3a1339cb8d6966b6aca8dc`
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
@@ -13,7 +13,8 @@ Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | 
 | abuse | TC-AI-005 | mcp_servers never imports execution, broker, vault, kill switch or policy-mutation modules; egress denies vault/broker; unsigned registry refused. | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_forbidden_capabilities_are_structurally_impossible` |
 | abuse | TC-AI-006 | After an allowed run_simulation call, a plane crossing on the live platform still raises the S1 plane.deny alert (MCP review OBJ-1). | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_run_simulation_cannot_touch_live_monitoring` |
 | abuse | TC-AI-009 | The same signed call (nonce) is accepted once; a replay is refused and a duplicate intent never enters the queue (T-08). | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_signed_call_replay_rejected` |
+| abuse | TC-AI-011 | The published dev key is refused outside dev/sim however it is supplied (IVA-07); replay is refused across issuer restarts (IVA-08). | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_dev_key_blacklisted_outside_sim_and_nonce_journal_survives_restart` |
 | recovery | TC-AI-004 | Tool revoked mid-session -> denied; expired identity -> denied; registry signature revoked -> all tools refuse; restore works. | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_revocation_mid_session_and_registry_revocation` |
 | recovery | TC-AI-008 | Tool and agent revocations are persisted; a rebuilt runtime (restart) still refuses them (MCP review OBJ-3d). | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_revocation_survives_runtime_restart` |
 
-Quartet complete: yes. Records: 9.
+Quartet complete: yes. Records: 10.

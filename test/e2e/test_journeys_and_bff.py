@@ -181,3 +181,6 @@ def test_dev_header_auth_refuses_non_human_roles_and_non_sim_env(client, monkeyp
     monkeypatch.setenv("RT_ENV", "paper")
     with pytest.raises(RuntimeError):
         create_app(p)
+    monkeypatch.delenv("RT_ENV")  # an unlabelled environment is not sim: fail closed (IVA-06)
+    with pytest.raises(RuntimeError):
+        create_app(p)

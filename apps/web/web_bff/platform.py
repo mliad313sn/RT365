@@ -29,6 +29,7 @@ from compliance_engine.jurisdiction import JurisdictionRegistry
 from compliance_engine.retention import RetentionService
 from compliance_engine.surveillance import StrategyDeclaration
 from data_providers.simulated import SimulatedFeed
+from execution_gateway.authorisation import CommandAuthoriser
 from execution_gateway.gateway import ExecutionGateway
 from execution_gateway.lease import LeaseStore
 from identity_service.accounts import Account, AccountRegistry, Tenant
@@ -48,7 +49,7 @@ from mcp_servers.tools import build_tools
 from oms.intent_queue import IntentQueue
 from oms.lifecycle import IntentTracker
 from oms.outbox import Inbox, Outbox
-from oms.pipeline import EligibilityInputs, PipelineResult, TradePipeline
+from oms.pipeline import TARGET_FOR_MODE, EligibilityInputs, PipelineResult, TradePipeline
 from portfolio_service.ledger import Ledger, PositionState
 from reconciliation_service.reconcile import BreakSeverity, ReconciliationResult, reconcile
 from reconciliation_service.tickets import BreakTicketService
@@ -59,11 +60,12 @@ from rtcore.errors import ControlDenied
 from rtcore.lines import Actor, ActorKind, Role, system_actor
 from rtcore.money import ZERO
 from rtcore.planes import Plane, PlaneGuard, enter
-from rtcore.schemas.account import AccountMode, AccountSnapshot, EmergencyPolicy, OpenOrder
+from rtcore.schemas.account import AccountMode, AccountSnapshot, EmergencyPolicy, OpenOrder, TradingStatus
 from rtcore.schemas.compliance import CustomerProfile, CustomerType, RestrictedLists
+from rtcore.schemas.decision import DecisionRecord, Outcome
 from rtcore.schemas.intent import TradeIntent, ValidatedIntent
 from rtcore.schemas.market import InstrumentAttributes, MarketSnapshot
-from rtcore.schemas.order import OrderRecord
+from rtcore.schemas.order import OrderCommand, OrderRecord
 from rtobs.alerts import Alert, AlertRouter
 from rtobs.metrics import MetricsRegistry
 from rtobs.slis import SliCatalog
@@ -616,6 +618,47 @@ def build_sim_platform(
     broker.connect(VaultRef(path="vault://brokers/sim/creds", version=1), now=now)
     broker.fund(ACCOUNT, cash)
     leases = LeaseStore()
+    # Control-plane command authorisation key: created here, handed only to the pipeline (sign) and the gateway
+    # (verify). No MCP/AI component, tool, handler or BFF route ever receives it (IVA V-C2).
+    authoriser = CommandAuthoriser.generate()
+    decisions: dict[str, DecisionRecord] = {}
+
+    def execution_permitted(command: OrderCommand, at: datetime) -> str | None:
+        """Permission oracle consulted by the gateway at submission/retry time (IVA V-C1).
+
+        Order of precedence: Kill Switch > halt/trading status > mode/target > decision provenance.
+        """
+        acct = accounts.get(command.account_id)
+        ks = platform.killswitch
+        if ks.blocks(
+            tenant_id=command.tenant_id,
+            account_id=command.account_id,
+            strategy_id=command.strategy_id,
+            instrument_id=command.instrument_id,
+            asset_class=broker.known_instruments.get(command.instrument_id, ""),
+            venue=command.venue,
+        ):
+            return "kill switch engaged for this scope"
+        if acct.mode == AccountMode.HALTED or acct.trading_status != TradingStatus.ACTIVE:
+            return f"account {acct.mode.value}/{acct.trading_status.value}"
+        if acct.tenant_id != command.tenant_id:
+            return "tenant mismatch"
+        if TARGET_FOR_MODE.get(acct.mode) != command.execution_target:
+            return f"execution target {command.execution_target.value} does not match account mode {acct.mode.value}"
+        dec = decisions.get(command.decision_id)
+        if dec is None:
+            return "decision unknown to the control plane"
+        if dec.intent_id != command.intent_id or dec.policy_version != command.policy_version:
+            return "decision does not belong to this intent/policy version"
+        if dec.outcome == Outcome.APPROVED and command.approval_id is None:
+            return None
+        if dec.outcome == Outcome.REQUIRES_HUMAN_APPROVAL and command.approval_id is not None:
+            item = approvals.get(command.approval_id)
+            if item.status.value != "APPROVED" or item.decision.decision_id != command.decision_id:
+                return "approval record does not authorise this decision"
+            return None
+        return f"decision outcome {dec.outcome.value} does not authorise execution"
+
     gateway = ExecutionGateway(
         adapters={BROKER: broker},
         lease_store=leases,
@@ -624,6 +667,8 @@ def build_sim_platform(
         alert=lambda n, p: alerts.raise_alert(n, p),
         broker_for_account=lambda a: accounts.get(a).broker,
         guard=guard,
+        verify_command=authoriser.verify,
+        execution_permitted=execution_permitted,
     )
     approvals = ApprovalQueue(audit_hook=audit3)
     jurisdictions = JurisdictionRegistry(audit_hook=audit2)
@@ -728,10 +773,24 @@ def build_sim_platform(
             i.account_id, platform.now, f"{i.instrument_id}|{i.side.value}|{i.order_type.value}|{i.quantity}|{i.limit_price}"
         )
 
+    def audit_pipeline(action: str, correlation_id: str, tenant: str, account: str | None, payload: dict[str, Any]) -> None:
+        if action in ("risk.decided.v1", "risk.redecided.v1"):
+            rec = DecisionRecord.model_validate({k: v for k, v in payload.items() if k != "approval_id"})
+            decisions[rec.decision_id] = rec
+        audit5(action, correlation_id, tenant, account, payload)
+
+    def strategy_owner(strategy_id: str, version: str) -> str | None:
+        try:
+            return strategies.get(strategy_id, version).owner_id
+        except KeyError:
+            return None
+
     platform.pipeline = TradePipeline(
         tracker=tracker,
         outbox=outbox,
-        audit=audit5,
+        audit=audit_pipeline,
+        sign_command=authoriser.sign,
+        strategy_owner=strategy_owner,
         eligibility_inputs=elig_inputs,
         account_snapshot=lambda vi, at: platform.account_snapshot(vi.intent.account_id, at),
         market_snapshot=lambda vi, at: platform.market_snapshot(vi.intent.instrument_id, at),

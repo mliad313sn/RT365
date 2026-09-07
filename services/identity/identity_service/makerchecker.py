@@ -92,6 +92,10 @@ class MakerChecker:
 
     def reject(self, change_id: str, checker: Actor, *, now: datetime, reason: str) -> PendingChange:
         change = self._changes[change_id]
+        if not checker.is_human:
+            raise ControlDenied("only humans may reject controlled changes; agents/MCP have no write path")
+        if change.status != ChangeStatus.PENDING:
+            raise ControlDenied(f"change {change_id} is {change.status.value}")
         updated = change.model_copy(
             update={"status": ChangeStatus.REJECTED, "checker_id": checker.actor_id, "checked_at": now, "reason": reason}
         )

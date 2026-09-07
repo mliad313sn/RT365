@@ -285,3 +285,45 @@ def test_registry_key_and_environment_fail_closed(monkeypatch):  # type: ignore[
     p.runtime.register_handler("get_strategy_docs", lambda principal, args, now: {}["boom"])  # handler defect
     res = p.tool_call(p.issue_agent(), "get_strategy_docs", {"strategy_id": STRATEGY})
     assert res.error_code == "HANDLER_ERROR" and p.audit.by_action("mcp.tool.denied") and p.alerts.by_name("mcp.handler_error")
+
+
+@pytest.mark.tc("TC-AI-011")
+@pytest.mark.req("FR-09")
+@pytest.mark.quartet("abuse")
+def test_dev_key_blacklisted_outside_sim_and_nonce_journal_survives_restart(monkeypatch, tmp_path):  # type: ignore[no-untyped-def]
+    """The published dev key is refused outside dev/sim however it is supplied (IVA-07); replay is refused across issuer restarts (IVA-08)."""
+    from mcp_servers.identity import IdentityIssuer
+    from mcp_servers.registry import DEV_KEY, load_registry
+
+    signed = ROOT / "mcp" / "policies" / "tool_registry.signed.json"
+    monkeypatch.setenv("RT_ENV", "paper")
+    monkeypatch.setenv("RT_MCP_REGISTRY_KEY", DEV_KEY)
+    with pytest.raises(RegistryUnsigned, match="black-listed"):
+        load_registry(signed)
+    with pytest.raises(RegistryUnsigned, match="black-listed"):
+        load_registry(signed, key=DEV_KEY)
+    monkeypatch.setenv("RT_ENV", "sim")
+    monkeypatch.delenv("RT_MCP_REGISTRY_KEY", raising=False)
+    journal = tmp_path / "nonces.jsonl"
+    now = __import__("datetime").datetime(2026, 9, 7, 14, 0, tzinfo=__import__("datetime").UTC)
+    issuer = IdentityIssuer(nonce_path=journal)
+    ident = issuer.issue(
+        agent_id="a1",
+        tenant_id="t",
+        account_id="acct",
+        strategy_id="s",
+        strategy_version="1",
+        model_id="m",
+        model_version="1",
+        prompt_id="p",
+        prompt_version="1",
+        now=now,
+    )
+    call = issuer.sign_call(ident, "read_market_snapshot", {"instrument_id": INSTRUMENT}, now=now)
+    issuer.verify(ident.token_id, tool="read_market_snapshot", args={"instrument_id": INSTRUMENT}, call=call, now=now)
+    restarted = IdentityIssuer(nonce_path=journal)  # process restart: token restored from the durable store, journal re-read
+    restarted.adopt(ident)
+    with pytest.raises(ControlDenied, match="replayed"):
+        restarted.verify(ident.token_id, tool="read_market_snapshot", args={"instrument_id": INSTRUMENT}, call=call, now=now)
+    fresh = restarted.sign_call(ident, "read_market_snapshot", {"instrument_id": INSTRUMENT}, now=now)
+    assert restarted.verify(ident.token_id, tool="read_market_snapshot", args={"instrument_id": INSTRUMENT}, call=fresh, now=now)

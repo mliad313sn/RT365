@@ -8,6 +8,7 @@ from execution_gateway.gateway import StaleFencingToken
 from rtcore.errors import PlaneViolation, TransitionError
 from rtcore.planes import Plane, enter
 from rtcore.schemas.order import OrderCommand, OrderState, idempotency_key
+from web_bff.platform import build_sim_platform
 
 
 def _command(p, result) -> OrderCommand:  # type: ignore[no-untyped-def]
@@ -57,7 +58,9 @@ def test_replayed_command_deduplicated(platform):  # type: ignore[no-untyped-def
 def test_stale_fencing_token_rejected(platform):  # type: ignore[no-untyped-def]
     """A submission with a stale fencing token is rejected and alerted (S1); no broker order is created."""
     r = platform.run_intent(resting_limit_intent(platform))
-    cmd = _command(platform, r).model_copy(update={"idempotency_key": "new-key", "intent_id": "other-intent"})
+    cmd = platform.pipeline.sign_command(
+        _command(platform, r).model_copy(update={"idempotency_key": "new-key", "intent_id": "other-intent"})
+    )
     old = platform.leases.current(ACCOUNT).fencing_token
     platform.leases.preempt(ACCOUNT, "executor-b", now=platform.now)
     with enter(Plane.CONTROL), pytest.raises(StaleFencingToken):
@@ -133,7 +136,8 @@ def test_new_policy_version_cannot_create_second_live_order(platform):  # type: 
     from execution_gateway.gateway import DuplicateIntentOrder
 
     r = platform.run_intent(platform.make_intent())
-    cmd = r.order.command.model_copy(update={"idempotency_key": "k-policy-v2", "policy_version": "sim-policy-v0.2"})
+    # a re-evaluation produces a new command id and idempotency key for the same intent; it is signed by the control plane
+    cmd = platform.pipeline.sign_command(r.order.command.model_copy(update={"idempotency_key": "k-policy-v2", "command_id": "cmd-reeval"}))
     lease = platform.leases.current(ACCOUNT)
     with enter(Plane.CONTROL), pytest.raises(DuplicateIntentOrder):
         platform.gateway.submit(cmd, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
@@ -174,3 +178,119 @@ def test_retry_queries_non_deduping_broker_before_resubmitting(platform):  # typ
     assert rec.state == OrderState.ACKNOWLEDGED and platform.broker.submissions_received == 1
     platform.settle()
     assert platform.reconcile().clean
+
+
+# ---- TC-EX-009: the gateway authenticates commands and consults Kill Switch / halt / mode at submission (IVA V-C1, V-C2)
+def _resign(p, cmd, **update):  # type: ignore[no-untyped-def]
+    return p.pipeline.sign_command(cmd.model_copy(update=update))
+
+
+@pytest.mark.tc("TC-EX-009")
+@pytest.mark.req("FR-13")
+@pytest.mark.quartet("positive")
+def test_gateway_accepts_only_control_plane_signed_commands(platform):  # type: ignore[no-untyped-def]
+    """A command signed by the pipeline for a known APPROVED decision is accepted; the same command with one field altered is not."""
+    from execution_gateway.gateway import CommandNotAuthorised
+
+    r = platform.run_intent(resting_limit_intent(platform))
+    assert r.order.command.authorisation and r.order.state in (OrderState.ACKNOWLEDGED, OrderState.SUBMITTED)
+    altered = r.order.command.model_copy(update={"quantity": r.order.command.quantity * 10, "idempotency_key": "k-altered"})
+    lease = platform.leases.current(ACCOUNT)
+    with enter(Plane.CONTROL), pytest.raises(CommandNotAuthorised):
+        platform.gateway.submit(altered, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
+    assert platform.broker.submissions_received == 1 and platform.alerts.by_name("execution.unauthorised_command")
+    assert platform.audit.by_action("order.command.unauthorised")
+
+
+@pytest.mark.tc("TC-EX-009")
+@pytest.mark.req("FR-17")
+@pytest.mark.quartet("negative")
+def test_gateway_blocks_kill_switch_and_halted_account_at_submission(platform):  # type: ignore[no-untyped-def]
+    """An authorised command that arrives after an ACCOUNT Kill Switch or a halt is refused at the gateway, whatever the decision said (IVA V-C1)."""
+    from conftest import RISK_OFFICER
+    from execution_gateway.gateway import ExecutionBlocked
+    from killswitch_service.service import KillSwitchLevel
+
+    r = platform.run_intent(resting_limit_intent(platform))
+    lease = platform.leases.current(ACCOUNT)
+    with enter(Plane.CONTROL):
+        platform.gateway.cancel(r.order.order_id, fencing_token=lease.fencing_token, now=platform.now, reason="make room for a re-send")
+    late = _resign(platform, r.order.command, idempotency_key="k-late", command_id="cmd-late")  # legitimately authorised, delivered late
+    platform.killswitch.activate(KillSwitchLevel.ACCOUNT, ACCOUNT, reason="drill", actor=RISK_OFFICER, now=platform.now)
+    lease = platform.leases.acquire(ACCOUNT, platform.executor_id, now=platform.now)
+    with enter(Plane.CONTROL), pytest.raises(ExecutionBlocked, match="kill switch"):
+        platform.gateway.submit(late, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
+    assert platform.broker.submissions_received == 1
+    assert platform.alerts.by_name("execution.blocked_at_gateway") and platform.audit.by_action("order.command.blocked")
+    # halted account without a kill switch: also refused
+    p2 = build_sim_platform()
+    r2 = p2.run_intent(resting_limit_intent(p2))
+    lease2 = p2.leases.current(ACCOUNT)
+    with enter(Plane.CONTROL):
+        p2.gateway.cancel(r2.order.order_id, fencing_token=lease2.fencing_token, now=p2.now, reason="x")
+    p2.accounts.halt(ACCOUNT, RISK_OFFICER, reason="drill", now=p2.now)
+    with enter(Plane.CONTROL), pytest.raises(ExecutionBlocked, match="HALTED"):
+        p2.gateway.submit(
+            _resign(p2, r2.order.command, idempotency_key="k-halt", command_id="cmd-halt"),
+            executor_id=p2.executor_id,
+            fencing_token=lease2.fencing_token,
+            now=p2.now,
+        )
+    assert p2.broker.submissions_received == 1
+
+
+@pytest.mark.tc("TC-EX-009")
+@pytest.mark.req("FR-13")
+@pytest.mark.quartet("abuse")
+def test_forged_decision_and_gateway_without_oracle_fail_closed(platform):  # type: ignore[no-untyped-def]
+    """A correctly signed command naming a decision the control plane never made is refused; a gateway built without hooks submits nothing."""
+    from execution_gateway.gateway import CommandNotAuthorised, ExecutionBlocked, ExecutionGateway
+
+    r = platform.run_intent(resting_limit_intent(platform))
+    lease = platform.leases.current(ACCOUNT)
+    with enter(Plane.CONTROL):
+        platform.gateway.cancel(r.order.order_id, fencing_token=lease.fencing_token, now=platform.now, reason="x")
+    forged = _resign(platform, r.order.command, decision_id="dec_forged", idempotency_key="k-forged", command_id="cmd-forged")
+    with enter(Plane.CONTROL), pytest.raises(ExecutionBlocked, match="decision unknown"):
+        platform.gateway.submit(forged, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
+    # decision exists but is for another intent
+    other = _resign(platform, r.order.command, intent_id="other-intent", idempotency_key="k-other", command_id="cmd-other")
+    with enter(Plane.CONTROL), pytest.raises(ExecutionBlocked, match="does not belong"):
+        platform.gateway.submit(other, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
+    assert platform.broker.submissions_received == 1
+    bare = ExecutionGateway(
+        adapters=platform.gateway._adapters,
+        lease_store=platform.leases,
+        audit=lambda *a: None,
+        publish=lambda e: None,
+        broker_for_account=lambda a: "sim-broker",
+        guard=platform.guard,
+    )
+    with enter(Plane.CONTROL), pytest.raises(CommandNotAuthorised, match="fail closed"):
+        bare.submit(r.order.command, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now)
+    assert platform.broker.submissions_received == 1
+
+
+@pytest.mark.tc("TC-EX-009")
+@pytest.mark.req("FR-17")
+@pytest.mark.quartet("recovery")
+def test_retry_after_outage_rechecks_kill_switch(platform):  # type: ignore[no-untyped-def]
+    """An order left SUBMITTED by a broker outage is not re-sent once the account was halted during the outage.
+
+    (A Kill Switch would already have cancelled the stuck order through its cancel hook; a halt does not, so the
+    gateway's own re-check at retry time is the control under test.)
+    """
+    from conftest import RISK_OFFICER
+    from execution_gateway.gateway import ExecutionBlocked
+
+    platform.broker.fail_submissions = True
+    r = platform.run_intent(resting_limit_intent(platform))
+    assert r.order.state == OrderState.SUBMITTED
+    platform.broker.fail_submissions = False
+    platform.accounts.halt(ACCOUNT, RISK_OFFICER, reason="drill during outage", now=platform.now)
+    lease = platform.leases.acquire(ACCOUNT, platform.executor_id, now=platform.now)
+    with enter(Plane.CONTROL), pytest.raises(ExecutionBlocked, match="HALTED"):
+        platform.gateway.retry_submit(
+            r.order.order_id, executor_id=platform.executor_id, fencing_token=lease.fencing_token, now=platform.now
+        )
+    assert platform.gateway.get(r.order.order_id).state == OrderState.SUBMITTED and platform.broker.submissions_received == 0

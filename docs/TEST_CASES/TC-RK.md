@@ -2,7 +2,7 @@
 
 Control: Deterministic risk engine — Requirement: FR-11 — RTM row: FR-11 — Owner: Backend Lead — Reviewer (≠ owner): Chief Risk Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-07T18:09:37.793153+00:00 at `78742a240edbfb535d75ff8c942a4b2a9b6a2bb1`
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-07T18:41:56.053654+00:00 at `2070d9318506064c7e3a1339cb8d6966b6aca8dc`
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
@@ -45,7 +45,8 @@ Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | 
 | abuse | TC-RK-003 | Intent mutated after validation (hash mismatch) -> REJECTED with RK-INTEG; pipeline raises an S1 alert. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_tampered_intent_hash_rejected` |
 | abuse | TC-RK-015 | Replayed signed intent -> RK-DUP; correlated group exposure enforced across instruments. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_duplicate_and_correlated_group` |
 | abuse | TC-RK-017 | Open buys are projected into gross exposure (no evasion via resting orders); a SELL that shrinks an over-limit book is allowed (Risk review OBJ-3/P4). | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_open_orders_count_towards_exposure_and_risk_reducing_orders_pass` |
+| abuse | TC-RK-021 | A resting same-side order counts as if filled for max_position_per_instrument: a flat book cannot reach 2x the cap by splitting (IVA-03). | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_position_cap_counts_resting_orders` |
 | recovery | TC-RK-004 | Missing policy/snapshots -> HALTED (fail closed); after restore the same inputs give the same decision as before. | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_engine_restart_same_decision_and_fail_closed_on_missing_inputs` |
 | recovery | TC-RK-019 | An approved intent is re-decided at execution time; a limit breached meanwhile blocks execution (Risk review OBJ-2). | pass | passed | `test/quartets/test_tc_rk_determinism.py::test_approval_re_decides_on_current_snapshots` |
 
-Quartet complete: yes. Records: 41.
+Quartet complete: yes. Records: 42.

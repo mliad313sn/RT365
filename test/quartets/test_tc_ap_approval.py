@@ -75,3 +75,19 @@ def test_expired_or_killed_intent_not_executed_after_approval(supervised):  # ty
     assert supervised.broker.submissions_received == 0
     r3 = supervised.run_intent(supervised.make_intent())
     assert r3.decision.outcome == Outcome.HALTED
+
+
+@pytest.mark.tc("TC-AP-005")
+@pytest.mark.req("FR-12")
+@pytest.mark.quartet("abuse")
+def test_strategy_owner_cannot_approve_own_strategy(supervised):  # type: ignore[no-untyped-def]
+    """The registered owner of the strategy (quant.fixture) is refused as approver even with an approving role; another PM may approve (IVA-04)."""
+    r = supervised.run_intent(supervised.make_intent())
+    item = supervised.approvals.get(r.approval_id)
+    assert item.strategy_owner_id == "quant.fixture"
+    owner_as_pm = human("quant.fixture", Role.PORTFOLIO_MANAGER)
+    with pytest.raises(ControlDenied):
+        supervised.approve(r.approval_id, owner_as_pm)
+    assert supervised.approvals.get(r.approval_id).status.value == "PENDING"
+    order = supervised.approve(r.approval_id, PM)
+    assert order.state in (OrderState.ACKNOWLEDGED, OrderState.FILLED, OrderState.PARTIALLY_FILLED)

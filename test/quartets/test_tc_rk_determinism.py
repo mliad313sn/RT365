@@ -491,3 +491,38 @@ def test_limit_change_only_via_maker_checker(platform):  # type: ignore[no-untyp
     platform.apply_effective_limits(platform.now + timedelta(hours=1, seconds=1))
     assert effective_limit(platform.policy, Metric.LEVERAGE_X, scope, platform.now + timedelta(hours=2)).threshold == Decimal("1.5")
     assert platform.policy.policy_version != "sim-policy-v0.1" and platform.audit.by_action("limit.changed.v1")
+
+
+@pytest.mark.tc("TC-RK-021")
+@pytest.mark.req("FR-11")
+@pytest.mark.quartet("abuse")
+def test_position_cap_counts_resting_orders(platform):  # type: ignore[no-untyped-def]
+    """A resting same-side order counts as if filled for max_position_per_instrument: a flat book cannot reach 2x the cap by splitting (IVA-03)."""
+    from rtcore.schemas.account import OpenOrder
+
+    vi = platform.submit_intent(platform.make_intent(quantity="9000"))  # 0.9M at ~100: under the 1M per-order cap
+    acct = platform.account_snapshot(ACCOUNT).model_copy(
+        update={"nav": Decimal("5000000"), "buying_power": Decimal("5000000"), "peak_nav": Decimal("5000000")}
+    )
+    clean = decide(vi, acct, platform.market_snapshot(INSTRUMENT), platform.policy, platform.now)
+    assert "RK-CAP-POS" not in clean.reason_codes
+    resting = acct.model_copy(
+        update={
+            "open_orders": (
+                OpenOrder(
+                    order_id="o-rest",
+                    instrument_id=INSTRUMENT,
+                    side=Side.BUY,
+                    quantity=Decimal("12000"),
+                    notional=Decimal("1200000"),
+                    submitted_at=platform.now,
+                ),
+            )
+        }
+    )
+    d = decide(vi, resting, platform.market_snapshot(INSTRUMENT), platform.policy, platform.now)
+    assert "RK-CAP-POS" in d.reason_codes and d.outcome == Outcome.REJECTED
+    # the opposite side reduces the committed position and passes the cap
+    sell = platform.submit_intent(platform.make_intent(side="SELL", quantity="9000", protective_stop=None))
+    d2 = decide(sell, resting, platform.market_snapshot(INSTRUMENT), platform.policy, platform.now)
+    assert "RK-CAP-POS" not in d2.reason_codes

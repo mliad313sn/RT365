@@ -53,6 +53,14 @@ class OrderCommand(StrictModel):
     authorised_at: datetime
     authorised_by: str
     execution_target: ExecutionTarget
+    # Control-plane authorisation MAC over authorised_digest(); the execution gateway verifies it and refuses
+    # commands that did not come through the risk/approval pipeline (IVA V-C2). Empty = unauthorised.
+    authorisation: str = ""
+
+    def authorised_digest(self) -> str:
+        """Canonical digest of every field that authorisation binds (everything except the MAC itself)."""
+        fields = self.model_dump(mode="json", exclude={"authorisation"})
+        return sha256_hex("|".join(f"{k}={fields[k]}" for k in sorted(fields)))
 
     @field_validator("authorised_at")
     @classmethod

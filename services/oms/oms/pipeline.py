@@ -74,6 +74,8 @@ class TradePipeline:
     gateway: ExecutionGateway
     leases: LeaseStore
     executor_id: str
+    sign_command: Callable[[OrderCommand], OrderCommand]  # control-plane authorisation (IVA V-C2)
+    strategy_owner: Callable[[str, str], str | None]  # (strategy_id, version) -> owner; owner never approves own intents (IVA-04)
     on_authorised: Callable[[ValidatedIntent, DecisionRecord], object] = lambda vi, d: None
     inbox: Inbox | None = None
     alert: Callable[[str, dict[str, Any]], object] = lambda name, payload: None
@@ -142,7 +144,9 @@ class TradePipeline:
                     validated_intent=vi, eligibility=elig, decision=decision, approval_id=None, order=None, final_state=IntentState.REJECTED
                 )
             if decision.outcome == Outcome.REQUIRES_HUMAN_APPROVAL:
-                item = self.approvals.enqueue(vi, decision, now=now)
+                item = self.approvals.enqueue(
+                    vi, decision, now=now, strategy_owner_id=self.strategy_owner(vi.intent.strategy_id, vi.intent.strategy_version)
+                )
                 self.tracker.transition(intent_id, IntentState.PENDING_APPROVAL, now=now, detail={"approval_id": item.approval_id})
                 return PipelineResult(
                     validated_intent=vi,
@@ -240,6 +244,7 @@ class TradePipeline:
             authorised_by=authorised_by,
             execution_target=TARGET_FOR_MODE[mode],
         )
+        command = self.sign_command(command)
         self.tracker.transition(
             intent_id,
             IntentState.AUTHORISED,

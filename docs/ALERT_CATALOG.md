@@ -17,3 +17,5 @@
 | Broker health fail | health check | S2 | cancel-only | broker disconnected |
 | Audit chain verification fail | hash mismatch | S1 | halt trading; forensic | Kill Switch activation |
 | Limit changed | any | info | — | — |
+| execution.unauthorised_command | command without valid control-plane authorisation (forged/altered) [Committee: GATE_C V-C2] | S1 | killswitch_account | credential compromise |
+| execution.blocked_at_gateway | authorised command refused by Kill Switch / halt / mode / provenance at submit or retry [Committee: GATE_C V-C1] | S1 | none (page) | Kill Switch activation |

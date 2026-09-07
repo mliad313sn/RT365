@@ -318,7 +318,17 @@ def chk_caps(ctx: _Ctx) -> list[EvaluatedCheck]:
     out = [_cap_check(ctx, "max_notional_per_order", Metric.MAX_NOTIONAL_PER_ORDER, ctx.order_notional, "RK-CAP")]
     pos = ctx.acct.position_for(i.instrument_id)
     current_qty = pos.quantity if pos else ZERO
-    projected_qty = current_qty + ctx.signed_qty
+    # Open orders on the instrument count as if filled (IVA-03): a resting order cannot be used to reach 2x the cap
+    open_signed = sum(
+        (
+            (o.quantity if o.side in (Side.BUY, Side.BUY_TO_COVER) else -o.quantity)
+            for o in ctx.acct.open_orders
+            if o.instrument_id == i.instrument_id
+        ),
+        ZERO,
+    )
+    committed_qty = current_qty + open_signed
+    projected_qty = committed_qty + ctx.signed_qty
     projected_value = abs(projected_qty) * ctx.est_price
     out.append(
         _cap_check(
@@ -327,7 +337,7 @@ def chk_caps(ctx: _Ctx) -> list[EvaluatedCheck]:
             Metric.MAX_POSITION_PER_INSTRUMENT,
             projected_value,
             "RK-CAP-POS",
-            current=abs(current_qty) * ctx.est_price,
+            current=abs(committed_qty) * ctx.est_price,
         )
     )
     # Aggregate open same-side orders on the instrument: order splitting cannot evade the cap [Committee C4 abuse test].
