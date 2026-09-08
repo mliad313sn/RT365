@@ -2,7 +2,7 @@
 
 | Owner | Reviewer (different line) | Approving body | First gate | Status |
 |---|---|---|---|---|
-| SRE Lead | Security Architect | CAB, Security & Privacy Board | C | Draft v1.1, 2026-09-08 — three fail-closed recoveries added (O-126, O-134); **reviewer signature pending**; not accepted |
+| SRE Lead | Security Architect | CAB, Security & Privacy Board | C | Draft v1.2, 2026-09-08 — three fail-closed recoveries added (O-126, O-134) and RB-15 added for an incomplete probe trace (F-14); **reviewer signature pending**; not accepted |
 
 Severity: S1 capital at risk / control bypass / data breach · S2 degraded control or data · S3 other.
 Incident command: SRE Lead (commander), Chief Risk Agent (risk decisions), Compliance Agent (notifications), Security Architect (cyber), Support Lead (customers). Deputies documented in RACI.md [Source: 13].
@@ -82,3 +82,17 @@ A drill that does not say what it ran against is not evidence, and a drill on a 
 8. **Who acted**: the identities that restored the audit store and the anchor directory, and whether they were different people.
 
 A drill record missing any of 1–3 or 7 produces a number the SRE Lead will refuse to carry into O-18. **No RPO or RTO figure is stated or implied here** [Open: O-18] [Source: 00].
+
+### RB-15 — The synthetic probe reports a missing or failed span (F-14, SRE-R10)
+
+**A missing span is a defect, not a warning** — but only if the id you were given is the id the spans are under, which is what F-14 repaired. Read this entry before treating a probe result as reassurance.
+
+| | |
+|---|---|
+| **Trigger** | `rt365 probe --env sim` (or the same probe run at deploy, DEPLOYMENT_RUNBOOK step 7) exits non-zero: `missing_spans` is non-empty, `failed_spans` is non-empty, or `trace_correlation_id` differs from `correlation_id`. |
+| **How you find out** | From the probe's own exit code and output. There is **no alert** for this: the probe is a command someone runs, not a monitored signal, and no scheduler runs it [Open: SRE-R10]. Treat a probe nobody ran as a check that did not happen. |
+| **First action** | (1) Record the printed `correlation_id` **before anything else**; it is the id the spans, the audit rows and the events are under, and it is the only handle on the run. (2) Distinguish the three failures, because they mean different things: **`trace_correlation_id` ≠ `correlation_id`** is a regression of F-14 itself — the verdict was computed under an id the operator was not given, and no completeness claim from that run may be cited anywhere; **`missing_spans`** is a stage that did not run or did not record on a path that reaches the stages after it — a hole in the trace; **`failed_spans`** is a stage that ran and failed (an `audit` span marked failed means the run produced **no audit row**, which is an audit-integrity matter, not an observability one). (3) Read `stages_not_reached`: `order_command`/`broker_ack` absent after a fail-closed refusal is the **control working** and is reported there, never as missing. |
+| **Never** | Do not re-run the probe until the first result is recorded — a second run mints a new correlation id and the first run's trace is the evidence. Do not "fix" a red probe by widening what counts as complete, by declaring a stage not reached, or by removing a stage from the pipeline stage list: only `order_command` and `broker_ack` may ever be declared not reached, and only when no later conditional stage ran. Do not cite a probe result whose two ids differ. |
+| **Escalation** | SRE Lead (probe and tracer), Backend Lead (the stage that did not record); Compliance and the Chief Risk Agent if the failed stage is `audit`, because a decision path that produced no audit row is an audit-trail failure. S2 for a missing span in dev/sim; **S1 for a failed `audit` span, and S1 for any missing span in an environment above sim**. |
+| **Evidence first** | The probe's whole output verbatim (both ids, `stages_recorded`, `stages_not_reached`, `missing_spans`, `failed_spans`, `final_state`, `intent_id`); the audit rows for the printed correlation id; the process's start time and the release artefact it is running. |
+| **Exit** | The stage records again, a fresh probe exits zero with the two ids equal, and the post-incident note says which stage was silent and why. **A probe result is evidence about one process**: the tracer is in-process only, with no propagation carrier and no exporter, so a green probe in one process is not evidence that a deployed cell is traceable end to end [Open: SRE-R10, R-05]. |
