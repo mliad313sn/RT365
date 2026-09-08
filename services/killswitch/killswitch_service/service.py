@@ -12,6 +12,7 @@ from rtcore.ids import hash_of, new_id
 from rtcore.lines import KILL_SWITCH_ACTIVATORS, Actor, ActorKind
 from rtcore.schemas.account import EmergencyPolicy, KillSwitchFlags
 from rtcore.schemas.base import StrictModel
+from rtcore.store import MemoryStore, Store
 
 
 class KillSwitchLevel(str, Enum):
@@ -69,7 +70,17 @@ class KillSwitchHooks:
 class KillSwitchService:
     hooks: KillSwitchHooks = field(default_factory=KillSwitchHooks)
     approved_liquidation_policies: tuple[str, ...] = ()  # [Open: O-08] registry of Trading-Risk-Committee-approved policies
-    _activations: dict[str, Activation] = field(default_factory=dict)
+    # Activations live behind the store seam (ADR-010): memory by default, SQLite with store_dir, so an engaged switch
+    # at any level survives a restart and is the flag the risk engine and the gateway oracle consult (R-23, R-05).
+    store: Store = field(default_factory=MemoryStore)
+    table: str = "killswitch.activations"
+
+    def _put(self, activation: Activation, correlation_id: str) -> Activation:
+        self.store.put(self.table, activation.activation_id, activation.model_dump_json(), correlation_id=correlation_id)
+        return activation
+
+    def _all(self) -> tuple[Activation, ...]:
+        return tuple(Activation.model_validate_json(raw) for _key, raw in self.store.items(self.table))
 
     # --- activation -------------------------------------------------------------------------
     def activate(
@@ -99,7 +110,7 @@ class KillSwitchService:
             cancelled_orders=(),
             revoked_identities=(),
         )
-        self._activations[activation.activation_id] = activation
+        self._put(activation, corr)
         self.hooks.audit(
             "killswitch.engaged",
             corr,
@@ -148,7 +159,7 @@ class KillSwitchService:
             }
         )
         attempt("observe", lambda: self.hooks.observe("killswitch.time_to_halt_s", halt_elapsed_ms / 1000.0), None)
-        self._activations[activation.activation_id] = activation
+        self._put(activation, corr)
         if level == KillSwitchLevel.ACCOUNT:
             attempt("halt_account", lambda: self.hooks.halt_account(target_id, reason), None)
         self.hooks.audit("killswitch.activated", corr, {**activation.model_dump(mode="json"), "evidence_snapshot": snapshot})
@@ -161,11 +172,11 @@ class KillSwitchService:
             ),
             None,
         )
-        return self._activations[activation.activation_id]
+        return self.get(activation.activation_id)
 
     # --- deactivation (two-person, different lines) --------------------------------------------
     def deactivate(self, activation_id: str, *, actor: Actor, reason: str, now: datetime) -> Activation:
-        act = self._activations[activation_id]
+        act = self.get(activation_id)
         if not act.active:
             raise ControlDenied("activation already deactivated")
         if actor.kind != ActorKind.HUMAN:
@@ -177,7 +188,7 @@ class KillSwitchService:
             updated = act.model_copy(
                 update={"deactivation_first_by": actor.actor_id, "deactivation_first_line": actor.line.value, "deactivation_reason": reason}
             )
-            self._activations[activation_id] = updated
+            self._put(updated, activation_id)
             self.hooks.audit(
                 "killswitch.deactivation.pending", activation_id, {"first": actor.actor_id, "line": actor.line.value, "reason": reason}
             )
@@ -189,7 +200,7 @@ class KillSwitchService:
         updated = act.model_copy(
             update={"active": False, "deactivated_at": now, "deactivation_reason": f"{act.deactivation_reason} | {reason}"}
         )
-        self._activations[activation_id] = updated
+        self._put(updated, activation_id)
         self.hooks.audit(
             "killswitch.deactivated",
             activation_id,
@@ -200,10 +211,13 @@ class KillSwitchService:
 
     # --- state queries ----------------------------------------------------------------------------
     def active(self) -> tuple[Activation, ...]:
-        return tuple(a for a in self._activations.values() if a.active)
+        return tuple(a for a in self._all() if a.active)
 
     def get(self, activation_id: str) -> Activation:
-        return self._activations[activation_id]
+        raw = self.store.get(self.table, activation_id)
+        if raw is None:
+            raise KeyError(activation_id)
+        return Activation.model_validate_json(raw)
 
     def flags_for(self, *, tenant_id: str, account_id: str, asset_classes: tuple[str, ...] = ()) -> KillSwitchFlags:
         active = self.active()

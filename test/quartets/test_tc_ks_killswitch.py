@@ -187,3 +187,34 @@ def test_time_to_halt_is_measured_and_every_later_approval_is_blocked(supervised
     assert sli.target is None and "activated_at" in sli.definition  # ceiling is set at the first drill [Open: Q-16-1]
     actions = [e.action for e in supervised.audit.by_correlation(supervised.audit.by_action("killswitch.engaged")[-1].correlation_id)]
     assert actions.index("killswitch.engaged") < actions.index("killswitch.activated")
+
+
+@pytest.mark.tc("TC-KS-010")
+@pytest.mark.req("FR-17")
+@pytest.mark.quartet("recovery")
+def test_activation_survives_restart_and_two_person_deactivation_spans_it(tmp_path):  # type: ignore[no-untyped-def]
+    """A STRATEGY-level activation (no account halt to fall back on) and its pending first-person deactivation survive a restart: the rebuilt platform still halts intents and revokes agents; the second person completes the deactivation after the restart (R-23)."""
+    from web_bff.platform import build_sim_platform
+
+    p1 = build_sim_platform(store_dir=tmp_path)
+    act = p1.killswitch.activate(KillSwitchLevel.STRATEGY, STRATEGY, reason="drill", actor=CHIEF_RISK, now=p1.now)
+    p1.killswitch.deactivate(act.activation_id, actor=RISK_OFFICER, reason="reviewed", now=p1.now)  # pending, 2nd line
+    p1.store.close()
+
+    p2 = build_sim_platform(store_dir=tmp_path)  # restart: the account registry is fresh (PAPER), only the store remembers
+    restored = p2.killswitch.get(act.activation_id)
+    assert restored.active and restored.deactivation_first_by == RISK_OFFICER.actor_id and restored in p2.killswitch.active()
+    assert p2.killswitch.flags_for(tenant_id=TENANT, account_id=ACCOUNT).strategies == (STRATEGY,)
+    r = p2.run_intent(p2.make_intent())
+    assert r.decision.outcome == Outcome.HALTED and "RK-HALT-KS" in r.decision.reason_codes and p2.broker.submissions_received == 0
+    # the scope revocation issued by the activation is restored too (revocation journal kept under store_dir)
+    assert p2.tool_call(p2.issue_agent(), "read_market_snapshot", {"instrument_id": INSTRUMENT}).error_code == "IDENTITY"
+    with pytest.raises(ControlDenied):  # same line as the first person: still refused after the restart
+        p2.killswitch.deactivate(act.activation_id, actor=COMPLIANCE, reason="me too", now=p2.now)
+    done = p2.killswitch.deactivate(act.activation_id, actor=SRE, reason="verified", now=p2.now)
+    assert not done.active and p2.killswitch.active() == () and p2.audit.by_action("killswitch.deactivated")
+    p2.issuer.restore_scope("STRATEGY", STRATEGY, by="risk.officer.1+sre.lead", now=p2.now)
+    assert p2.run_intent(p2.make_intent()).decision.outcome == Outcome.APPROVED
+    p3 = build_sim_platform(store_dir=tmp_path)  # a further restart sees the deactivation, never the activation alone
+    assert p3.killswitch.active() == () and p3.killswitch.get(act.activation_id).deactivated_at is not None
+    p3.store.verify()

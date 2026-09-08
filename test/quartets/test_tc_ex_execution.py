@@ -450,3 +450,65 @@ def test_authorised_digest_binds_every_field_injectively():  # type: ignore[no-u
     assert (
         base.model_copy(update={"quantity": Decimal("1.0")}).authorised_digest() != base.authorised_digest() or True
     )  # Decimal form is part of the canonical dump
+
+
+# ---- TC-EX-011: restart with an order in flight (R-05): durable lease token, inbox, decision index and one-shot grants
+@pytest.mark.tc("TC-EX-011")
+@pytest.mark.req("FR-13")
+@pytest.mark.quartet("recovery")
+def test_restart_with_order_in_flight_keeps_fencing_inbox_and_one_shot_grants(tmp_path):  # type: ignore[no-untyped-def]
+    """A gateway rebuilt from its store after a crash with an order in flight: the fencing token is never reissued lower, the replayed command is deduplicated, the consumed grant and decision stay refused, and nothing reaches the broker."""
+    from execution_gateway.authorisation import CommandAuthoriser
+    from execution_gateway.gateway import CommandNotAuthorised, ExecutionBlocked, ExecutionGateway
+    from rtcore.errors import ControlDenied
+
+    key = b"sim-only-command-authorisation-key-32b!!"  # handed to the composition root only (vault/KMS in deployment, O-53)
+    p1 = build_sim_platform(store_dir=tmp_path, authorisation_key=key)
+    p1.broker.fail_submissions = True
+    r = p1.run_intent(p1.make_intent())
+    assert r.order.state == OrderState.SUBMITTED
+    cmd = r.order.command
+    t1 = p1.leases.current(ACCOUNT).fencing_token
+    p1.store.close()  # crash of executor A
+
+    p2 = build_sim_platform(store_dir=tmp_path, authorisation_key=key, executor_id="executor-b")
+    rec = p2.gateway.get(r.order.order_id)
+    assert rec.state == OrderState.SUBMITTED and rec.fencing_token == t1
+    lease = p2.leases.preempt(ACCOUNT, "executor-b", now=p2.now)  # failover: the token strictly increases across the restart
+    assert lease.fencing_token > t1 and not p2.leases.is_valid(ACCOUNT, t1, now=p2.now)
+    # the in-flight order cannot be re-sent: the control-plane decision state did not survive, so the oracle fails closed
+    with enter(Plane.CONTROL), pytest.raises(ExecutionBlocked, match="intent unknown"):
+        p2.gateway.retry_submit(r.order.order_id, executor_id="executor-b", fencing_token=lease.fencing_token, now=p2.now)
+    assert p2.gateway.get(r.order.order_id).state == OrderState.SUBMITTED
+    # replay of the original command: the inbox answers from the store, nothing new is created
+    with enter(Plane.CONTROL):
+        same = p2.gateway.submit(cmd, executor_id="executor-b", fencing_token=lease.fencing_token, now=p2.now)
+    assert same.order_id == r.order.order_id and p2.gateway.duplicate_commands == 1
+    assert p2.audit.by_action("order.command.duplicate_ignored") and p2.gateway.authorisation_consumed(cmd.authorisation)
+    # the same decision under a new key is refused at platform level whatever the path (here the durable per-intent index
+    # still holds the in-flight order: S1 execution.duplicate_order and its auto Kill Switch on the account, as in TC-EX-007) ...
+    replay = p2.pipeline.sign_command(cmd.model_copy(update={"idempotency_key": "k-after-restart", "command_id": "cmd-after-restart"}))
+    with enter(Plane.CONTROL), pytest.raises(ControlDenied):
+        p2.gateway.submit(replay, executor_id="executor-b", fencing_token=lease.fencing_token, now=p2.now)
+    assert p2.alerts.by_name("execution.duplicate_order")
+    assert any(a.level.value == "ACCOUNT" and a.target_id == ACCOUNT for a in p2.killswitch.active())
+    assert p2.gateway.get(r.order.order_id).state == OrderState.CANCELLED  # the switch cancelled the stuck order (never reached the broker)
+    # ... and, isolated from the oracle and the switch, precisely because the durable decision index already holds an order
+    # for that decision (one-shot grant, IVA-21). The switch released the executor lease: a fresh, strictly higher token.
+    lease = p2.leases.acquire(ACCOUNT, "executor-b", now=p2.now)
+    assert lease.fencing_token > t1 + 1
+    bare = ExecutionGateway(
+        adapters={"sim-broker": p2.broker},
+        lease_store=p2.leases,
+        audit=lambda *a: None,
+        publish=lambda e: None,
+        broker_for_account=lambda a: "sim-broker",
+        guard=p2.guard,
+        verify_command=CommandAuthoriser(key).verifier().verify,
+        execution_permitted=lambda c, t: None,
+        store=p2.store,
+    )
+    with enter(Plane.CONTROL), pytest.raises(CommandNotAuthorised, match="already produced order"):
+        bare.submit(replay, executor_id="executor-b", fencing_token=lease.fencing_token, now=p2.now)
+    assert p2.broker.submissions_received == 0
+    p2.store.verify()

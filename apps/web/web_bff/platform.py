@@ -67,6 +67,7 @@ from rtcore.schemas.decision import DecisionRecord, Outcome
 from rtcore.schemas.intent import TradeIntent, ValidatedIntent
 from rtcore.schemas.market import InstrumentAttributes, MarketSnapshot
 from rtcore.schemas.order import OrderCommand, OrderRecord
+from rtcore.store import MemoryStore, SqliteStore, Store
 from rtobs.alerts import Alert, AlertRouter
 from rtobs.metrics import MetricsRegistry
 from rtobs.slis import SliCatalog
@@ -86,6 +87,7 @@ STRATEGY_VERSION = "0.1"
 JURISDICTION = "ZZ"  # ISO 3166 user-assigned code: explicitly not a real jurisdiction [Open: O-11]
 BASE_TIME = datetime(2026, 9, 7, 14, 0, tzinfo=UTC)  # a Monday, session open
 BACKTEST_START = datetime(2026, 9, 4, 14, 0, tzinfo=UTC)  # a Friday, session open
+STORE_FILENAME = "control_state.sqlite"  # one file per platform under store_dir (ADR-018 proposed; R-05)
 
 
 @dataclass
@@ -128,6 +130,7 @@ class SimPlatform:
     applied_fill_refs: set[str] = field(default_factory=set)
     applied_changes: set[str] = field(default_factory=set)
     executor_id: str = "executor-a"
+    store: Store = field(default_factory=MemoryStore)  # lease, outbox/inbox, gateway indexes, Kill Switch activations
 
     # --- clock ----------------------------------------------------------------------------------------
     def advance(self, seconds: float) -> datetime:
@@ -503,10 +506,21 @@ def build_sim_platform(
     enable_cell: bool = True,
     revocations_path: Path | None = None,
     nonce_path: Path | None = None,
+    store_dir: Path | None = None,
+    executor_id: str = "executor-a",
+    authorisation_key: bytes | None = None,
 ) -> SimPlatform:
     root = resource_root()  # source checkout, installed bundle or frozen executable; fails closed when absent (ADR-016)
+    # Durable control state (ADR-010 seam): None keeps every store in memory (the default for tests and backtests);
+    # a directory keeps lease, outbox/inbox, gateway indexes and Kill Switch activations in one SQLite file so a
+    # rebuilt platform is a restart. The revocation and nonce journals default to the same directory so that a
+    # restored activation is never paired with forgotten revocations. Audit durability is E11 (B-5), not this seam.
+    control_store: Store = SqliteStore(store_dir / STORE_FILENAME) if store_dir is not None else MemoryStore()
+    if store_dir is not None:
+        revocations_path = revocations_path or store_dir / "revocations.jsonl"
+        nonce_path = nonce_path or store_dir / "nonces.jsonl"
     audit = AuditStore()
-    outbox = Outbox()
+    outbox = Outbox(control_store)
     alerts = AlertRouter.load(root / "observability" / "alerts.yaml")
     metrics = MetricsRegistry()
     tracer = Tracer()
@@ -619,10 +633,12 @@ def build_sim_platform(
     broker = SimulatedBroker(known_instruments={INSTRUMENT: "EQUITY", INSTRUMENT_2: "EQUITY"}, venues=(VENUE,))
     broker.connect(VaultRef(path="vault://brokers/sim/creds", version=1), now=now)
     broker.fund(ACCOUNT, cash)
-    leases = LeaseStore()
+    leases = LeaseStore(control_store)
     # Control-plane command authorisation key: created here, handed only to the pipeline (sign) and the gateway
     # (verify). No MCP/AI component, tool, handler or BFF route ever receives it (IVA V-C2).
-    authoriser = CommandAuthoriser.generate()
+    # (verify). No MCP/AI component, tool, handler or BFF route ever receives it (IVA V-C2). A caller-supplied key is the
+    # vault/KMS path of a deployment (O-53): it lets a restarted process verify commands its predecessor signed.
+    authoriser = CommandAuthoriser(authorisation_key) if authorisation_key is not None else CommandAuthoriser.generate()
     decisions: dict[str, DecisionRecord] = {}
 
     def execution_permitted(command: OrderCommand, at: datetime) -> str | None:
@@ -677,6 +693,7 @@ def build_sim_platform(
         guard=guard,
         verify_command=authoriser.verifier().verify,
         execution_permitted=execution_permitted,
+        store=control_store,
     )
     approvals = ApprovalQueue(audit_hook=audit3)
     jurisdictions = JurisdictionRegistry(audit_hook=audit2)
@@ -760,6 +777,8 @@ def build_sim_platform(
         slis=slis,
         guard=guard,
         allowlists=allowlists,
+        executor_id=executor_id,
+        store=control_store,
     )
 
     # --- pipeline wiring -----------------------------------------------------------------------------------
@@ -808,7 +827,7 @@ def build_sim_platform(
         leases=leases,
         executor_id=platform.executor_id,
         on_authorised=on_authorised,
-        inbox=Inbox(),
+        inbox=Inbox(control_store, table="oms.pipeline_inbox", model=PipelineResult),
         alert=lambda n, pl: alerts.raise_alert(n, pl),
     )
 
@@ -873,6 +892,7 @@ def build_sim_platform(
 
     platform.killswitch = KillSwitchService(
         approved_liquidation_policies=policy.approved_liquidation_policies,
+        store=control_store,
         hooks=KillSwitchHooks(
             cancel_open_orders=cancel_open,
             revoke_agent_identities=lambda level, target: issuer.revoke_scope(level.value, target, now=platform.now),
