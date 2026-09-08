@@ -22,7 +22,8 @@ from pathlib import Path
 from typing import Any
 
 from approval_service.queue import ApprovalQueue, ApprovalRecord
-from audit_service.store import AuditStore
+from audit_service.anchor import FileAnchorPublisher
+from audit_service.store import DEFAULT_ANCHOR_EVERY, DEFAULT_MAX_ANCHOR_LAG, AuditStore
 from backtest_engine.costs import CostModel
 from backtest_engine.runner import BacktestReport, BacktestRunner
 from broker_adapters.base import VaultRef
@@ -128,7 +129,8 @@ SIM_DISCLOSURE_VERSION = "SIM-DISCL-v0.1"  # fixture disclosure pack version; ap
 SIM_LEGAL_RECORD_ID = "SIM-LEGAL-FIXTURE-001"  # SIM- prefix: valid only on the simulated cell, never a legal opinion (D-012)
 BASE_TIME = datetime(2026, 9, 7, 14, 0, tzinfo=UTC)  # a Monday, session open
 BACKTEST_START = datetime(2026, 9, 4, 14, 0, tzinfo=UTC)  # a Friday, session open
-STORE_FILENAME = "control_state.sqlite"  # one file per platform under store_dir (ADR-018 proposed; R-05)
+STORE_FILENAME = "control_state.sqlite"
+AUDIT_STORE_FILENAME = "audit_state.sqlite"  # the audit trail is its own store (B-5): control state and its evidence never share a file  # one file per platform under store_dir (ADR-018 proposed; R-05)
 
 
 @dataclass
@@ -610,6 +612,9 @@ def build_sim_platform(
     revocations_path: Path | None = None,
     nonce_path: Path | None = None,
     store_dir: Path | None = None,
+    anchor_dir: Path | None = None,
+    anchor_every: int = DEFAULT_ANCHOR_EVERY,
+    max_anchor_lag: int = DEFAULT_MAX_ANCHOR_LAG,
     executor_id: str = "executor-a",
     authorisation_key: bytes | None = None,
     second_tenant: bool = False,
@@ -625,9 +630,18 @@ def build_sim_platform(
     if store_dir is not None:
         revocations_path = revocations_path or store_dir / "revocations.jsonl"
         nonce_path = nonce_path or store_dir / "nonces.jsonl"
-    audit = AuditStore()
+    # Durable, witnessed audit (B-5, ADR-020 proposed): the trail lives in its own store so that control state and
+    # the evidence of what happened to it are never one file, and its head is anchored by a different principal in a
+    # directory the audit process does not own (anchor_dir; a WORM bucket or replica in deployment) [Open: O-54].
+    audit = AuditStore(
+        store=SqliteStore(store_dir / AUDIT_STORE_FILENAME) if store_dir is not None else MemoryStore(),
+        publisher=FileAnchorPublisher(anchor_dir) if anchor_dir is not None else None,
+        anchor_every=anchor_every,
+        max_anchor_lag=max_anchor_lag,
+    )
     outbox = Outbox(control_store)
     alerts = AlertRouter.load(root / "observability" / "alerts.yaml")
+    audit.set_alert_sink(alerts.raise_alert)
     metrics = MetricsRegistry()
     tracer = Tracer()
     # Every platform (live or a throwaway backtest) owns a private PlaneGuard: nothing an agent can call

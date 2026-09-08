@@ -2,7 +2,7 @@
 
 Control: MCP governance and injection defence — Requirement: FR-09 — RTM row: FR-09 — Owner: Backend Lead — Reviewer (≠ owner): MCP Security Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:09:26.022003+00:00 at `01a6b190ecf24f4e0bc3f0ed37516ef2f47dbf6d` (tree dirty, tested tree `865924eb5496`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:20:15.686197+00:00 at `7d61bd14972d4a8d16c011f4349e3a9dc9677340` (tree dirty, tested tree `1a23b8278a11`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
