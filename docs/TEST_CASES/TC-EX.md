@@ -2,7 +2,7 @@
 
 Control: Execution gateway: idempotency, fencing, failover — Requirement: FR-13 — RTM row: FR-13 — Owner: Backend Lead — Reviewer (≠ owner): Trading Domain Lead / Integration Architect — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:11:38.789740+00:00 at `40bcb514eac43d5a994dc5254cea3d1909e2d5b7` (tree dirty, tested tree `fc957174709b`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:15:20.750889+00:00 at `8fe02a72878f4098c937c45f0c657c543de772e2` (tree dirty, tested tree `3f71b53abbd6`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
