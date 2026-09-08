@@ -49,7 +49,7 @@ Effort key: S = days · M = weeks · L = a release. "Who" names the accountable 
 | B-12 | MCP: registration review of the six tools and the stdio transport (O-35), remaining review partials R-17, R-19, R-20; O-36..O-45; identity TTL and refresh for non-sim hosts | E09 | D | Backend Lead, MCP Security Agent | M | O-35..O-45, R-47 |
 | B-13 | Dashboard: Next.js PWA and design system, admin console, accessibility evidence with assistive technology, incident centre, customer reporting | E10, E14 | C/F | Frontend Lead, Accessibility Lead | L | ADR-012, NFR-A11Y-01, O-51 |
 | B-14 | Observability: telemetry export to a backend, SLO targets after baselines, on-call model, redaction assertions for id/IBAN/IP (TC-OB), drill measurement of operator-action → engaged | E12 | C/E | SRE Lead | M | O-03, O-15, O-18, R-35, O-64 |
-| B-15 | Security: gating SAST/DAST/SCA, artefact and image signing, cluster network policies applied and tested, secrets in vault, agent-guard hardening (Bash bypass R-46) | E13 | B/C | Security Architect, Cloud Architect | M | O-23, R-46, O-58 |
+| B-15 | Security: gating SAST/DAST/SCA, artefact and image signing, cluster network policies applied and tested, secrets in vault, agent-guard hardening (Bash bypass R-46) — **2026-09-08: lock regenerated from the declared closure, pip-audit runnable and clean (idna upgraded), bandit six Low; thresholds pending the Board packet** | E13 | B/C | Security Architect, Cloud Architect | M | O-23, R-46, O-58 |
 | B-16 | Billing/support/admin: services tenant, notification, billing, support; NFR-BIL-01 boundary and quartet TC-BIL-001..004; metering from the audit chain (Gate D), invoicing provider (Gate F) | E14 | D/F | Backend Lead, Enterprise Architect | L | O-31, D-046 |
 | B-17 | Market launch: launch matrix per cell, disclosures, dual-key ceremony runbook, post-launch review template filled | E15 | F | Compliance Agent, GTM Lead | M | H-16, H-17, O-14 |
 | B-18 | Evidence provenance: evidence headers embed the tested commit, gate decisions cite the CI-evidenced commit, reviewer columns carry 2nd-line roles | QA (test/evidence_plugin.py), Program Orchestrator | B | QA Lead | S | O-65, O-67 |
@@ -66,18 +66,18 @@ Effort key: S = days · M = weeks · L = a release. "Who" names the accountable 
 ## D. Meridian IT-PMO improvements (proposed upstream; detail and rationale in docs/PMO_MERIDIAN_ASSESSMENT.md §5)
 | # | Improvement | Effort |
 |---|---|---|
-| I-1 | Fix the first hour: load `.env` / default `PGLITE_DIR`, recursive data-dir creation, `dev` builds or proxies the client, refuse silent in-memory books | S |
-| I-2 | Write API v1 with external ids, idempotency keys, scoped integration keys and generated OpenAPI | M |
-| I-3 | Configurable gate ladder and phases per programme (Meridian's four gates as default template) | M |
-| I-4 | Evidence and traceability objects per gate criterion (type, link, hash, owner, reviewer); gate cannot pass unreviewed | M |
-| I-5 | Progress and cost from source systems (inbound events with provenance; EVM on measured progress) | L |
-| I-6 | Operate-for-real kit: pg_dump backup with restore drill, second instance, PostgreSQL required outside training, instance identity, fleet runbook | M |
-| I-7 | Decision register outside meetings (alternatives, dissent, links to change/gate/RAID) | S |
-| I-8 | RAID linked to gates and change requests; review dates drive agenda items | S |
-| I-9 | Release discipline: tags, changelog check, OpenAPI version = package version, signed installer | S |
-| I-10 | Stakeholders, skills in capacity, supplier performance, communication plan | M–L |
-| I-11 | English translation of the committee record | S |
-| I-12 | Day-one security posture: no demo accounts in production, security-policy template, break-glass shown in UI | S |
+| I-1 | Fix the first hour: load `.env` / default `PGLITE_DIR`, recursive data-dir creation, `dev` builds or proxies the client, refuse silent in-memory books — filed as https://github.com/mliad313sn/Meridian/issues/1 | S |
+| I-2 | Write API v1 with external ids, idempotency keys, scoped integration keys and generated OpenAPI — filed as https://github.com/mliad313sn/Meridian/issues/2 | M |
+| I-3 | Configurable gate ladder and phases per programme (Meridian's four gates as default template) — filed as https://github.com/mliad313sn/Meridian/issues/3 | M |
+| I-4 | Evidence and traceability objects per gate criterion (type, link, hash, owner, reviewer); gate cannot pass unreviewed — filed as https://github.com/mliad313sn/Meridian/issues/4 | M |
+| I-5 | Progress and cost from source systems (inbound events with provenance; EVM on measured progress) — filed as https://github.com/mliad313sn/Meridian/issues/5 | L |
+| I-6 | Operate-for-real kit: pg_dump backup with restore drill, second instance, PostgreSQL required outside training, instance identity, fleet runbook — filed as https://github.com/mliad313sn/Meridian/issues/6 | M |
+| I-7 | Decision register outside meetings (alternatives, dissent, links to change/gate/RAID) — filed as https://github.com/mliad313sn/Meridian/issues/7 | S |
+| I-8 | RAID linked to gates and change requests; review dates drive agenda items — filed as https://github.com/mliad313sn/Meridian/issues/8 | S |
+| I-9 | Release discipline: tags, changelog check, OpenAPI version = package version, signed installer — filed as https://github.com/mliad313sn/Meridian/issues/9 | S |
+| I-10 | Stakeholders, skills in capacity, supplier performance, communication plan — filed as https://github.com/mliad313sn/Meridian/issues/10 | M–L |
+| I-11 | English translation of the committee record — filed as https://github.com/mliad313sn/Meridian/issues/11 | S |
+| I-12 | Day-one security posture: no demo accounts in production, security-policy template, break-glass shown in UI — filed as https://github.com/mliad313sn/Meridian/issues/12 | S |
 
 ## F. Global compatibility (owner requirement 2026-09-08; docs/GLOBAL_COMPATIBILITY.md; D-050)
 | # | Improvement | Gate | Who | Effort | Status |
@@ -95,13 +95,13 @@ Effort key: S = days · M = weeks · L = a release. "Who" names the accountable 
 | — | Built 2026-09-08: world registry (250 rows, 7 continents), country validation with simulated cells, timezone-aware venue calendars, TC-GLO-001..004 | B | Backend Lead | — | done in dev/sim |
 
 ## Execution (D-051)
-Sections B, C, D, E and F are delegated to the Product Owner agent and its counsellors. Execution order: Gate B items first (B-2, B-3, B-15, B-18, C-1, C-2, C-5, F-1), then Gate C (B-1, B-4, B-5, B-6, B-7, B-8, B-9, F-3, F-4, F-5), then D and F. Each build item runs through its build agent with the control quartet first, a session packet `docs/SESSIONS/BUILD_<epic>_<date>.md`, `make all` green, and the 2nd-line reviewer named; section D items are filed upstream as issues once the Meridian repository is attached with write access. Progress is reported in the weekly report and mirrored in Meridian by `make pmo-sync`.
+Sections B, C, D, E and F are delegated to the Product Owner agent and its counsellors. Execution order: Gate B items first (B-2, B-3, B-15, B-18, C-1, C-2, C-5, F-1), then Gate C (B-1, B-4, B-5, B-6, B-7, B-8, B-9, F-3, F-4, F-5), then D and F. Each build item runs through its build agent with the control quartet first, a session packet `docs/SESSIONS/BUILD_<epic>_<date>.md`, `make all` green, and the 2nd-line reviewer named; section D items were filed upstream on 2026-09-08 as mliad313sn/Meridian issues #1–#12. Progress is reported in the weekly report and mirrored in Meridian by `make pmo-sync`.
 
 ## E. Delivery-kit and agent tooling
 | # | Improvement | Why | Who | Effort | Source |
 |---|---|---|---|---|---|
 | E-1 | Agent write-scope guard enforced beyond Edit/Write (Bash-path writes) or replaced by branch-level checks in CI (path ownership per author) | R-46 | Product Owner, MCP Security Agent | M | R-46, O-58 |
-| E-2 | Verify that the harness honours `hooks:` in agent frontmatter; otherwise move the guard to project settings | O-58 | Product Owner | S | O-58 |
+| E-2 | Verify that the harness honours `hooks:` in agent frontmatter; otherwise move the guard to project settings — **probed 2026-09-08: frontmatter hooks not enforced; guard moved to `.claude/settings.json`; payload identity pending** | O-58 | Product Owner | S | O-58 |
 | E-3 | Council convening automation: one command that runs the member agents, the challenger and the IVA for a queue item and fills the recommendation | speed of the decision loop | product-owner delegate | M | PO_DECISION_QUEUE |
 | E-4 | Two-way Meridian link once I-2 exists: decisions and actions recorded in the room flow back into the ledgers | ledger/PMO drift | Program Orchestrator | M | ADR-017 |
 | E-5 | Windows/macOS executables signed; installer verifies signature, not only SHA-256 | O-23 | Security Architect | S after A-18 | O-23 |

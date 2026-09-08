@@ -39,7 +39,7 @@ sbom:
 	$(PY) scripts/generate_sbom.py
 
 lock:
-	$(PY) -m pip freeze --exclude-editable > requirements.lock.txt
+	$(PY) scripts/lock_requirements.py
 
 security-scan:
 	$(PY) -m bandit -q -r libs services mcp connectors observability apps -x test || true

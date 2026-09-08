@@ -64,7 +64,7 @@ Meridian is an unusually well-governed piece of software for a portfolio office:
 | I-11 | **English translation of the committee record** (docs/16–32) | M-11; the "why" is the product's best asset and half the world cannot read it | S |
 | I-12 | **Day-one security posture**: force the demo accounts off (or seed without them) when `NODE_ENV=production`, ship a security-policy template, document the admin break-glass exemption in the UI | M-10 | S |
 
-Effort key: S = days, M = weeks, L = a release. These are proposals for the Meridian maintainers; this session cannot write to that repository. Items I-1, I-7 and I-9 could be opened as issues verbatim.
+Effort key: S = days, M = weeks, L = a release. Filed upstream on 2026-09-08 as issues #1–#12 of https://github.com/mliad313sn/Meridian (I-n = issue #n).
 
 ## 6. What we do meanwhile (RoboTrader)
 Use Meridian as ADR-017 states: portfolio and rhythm system, loaded one way from the ledgers by `make pmo-sync`, on an instance run with PostgreSQL, a restore-tested backup and changed credentials before anything real (H-28). Revisit the split when I-2 and I-4 exist.

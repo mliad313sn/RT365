@@ -36,6 +36,18 @@ def load_roster(root: Path) -> dict[str, list[str]]:
     return {name: list(spec.get("allowed_paths", [])) for name, spec in agents.items()}
 
 
+AGENT_KEYS = ("agent_name", "agent_type", "subagent_type", "agent")
+
+
+def _agent_from_payload(payload: dict[str, object]) -> str | None:
+    """Sub-agent identity as the harness reports it in the hook payload, if it does; None for the main session."""
+    for key in AGENT_KEYS:
+        value = payload.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
 def _relative(root: Path, file_path: str) -> str | None:
     p = Path(file_path)
     if not p.is_absolute():
@@ -64,7 +76,7 @@ def decide(agent: str, file_path: str, roster: dict[str, list[str]], root: Path)
 
 def main(argv: list[str] | None = None, stdin: str | None = None) -> int:
     parser = argparse.ArgumentParser(prog="agent_guard")
-    parser.add_argument("--agent", required=True)
+    parser.add_argument("--agent", default=None, help="agent name; when omitted it is read from the hook payload (project-level hook)")
     parser.add_argument("--root", default=".")
     args = parser.parse_args(argv)
     root = Path(args.root).resolve()
@@ -73,12 +85,15 @@ def main(argv: list[str] | None = None, stdin: str | None = None) -> int:
         tool = str(payload.get("tool_name", ""))
         if tool not in WRITE_TOOLS:
             return 0
+        agent = args.agent or _agent_from_payload(payload)
+        if agent is None:
+            return 0  # main session or a harness that does not identify the sub-agent: the roster is advisory (O-58)
         tool_input = payload.get("tool_input") or {}
         file_path = tool_input.get("file_path") or tool_input.get("notebook_path")
         if not file_path:
             print("agent_guard: write tool without a file path; denied (fail closed)", file=sys.stderr)
             return 2
-        allowed, reason = decide(args.agent, str(file_path), load_roster(root), root)
+        allowed, reason = decide(agent, str(file_path), load_roster(root), root)
     except (GuardError, ValueError, OSError) as exc:
         print(f"agent_guard: {exc}; denied (fail closed)", file=sys.stderr)
         return 2

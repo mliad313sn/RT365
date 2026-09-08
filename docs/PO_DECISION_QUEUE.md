@@ -73,6 +73,19 @@ Order recommended by Independent Validation (COUNCIL_2026-09-08_gate_A_iva §4):
 |---|---|---|
 | Lifecycle system | Meridian IT-PMO as portfolio and rhythm system, ledgers stay the truth, one-way sync (D-049, ADR-017); operate-for-real acts H-28 | 2026-09-08 |
 
+## B3. Concerns raised to the human Product Owner (owner instruction 2026-09-08: keep communication open)
+The delegate consults the request list in detail before every change — the PRD's 17 functional groups (FR-01..FR-17), the NFRs, SCOPE, the blueprint sections tagged [Source] and the owner's instructions recorded as D-039..D-051 — and records here anything that needs the human's eye. Build agents append their own "Concerns for the Product Owner" from their session packets. A concern is closed when the owner answers in session or the delegate records a decision citing it.
+
+| # | Raised by | Concern | What the delegate did meanwhile | Owner's answer |
+|---|---|---|---|---|
+| PC-1 | delegate | "Compatible with all countries" was read as capability everywhere, enablement per cell (D-050). If you meant legal availability everywhere, that is impossible without a legal record per cell; say so and the roadmap changes to a multi-cell counsel programme | built the capability layer (world registry, calendars, validation) | pending |
+| PC-2 | delegate | The first-cell hypothesis (D-043) cannot name a regulator until you give the country of your operating entity (Q-11-1) | recorded as hypothesis; Gate B condition GA-C1 | pending |
+| PC-3 | delegate | Authorship evidence: every commit is authored by the AI delegate; GA-C3 asks for one owner-authored merge or commit (H-27). Merging the branch's pull request would close it | left open; no PR created without your ask | pending |
+| PC-4 | delegate | The FX dimension (F-3) changes the risk engine's inputs: a missing FX rate must fail closed, which will HALT intents on foreign-currency instruments until a licensed FX feed exists (H-08). Confirm that is acceptable for paper | scheduled under Gate C | pending |
+| PC-5 | delegate | Meridian is loaded from a demo book with public credentials; nothing real should go there until H-28 | documented; PMO guide warns | pending |
+| PC-7 | delegate | The agent write-scope guard in agent frontmatter is not enforced by this harness (probe O-58). I moved it to the project settings hook; if the harness does not name the sub-agent in the hook payload, the guard stays advisory and author ≠ reviewer for agents is enforced only by review and CODEOWNERS. Decide whether that residual risk (R-46) is accepted for dev/sim | project-level hook installed; second probe running | pending |
+| PC-6 | delegate | Sections B–F are being executed by build agents in parallel worktrees; each will bring design choices the PRD leaves open (listed in their packets and appended below). Expect a batch per cycle | running E01 (tenant isolation), E06 (compliance fields), E07 (durable stores) | pending |
+
 ## C. Gates
 
 | Gate | Environment it authorises | Entry | Council(s) | IVA recommendation | Decision (human Product Owner) |
