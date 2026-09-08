@@ -14,6 +14,7 @@ alerts:
   - {name: broker.unavailable, condition: "health check", severity: S2, auto_action: cancel_only, runbook: broker disconnected}
   - {name: audit.anchor_missing, condition: "the external audit anchor is absent, stale beyond the ceiling, broken or ahead of the published witness", severity: S1, auto_action: none, runbook: Kill Switch activation}
   - {name: audit.chain_verification_failed, condition: "hash mismatch", severity: S1, auto_action: killswitch_platform, runbook: Kill Switch activation}
+  - {name: store.journal_unwitnessed, condition: "the control store's journal head is rolled back, forked, unwitnessed or staler than the ceiling against the audit chain", severity: S1, auto_action: none, runbook: store unavailable}
   - {name: execution.unauthorised_command, condition: "command without valid control-plane authorisation", severity: S1, auto_action: none, runbook: credential compromise}
   - {name: execution.live_under_block, condition: "order live at broker while execution is blocked and cancel failed", severity: S1, auto_action: killswitch_account, runbook: Kill Switch activation}
   - {name: execution.blocked_at_gateway, condition: "authorised command refused by Kill Switch/halt/mode/provenance at submit or retry", severity: S1, auto_action: none, runbook: Kill Switch activation}

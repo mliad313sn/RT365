@@ -13,6 +13,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from audit_service.anchor import FileAnchorPublisher
 from audit_service.journal_witness import AuditJournalWitness
 from audit_service.store import AUDIT_EVENTS_TABLE, GENESIS_HASH, AuditEvent, AuditIntegrityError, AuditStore
 from conftest import ACCOUNT, RISK_OFFICER, SRE, STRATEGY, resting_limit_intent
@@ -291,10 +292,19 @@ def test_journal_head_is_anchored_into_the_audit_chain_and_verifies_across_a_res
 
     rows = _anchored_rows(p1.audit, anchor.store_id)
     assert len(rows) > len(genesis)  # control-table commits are anchored, not only the open
-    assert rows[-1].payload["sequence"] == head.sequence and rows[-1].payload["head_digest"] == head.digest
     assert all(e.correlation_id for e in rows) and all(e.actor == "control_store" for e in rows)
     assert any("killswitch.activations" in e.payload["tables"] for e in rows)
+    assert any(e.payload["trigger"] == "control_write" for e in rows)
     assert r.validated_intent.correlation_id in {e.correlation_id for e in rows}  # the business correlation, not a synthetic one
+    witnessed = anchor.last_witnessed()
+    assert witnessed is not None and 0 < witnessed.sequence <= head.sequence  # writes after the last control write may lead
+    assert p1.store.journal_head(at=witnessed.sequence).digest == witnessed.digest
+    assert anchor.check().ok and anchor.check().lag == head.sequence - witnessed.sequence
+    # on demand: an operator anchors the head exactly where it stands, and the lag closes
+    assert anchor.anchor(correlation_id="operator:anchor:1", trigger="operator") == head
+    assert anchor.anchor(correlation_id="operator:anchor:2", trigger="operator") is None  # already witnessed: no duplicate row
+    rows = _anchored_rows(p1.audit, anchor.store_id)
+    assert rows[-1].payload["sequence"] == head.sequence and rows[-1].payload["head_digest"] == head.digest
     check = anchor.check()
     assert check.ok and check.witnessed_sequence == head.sequence and check.lag == 0
 
@@ -330,6 +340,7 @@ def test_consistently_rolled_back_control_store_is_refused_because_the_chain_rem
     p1 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
     p1.run_intent(p1.make_intent())
     act = p1.killswitch.activate(KillSwitchLevel.ACCOUNT, ACCOUNT, reason="drill", actor=RISK_OFFICER, now=p1.now)
+    p1.journal_anchor.anchor(correlation_id="operator:anchor:1", trigger="operator")  # on demand, e.g. before a shutdown
     witnessed = p1.journal_anchor.last_witnessed()
     assert witnessed is not None and witnessed.sequence == p1.store.journal_head().sequence
     p1.audit.seal(correlation_id="seal:operator:1")  # the witnessed head is under the external anchor too
@@ -386,6 +397,7 @@ def test_consistent_rewrite_must_also_rewrite_the_audit_chain_and_that_breaks_th
     p1 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
     p1.run_intent(p1.make_intent())
     act = p1.killswitch.activate(KillSwitchLevel.ACCOUNT, ACCOUNT, reason="drill", actor=RISK_OFFICER, now=p1.now)
+    p1.journal_anchor.anchor(correlation_id="operator:anchor:1", trigger="operator")
     witnessed = p1.journal_anchor.last_witnessed()
     p1.audit.seal(correlation_id="seal:operator:1")
     assert p1.audit.verify().ok
@@ -434,7 +446,8 @@ def test_consistent_rewrite_must_also_rewrite_the_audit_chain_and_that_breaks_th
     adb.close()
     SqliteStore(store_dir / AUDIT_STORE_FILENAME).close()
     control = SqliteStore(store_dir / STORE_FILENAME)
-    audit = AuditStore(store=SqliteStore(store_dir / AUDIT_STORE_FILENAME))  # the audit chain now verifies on its own terms
+    # the audit chain now verifies on its own terms; only the anchor directory, owned by another principal, is left
+    audit = AuditStore(store=SqliteStore(store_dir / AUDIT_STORE_FILENAME), publisher=FileAnchorPublisher(anchor_dir))
     assert audit.verify(published=False).ok
     anchor = JournalAnchor(control, AuditJournalWitness(audit))
     assert anchor.check().ok  # head and witness agree: each half, taken alone, is satisfied
@@ -461,6 +474,7 @@ def test_restore_from_a_backup_consistent_with_the_witnessed_head_verifies_and_t
     p1 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
     p1.run_intent(p1.make_intent())
     act = p1.killswitch.activate(KillSwitchLevel.ACCOUNT, ACCOUNT, reason="drill", actor=RISK_OFFICER, now=p1.now)
+    p1.journal_anchor.anchor(correlation_id="operator:anchor:1", trigger="operator")
     witnessed = p1.journal_anchor.last_witnessed()
     p1.audit.seal(correlation_id="seal:operator:1")
     p1.audit.close()

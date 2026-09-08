@@ -217,6 +217,39 @@ REASON_CODES: dict[str, tuple[str, str, str]] = {
     "RT-DRIFT": ("Runtime halt", "Model drift threshold breached.", "Signals suspended; Model Risk review."),
     "RT-RECON": ("Runtime halt", "Open reconciliation break.", "Account in Supervised until resolved with two-person confirmation."),
     "RT-VENUE": ("Runtime halt", "Venue health failed.", "Cancel-only until venue recovers."),
+    # Integrity of the durable control store against the audit chain that witnesses its journal head
+    # (O-128, D-061 (5); ADR-018 amendment 1). These are operator-facing, not customer-facing: they are raised
+    # before any order exists, and the platform refuses to start rather than trade on a store it cannot trust.
+    "STORE-JOURNAL-ROLLBACK": (
+        "Integrity",
+        "The control store's journal is behind the head recorded in the audit trail: the store was rolled back or replaced.",
+        "Nothing to change on any order; the platform will not start. Operations restore the store from a backup that matches the "
+        "recorded head, and the incident is investigated before trading resumes.",
+    ),
+    "STORE-JOURNAL-FORK": (
+        "Integrity",
+        "The control store's history was rewritten: its journal digest disagrees with the one the audit trail recorded.",
+        "Nothing to change on any order; the platform will not start. Operations treat this as a suspected tampering incident and "
+        "restore from a backup that matches the recorded head.",
+    ),
+    "STORE-JOURNAL-UNWITNESSED": (
+        "Integrity",
+        "The audit trail holds no record of this control store's history, so its contents cannot be trusted.",
+        "Nothing to change on any order; the platform will not start. Operations restore the audit trail and the store together, "
+        "from the same point in time.",
+    ),
+    "STORE-JOURNAL-STALE": (
+        "Integrity",
+        "The control store has moved further ahead of the audit trail than the configured ceiling allows.",
+        "Nothing to change on any order. Operations restore the audit trail's availability; the ceiling itself is a configured "
+        "value and is not changed to clear the condition.",
+    ),
+    "STORE-JOURNAL-WITNESS-UNTRUSTED": (
+        "Integrity",
+        "The audit trail that witnesses the control store does not itself verify against its external anchor.",
+        "Nothing to change on any order. Operations restore the external anchor or the audit trail; the check is never disabled "
+        "to make the platform start.",
+    ),
 }
 
 

@@ -23,6 +23,7 @@ from typing import Any
 
 from approval_service.queue import ApprovalQueue, ApprovalRecord
 from audit_service.anchor import FileAnchorPublisher
+from audit_service.journal_witness import AuditJournalWitness
 from audit_service.store import DEFAULT_ANCHOR_EVERY, DEFAULT_MAX_ANCHOR_LAG, AuditStore
 from backtest_engine.costs import CostModel
 from backtest_engine.runner import BacktestReport, BacktestRunner
@@ -61,6 +62,9 @@ from risk_engine.policy import RiskPolicy, apply_limit_change, load_policy
 from rtcore.envelope import make_event
 from rtcore.errors import ControlDenied
 from rtcore.ids import hash_of
+from rtcore.journal_anchor import DEFAULT_ANCHOR_EVERY as DEFAULT_JOURNAL_ANCHOR_EVERY
+from rtcore.journal_anchor import DEFAULT_MAX_LAG as DEFAULT_MAX_JOURNAL_LAG
+from rtcore.journal_anchor import JournalAnchor
 from rtcore.lines import Actor, ActorKind, Role, system_actor
 from rtcore.money import ZERO
 from rtcore.planes import Plane, PlaneGuard, enter
@@ -80,7 +84,7 @@ from rtcore.schemas.decision import DecisionRecord, Outcome
 from rtcore.schemas.intent import TradeIntent, ValidatedIntent
 from rtcore.schemas.market import InstrumentAttributes, MarketSnapshot
 from rtcore.schemas.order import OrderCommand, OrderRecord
-from rtcore.store import MemoryStore, SqliteStore, Store
+from rtcore.store import MemoryStore, SqliteStore, Store, StoreIntegrityError
 from rtcore.trust import TrustSet
 from rtobs.alerts import Alert, AlertRouter
 from rtobs.metrics import MetricsRegistry
@@ -174,6 +178,9 @@ class SimPlatform:
     applied_changes: set[str] = field(default_factory=set)
     executor_id: str = "executor-a"
     store: Store = field(default_factory=MemoryStore)  # lease, outbox/inbox, gateway indexes, Kill Switch activations
+    # Present only for a durable store: it anchors ``store``'s journal head into ``audit`` and refuses the store
+    # when the two disagree (O-128, D-061 (5)). An operator or a monitor re-runs ``verify(with_witness=True)``.
+    journal_anchor: JournalAnchor | None = None
 
     # --- clock ----------------------------------------------------------------------------------------
     def advance(self, seconds: float) -> datetime:
@@ -615,6 +622,8 @@ def build_sim_platform(
     anchor_dir: Path | None = None,
     anchor_every: int = DEFAULT_ANCHOR_EVERY,
     max_anchor_lag: int = DEFAULT_MAX_ANCHOR_LAG,
+    journal_anchor_every: int = DEFAULT_JOURNAL_ANCHOR_EVERY,
+    max_journal_anchor_lag: int = DEFAULT_MAX_JOURNAL_LAG,
     executor_id: str = "executor-a",
     authorisation_key: bytes | None = None,
     second_tenant: bool = False,
@@ -642,6 +651,26 @@ def build_sim_platform(
     outbox = Outbox(control_store)
     alerts = AlertRouter.load(root / "observability" / "alerts.yaml")
     audit.set_alert_sink(alerts.raise_alert)
+    # The two halves of D-061 (5) joined (O-128): the control store's journal head is written into the audit chain,
+    # which is itself witnessed off-box by a different principal (ADR-020). ``start`` refuses the store *before*
+    # anything reads or writes it — a rolled-back or re-journalled file must never be written on top of. The
+    # dependency runs one way only: rtcore knows a three-method witness protocol, the audit service implements it
+    # over the append path it already had, and neither imports the other's internals.
+    journal_anchor: JournalAnchor | None = None
+    if store_dir is not None:
+        journal_anchor = JournalAnchor(
+            control_store,
+            AuditJournalWitness(audit),
+            anchor_every=journal_anchor_every,
+            max_lag=max_journal_anchor_lag,
+            alerts=alerts.raise_alert,
+        )
+        try:
+            journal_anchor.start()
+        except StoreIntegrityError:
+            audit.close()  # the incident row is already committed; do not leave two open handles on a refused platform
+            control_store.close()
+            raise
     metrics = MetricsRegistry()
     tracer = Tracer()
     # Every platform (live or a throwaway backtest) owns a private PlaneGuard: nothing an agent can call
@@ -966,6 +995,7 @@ def build_sim_platform(
         allowlists=allowlists,
         executor_id=executor_id,
         store=control_store,
+        journal_anchor=journal_anchor,
     )
 
     # --- pipeline wiring -----------------------------------------------------------------------------------

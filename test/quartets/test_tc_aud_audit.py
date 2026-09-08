@@ -144,19 +144,27 @@ def _rewrite_consistently(db: sqlite3.Connection, table: str, key: str, new_valu
 
 def _rollback_consistently(db: sqlite3.Connection, keep_upto_seq: int) -> None:
     """Roll the whole store back to journal seq ``keep_upto_seq`` and rebuild the state rows so ``SqliteStore.verify()`` passes:
-    a tail truncation that the seam cannot see and only the external anchor exposes."""
+    a tail truncation that the seam cannot see and only an external witness exposes.
+
+    Rows the truncated tail had deleted are re-created, not merely re-valued, so the attacker models a *complete*
+    restore of an earlier state (a released lease is back, a revoked grant is back) rather than a partial one
+    [Committee: O-128 quartet, TC-DUR-006/008]."""
     db.execute("DELETE FROM journal WHERE seq > ?", (keep_upto_seq,))
-    expected: dict[tuple[str, str], tuple[str, int]] = {}
+    expected: dict[tuple[str, str], tuple[str, int, int]] = {}  # (value, seq, created_seq)
     for seq, op, tbl, k, value in db.execute("SELECT seq, op, tbl, key, value FROM journal ORDER BY seq").fetchall():
         if op == "put":
-            expected[(tbl, k)] = (value, int(seq))
+            created = expected[(tbl, k)][2] if (tbl, k) in expected else int(seq)
+            expected[(tbl, k)] = (value, int(seq), created)
         else:
             expected.pop((tbl, k), None)
     for tbl, k in db.execute("SELECT tbl, key FROM kv").fetchall():
         if (tbl, k) not in expected:
             db.execute("DELETE FROM kv WHERE tbl=? AND key=?", (tbl, k))
-    for (tbl, k), (value, seq) in expected.items():
-        db.execute("UPDATE kv SET value=?, seq=?, digest=? WHERE tbl=? AND key=?", (value, seq, row_digest(tbl, k, value, seq), tbl, k))
+    for (tbl, k), (value, seq, created) in expected.items():
+        db.execute(
+            "INSERT OR REPLACE INTO kv (tbl, key, value, created_seq, seq, digest) VALUES (?, ?, ?, ?, ?, ?)",
+            (tbl, k, value, created, seq, row_digest(tbl, k, value, seq)),
+        )
 
 
 @pytest.mark.tc("TC-AUD-006")
