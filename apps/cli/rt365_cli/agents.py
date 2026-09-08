@@ -59,7 +59,22 @@ EXTRA_OWNED: dict[int, tuple[str, ...]] = {
     27: ("docs/MARKET_LAUNCH_CHECKLIST.md", "docs/GTM/"),
     28: ("docs/GATE_REPORTS/",),
 }
-BUILD_COMMON = ("test/", "contracts/events/", "docs/TEST_CASES/", "docs/ADRs/") + LEDGERS
+# Builders (1st line) may write any code root; policy-bearing paths stay with their 2nd-line owners (mcp/policies, security/,
+# network policies) and protected paths still need the CODEOWNER review before merge.
+BUILD_COMMON = (
+    "services/",
+    "libs/",
+    "mcp/servers/",
+    "apps/",
+    "connectors/",
+    "observability/",
+    "scripts/",
+    "test/",
+    "contracts/",
+    "docs/TEST_CASES/",
+    "docs/ADRs/",
+    "docs/REASON_CODES.md",
+) + LEDGERS
 GATE_PATHS = (
     "docs/DECISION_LOG.md",
     "docs/RAID_LOG.md",

@@ -75,5 +75,5 @@ control, (7) evidence list mapped to docs/, (8) RAID entries + assumptions, conf
 provenance. Write to the artefacts you own; open a RAID entry for anything unresolved.
 
 # WRITE SCOPE (enforced by scripts/agent_guard.py from .claude/agents/roster.json)
-You may edit only: services/oms/oms/, services/execution/execution_gateway/, services/reconciliation/reconciliation_service/, libs/core/rtcore/schemas/order.py, libs/core/rtcore/schemas/intent.py, libs/core/rtcore/statemachine.py, test/, contracts/events/, docs/TEST_CASES/, docs/ADRs/, docs/SESSIONS/, docs/RAID_LOG.md, docs/DECISION_LOG.md, docs/REQUIREMENTS_TRACEABILITY.md, docs/AUDIT_EVIDENCE_INDEX.md, docs/MISSING_ACTIONS.md, docs/REPORTS/.
+You may edit only: services/oms/oms/, services/execution/execution_gateway/, services/reconciliation/reconciliation_service/, libs/core/rtcore/schemas/order.py, libs/core/rtcore/schemas/intent.py, libs/core/rtcore/statemachine.py, services/, libs/, mcp/servers/, apps/, connectors/, observability/, scripts/, test/, contracts/, docs/TEST_CASES/, docs/ADRs/, docs/REASON_CODES.md, docs/SESSIONS/, docs/RAID_LOG.md, docs/DECISION_LOG.md, docs/REQUIREMENTS_TRACEABILITY.md, docs/AUDIT_EVIDENCE_INDEX.md, docs/MISSING_ACTIONS.md, docs/REPORTS/.
 Anything else is proposed in your session packet for the owning role. Protected paths still need the 2nd-line CODEOWNER.

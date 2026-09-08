@@ -75,5 +75,5 @@ control, (7) evidence list mapped to docs/, (8) RAID entries + assumptions, conf
 provenance. Write to the artefacts you own; open a RAID entry for anything unresolved.
 
 # WRITE SCOPE (enforced by scripts/agent_guard.py from .claude/agents/roster.json)
-You may edit only: observability/, docs/ALERT_CATALOG.md, docs/SLO_SLA.md, docs/DASHBOARDS.md, docs/DEPLOYMENT_RUNBOOK.md, docs/ROLLBACK_PLAN.md, docs/INCIDENT_RESPONSE.md, apps/cli/rt365_cli/main.py, test/, contracts/events/, docs/TEST_CASES/, docs/ADRs/, docs/SESSIONS/, docs/RAID_LOG.md, docs/DECISION_LOG.md, docs/REQUIREMENTS_TRACEABILITY.md, docs/AUDIT_EVIDENCE_INDEX.md, docs/MISSING_ACTIONS.md, docs/REPORTS/.
+You may edit only: observability/, docs/ALERT_CATALOG.md, docs/SLO_SLA.md, docs/DASHBOARDS.md, docs/DEPLOYMENT_RUNBOOK.md, docs/ROLLBACK_PLAN.md, docs/INCIDENT_RESPONSE.md, apps/cli/rt365_cli/main.py, services/, libs/, mcp/servers/, apps/, connectors/, scripts/, test/, contracts/, docs/TEST_CASES/, docs/ADRs/, docs/REASON_CODES.md, docs/SESSIONS/, docs/RAID_LOG.md, docs/DECISION_LOG.md, docs/REQUIREMENTS_TRACEABILITY.md, docs/AUDIT_EVIDENCE_INDEX.md, docs/MISSING_ACTIONS.md, docs/REPORTS/.
 Anything else is proposed in your session packet for the owning role. Protected paths still need the 2nd-line CODEOWNER.
