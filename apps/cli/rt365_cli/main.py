@@ -9,6 +9,7 @@ import sys
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -73,6 +74,22 @@ def cmd_version(args: argparse.Namespace) -> int:
     return 0
 
 
+def _trust_anchor_state(root: Path) -> str:
+    """What the operator needs to know about the file that says which keys to trust (RT-F6, TC-AI-028..031).
+
+    Informational in dev/sim, where the committed registry is HMAC-signed and no anchor is shipped (H-20); an
+    Ed25519 registry cannot load at all unless the anchor exists at the resource root and matches its pin.
+    """
+    from mcp_servers.registry import TRUST_ANCHOR_RELPATH, TRUST_PIN_ENV, TrustAnchorRefused, load_trust_set
+
+    path = root.joinpath(*TRUST_ANCHOR_RELPATH)
+    try:
+        trust = load_trust_set(root / "mcp" / "policies" / "tool_registry.signed.json")
+    except TrustAnchorRefused as exc:
+        return f"none usable at {path} — {exc}; asymmetric registries are refused (pin with {TRUST_PIN_ENV})"
+    return f"OK — {path}, {len(trust)} key(s): {', '.join(trust.key_ids) or 'none'}, digest pinned"
+
+
 def cmd_check(args: argparse.Namespace) -> int:
     env = _label(args)
     root = _root()
@@ -88,6 +105,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         f"registry: OK — version {reg.registry_version}, {len(reg.tools)} tools, "
         f"{'dev key' if reg.dev_key_in_use else 'configured key'}, {'sim FIXTURE (approvals pending; refused outside dev/sim)' if reg.fixture else 'approved'}"
     )
+    print(f"trust anchor: {_trust_anchor_state(root)}")
     problems: list[str] = []
     if set(reg.tools) - ALLOWED_TOOLS:
         problems.append(f"tools outside the six allowed capabilities: {sorted(set(reg.tools) - ALLOWED_TOOLS)}")

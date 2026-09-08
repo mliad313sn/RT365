@@ -34,8 +34,8 @@ import pytest
 from conftest import ACCOUNT, INSTRUMENT, STRATEGY, TENANT
 from mcp_servers.registry import (
     REGISTRY_PURPOSE,
-    RegistryUnsigned,
     TRUST_PIN_ENV,
+    RegistryUnsigned,
     TrustAnchorRefused,
     envelope_message,
     load_registry,
@@ -94,12 +94,10 @@ NETWORK_MODULES = (
 
 
 # --- helpers ---------------------------------------------------------------------------------------------
-def _registry_content(**tool_overrides: Any) -> dict[str, Any]:
+def _registry_content(**per_tool: dict[str, Any]) -> dict[str, Any]:
     content = json.loads(COMMITTED.read_text(encoding="utf-8"))["registry"]
-    if tool_overrides:
-        for tool in content["tools"]:
-            if tool["name"] == "submit_trade_intent":
-                tool.update(tool_overrides)
+    for tool in content["tools"]:
+        tool.update(per_tool.get(tool["name"], {}))
     return content
 
 
@@ -183,7 +181,10 @@ def test_egress_guard_is_on_the_platform_call_path_and_allows_only_the_allowlist
     bound = guard.bound(correlation_id="corr-egress-1", tenant=TENANT, actor="agent:agent-sim-1", tool="run_simulation")
     created: list[tuple[str, int | None]] = []
     client = bound.acquire(
-        "intent-queue.control.svc.cluster.local", port=8443, purpose="intent intake", connect=lambda host, port: created.append((host, port)) or "client"
+        "intent-queue.control.svc.cluster.local",
+        port=8443,
+        purpose="intent intake",
+        connect=lambda host, port: created.append((host, port)) or "client",
     )
     assert client == "client" and created == [("intent-queue.control.svc.cluster.local", 8443)]
     rows = platform.audit.by_action("mcp.egress.allowed")
@@ -340,7 +341,12 @@ def test_registry_loads_under_the_anchored_and_pinned_trust_set(tmp_path, monkey
     assert trust_set_path(root / "mcp" / "policies" / "tool_registry.signed.json") == anchor.resolve()
     # a registry outside the root loads only with a trust set the caller supplies in process (an operator act)
     elsewhere = _sign(tmp_path / "elsewhere" / "tool_registry.signed.json", signer)
-    assert load_registry(elsewhere, trust_set=TrustSet([signer.trusted_key(valid_from=T0 - timedelta(days=1))], purpose="tool-registry"), at=T0).key_id == "reg-anchor-a"
+    assert (
+        load_registry(
+            elsewhere, trust_set=TrustSet([signer.trusted_key(valid_from=T0 - timedelta(days=1))], purpose="tool-registry"), at=T0
+        ).key_id
+        == "reg-anchor-a"
+    )
     monkeypatch.delenv("RT365_HOME")
     committed = load_registry(COMMITTED)
     assert committed.dev_key_in_use and committed.algorithm == "HMAC-SHA256" and committed.key_id == "dev-key-v0"
@@ -385,7 +391,10 @@ def test_absent_unpinned_or_mismatched_trust_anchor_fails_closed(tmp_path, monke
 def test_attacker_written_trust_set_is_refused_beside_the_artefact_and_at_the_anchor(tmp_path, monkeypatch):  # type: ignore[no-untyped-def]
     """The red team's probe as a test (rt_probe_04): an attacker key, a forged registry widening the write-class quota by four orders of magnitude with masking off, and the attacker's own trust set — beside the artefact, and written into the resource root itself — are both refused, and no widened ToolSpec is ever produced."""
     attacker = Ed25519Signer.generate("attacker-key-v1")
-    forged_content = _registry_content(quota_per_minute=100000, payload_limit_bytes=10_000_000, masking="none")
+    forged_content = _registry_content(
+        submit_trade_intent={"quota_per_minute": 100000, "payload_limit_bytes": 10_000_000},
+        read_account_state={"masking": "none", "payload_limit_bytes": 10_000_000},  # T-91: masking is data in the registry
+    )
     stage = tmp_path / "stage" / "policies"
     forged = _sign(stage / "tool_registry.signed.json", attacker, forged_content)
     adjacent = _write_trust(stage / "trust" / "registry_keys.json", attacker)
@@ -393,21 +402,26 @@ def test_attacker_written_trust_set_is_refused_beside_the_artefact_and_at_the_an
     with pytest.raises(TrustAnchorRefused, match="TRUST-ANCHOR-ADJACENT"):
         load_registry(forged, at=T0)
     assert adjacent.is_file()  # the file is still there; it is simply not a trust anchor
-    # the same attacker with write access to the resource root: the pin refuses the substitution
+    # the same attacker with write access to the resource root: the forged registry and his trust set are both
+    # written into the bundle, and the pin — which is not in the bundle — refuses the substitution
+    marker = root / "mcp" / "policies" / "tool_registry.signed.json"
+    shutil.copy(forged, marker)
     anchor = _write_trust(root / "mcp" / "policies" / "trust" / "registry_keys.json", attacker)
     honest = Ed25519Signer.generate("reg-anchor-a")
     monkeypatch.setenv(TRUST_PIN_ENV, _digest(_write_trust(tmp_path / "expected.json", honest)))
     with pytest.raises(TrustAnchorRefused, match="TRUST-ANCHOR-PIN-MISMATCH"):
-        load_registry(root / "mcp" / "policies" / "tool_registry.signed.json", at=T0)
+        load_registry(marker, at=T0)
     # and removing the pin does not silently restore trust
     monkeypatch.delenv(TRUST_PIN_ENV)
     with pytest.raises(TrustAnchorRefused, match="TRUST-ANCHOR-UNPINNED"):
-        load_registry(root / "mcp" / "policies" / "tool_registry.signed.json", at=T0)
+        load_registry(marker, at=T0)
     assert anchor.is_file()
-    # nothing widened: the committed registry's write-class limits are untouched
+    # nothing widened: the committed registry's write-class limits and the read tool's masking are untouched
     monkeypatch.delenv("RT365_HOME")
-    spec = load_registry(COMMITTED).get("submit_trade_intent")
-    assert spec.quota_per_minute < 100000 and spec.payload_limit_bytes < 10_000_000 and spec.masking != "none"
+    committed = load_registry(COMMITTED)
+    write = committed.get("submit_trade_intent")
+    assert write.quota_per_minute == 10 and write.payload_limit_bytes == 32768
+    assert committed.get("read_account_state").masking == "identifiers masked; balances rounded per policy"
 
 
 @pytest.mark.tc("TC-AI-031")

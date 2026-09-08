@@ -23,6 +23,7 @@ alerts:
   - {name: risk.integrity_violation, condition: "RK-INTEG decision", severity: S1, auto_action: revoke_agent_identity, runbook: credential compromise}
   - {name: alert.autoaction_failed, condition: "auto-action unbound or payload incomplete", severity: S1, auto_action: none, runbook: Kill Switch activation}
   - {name: killswitch.hook_failed, condition: "Kill Switch side effect failed", severity: S1, auto_action: none, runbook: Kill Switch activation}
+  - {name: mcp.egress_denied, condition: "an MCP tool handler asked the egress guard for a destination the allowlist does not name, or asked with no policy loaded", severity: S1, auto_action: none, runbook: credential compromise}
   - {name: mcp.handler_timeout, condition: "handler exceeded deadline", severity: S2, auto_action: none, runbook: "-"}
   - {name: mcp.handler_error, condition: "handler raised", severity: S2, auto_action: none, runbook: "-"}
   - {name: execution.unexpected_fill, condition: "over-fill or fill after terminal state", severity: S1, auto_action: killswitch_account, runbook: duplicate order}

@@ -128,8 +128,12 @@ def test_signed_command_and_registry_verify_with_public_trust_set(tmp_path):  # 
     assert reg.algorithm == ALGORITHM_ED25519 and reg.key_id == "reg-sim-a" and not reg.dev_key_in_use and len(reg.tools) == 6
     (tmp_path / "trust").mkdir()
     reg_trust.save(tmp_path / "trust" / "registry_keys.json")
-    assert load_registry(signed, at=T0).key_id == "reg-sim-a"  # default trust set: <dir>/trust/registry_keys.json
-    p2 = build_sim_platform(registry_path=signed)
+    # A trust set beside the artefact is not a trust anchor (RT-F6; TC-AI-028..031): the anchor is resolved from
+    # the resource root and pinned by digest, so a bundle carrying both a forged registry and a matching trust set
+    # is refused. A registry outside the resource root loads only against a trust set the composition root passes.
+    with pytest.raises(RegistryUnsigned, match="TRUST-ANCHOR-ADJACENT"):
+        load_registry(signed, at=T0)
+    p2 = build_sim_platform(registry_path=signed, registry_trust_set=reg_trust)
     assert p2.tool_call(p2.issue_agent(), "read_market_snapshot", {"instrument_id": INSTRUMENT}).ok
     # the committed registry still verifies on the HMAC dev path, explicitly and only in dev/sim
     committed = load_registry(ROOT / "mcp" / "policies" / "tool_registry.signed.json")
@@ -351,10 +355,11 @@ def test_rotation_overlap_then_retire(tmp_path):  # type: ignore[no-untyped-def]
     assert reloaded.get("reg-a").revoked and not reloaded.get("reg-b").revoked
     with pytest.raises(RegistryUnsigned, match="retired"):
         load_registry(old, trust_set=reloaded, at=T0 + timedelta(days=32))
-    # the shipped trust set holds no ceremony key yet (H-20; the file itself is proposed to the MCP Security Agent,
-    # CODEOWNER of mcp/policies): an absent or empty set refuses every Ed25519 registry
-    shipped = load_trust_set(ROOT / "mcp" / "policies" / "tool_registry.signed.json")
-    assert len(shipped) == 0
+    # no trust anchor is shipped yet (H-20; the file is proposed to the MCP Security Agent, CODEOWNER of
+    # mcp/policies): an absent anchor is now a loud refusal naming the path it looked in, not a silently empty
+    # set, and an empty set still refuses every Ed25519 registry (TC-AI-029)
+    with pytest.raises(RegistryUnsigned, match="TRUST-ANCHOR-ABSENT"):
+        load_trust_set(ROOT / "mcp" / "policies" / "tool_registry.signed.json")
     with pytest.raises(RegistryUnsigned, match="unknown key_id"):
-        load_registry(new, trust_set=shipped, at=at)
+        load_registry(new, trust_set=TrustSet(purpose="tool-registry"), at=at)
     assert TENANT and STRATEGY  # fixture identifiers unchanged by rotation

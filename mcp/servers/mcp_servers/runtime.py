@@ -14,12 +14,13 @@ from datetime import UTC, datetime
 from typing import Any
 
 import jsonschema
-from rtcore.errors import ControlDenied, RTError
+from rtcore.errors import ControlDenied, PlaneViolation, RTError
 from rtcore.ids import canonical_json, hash_of, sha256_hex
 from rtcore.provenance import TRUSTED_FOR_DECISIONS, Provenance, delimit_untrusted
 from rtcore.schemas.base import StrictModel
 
 from mcp_servers.allowlist import TenantAllowlist
+from mcp_servers.egress import DENY_ALL, EgressGuard
 from mcp_servers.identity import CallSignature, IdentityIssuer, Principal
 from mcp_servers.registry import ToolRegistry
 from mcp_servers.revocation import RevocationList
@@ -27,11 +28,21 @@ from mcp_servers.revocation import RevocationList
 Handler = Callable[[Principal, dict[str, Any], datetime], dict[str, Any]]
 
 _current_principal: contextvars.ContextVar[Principal | None] = contextvars.ContextVar("mcp_principal", default=None)
+_current_egress: contextvars.ContextVar[EgressGuard | None] = contextvars.ContextVar("mcp_egress", default=None)
 
 
 def current_principal() -> Principal | None:
     """The agent whose tool call is executing (for alert payloads raised inside handlers)."""
     return _current_principal.get()
+
+
+def current_egress() -> EgressGuard:
+    """The egress guard bound to the executing tool call, or the deny-all guard when no call is executing.
+
+    The only sanctioned way a handler may acquire an outbound destination (RT-F1). No handler performs network
+    I/O today and none can (TC-AI-026); this is the seam where a future one would ask, and it fails closed.
+    """
+    return _current_egress.get() or DENY_ALL
 
 
 class ToolDenied(RTError):
@@ -72,6 +83,7 @@ class ToolRuntime:
         audit: Callable[[str, str, str, dict[str, Any]], object],
         alert: Callable[[str, dict[str, Any]], object] | None = None,
         revocations: RevocationList | None = None,
+        egress: EgressGuard | None = None,
         quota_clock: Callable[[], datetime] = lambda: datetime.now(tz=UTC),
         tenant_ceiling_per_minute: int = 600,
         deny_limit_per_minute: int = 30,
@@ -84,6 +96,9 @@ class ToolRuntime:
         self._audit = audit  # (action, correlation, tenant, payload)
         self._alert = alert or (lambda name, payload: None)
         self._revocations = revocations or RevocationList()
+        # No policy means no destination: an MCP runtime built without an egress guard refuses every outbound
+        # acquisition rather than leaving handlers unfiltered (RT-F1, fail closed).
+        self._egress = egress or EgressGuard(None, audit=self._audit, alert=self._alert)
         self._quota_clock = quota_clock
         self._tenant_ceiling = tenant_ceiling_per_minute
         self._deny_limit = deny_limit_per_minute
@@ -229,7 +244,12 @@ class ToolRuntime:
             return deny("INPUT_SCHEMA", exc.message)
         # 3. handler under a pre-emptive deadline (F-05); the principal never carries the token secret (F-08)
         token = _current_principal.set(principal)
-        future: Future[dict[str, Any]] = self._pool.submit(self._handlers[tool], principal, args, now)
+        # The egress guard of this call: every destination a handler could ask for is audited under this
+        # correlation id, this tenant and this tool (RT-F1). The context is copied into the pool thread so the
+        # handler sees its own principal and guard rather than an empty context.
+        egress_token = _current_egress.set(self._egress.bound(correlation_id=correlation_id, tenant=tenant, actor=actor, tool=tool))
+        context = contextvars.copy_context()
+        future: Future[dict[str, Any]] = self._pool.submit(context.run, self._handlers[tool], principal, args, now)
         try:
             output = future.result(timeout=spec.timeout_s)
         except FutureTimeout:
@@ -237,12 +257,17 @@ class ToolRuntime:
             return deny("TIMEOUT", f"handler exceeded {spec.timeout_s}s; result discarded", alert="mcp.handler_timeout", extra=scope)
         except ToolDenied as exc:
             return deny(exc.code, exc.detail)
+        except PlaneViolation as exc:
+            # the handler asked the guard for a destination the allowlist does not name; the guard has already
+            # audited the decision and raised mcp.egress_denied, so the call denial carries no second alert
+            return deny("EGRESS_DENIED", str(exc))
         except ControlDenied as exc:
             return deny("HANDLER_DENIED", str(exc))
         except Exception as exc:  # noqa: BLE001 - every failure must leave an audit row (F-03)
             return deny("HANDLER_ERROR", f"{type(exc).__name__}", alert="mcp.handler_error", extra=scope)
         finally:
             _current_principal.reset(token)
+            _current_egress.reset(egress_token)
         out_json = canonical_json(output)
         if len(out_json.encode()) > spec.payload_limit_bytes:
             return deny("OUTPUT_TOO_LARGE", "tool output exceeds payload limit")
