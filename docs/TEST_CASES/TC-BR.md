@@ -2,7 +2,7 @@
 
 Control: Broker adapter certification — Requirement: FR-02 — RTM row: FR-02 — Owner: Broker-Connector Lead — Reviewer (≠ owner): Trading Domain Lead — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T13:59:43.838582+00:00 at `28284acaaaefcfb5df6bdf6227b479718c779dee` (tree dirty, tested tree `676593a481e8`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:02:23.547779+00:00 at `9b49d14015ca872e929849c8968baa3fea2ce650` (tree dirty, tested tree `13c4135c169d`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
