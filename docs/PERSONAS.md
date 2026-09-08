@@ -6,7 +6,7 @@
 
 | Persona [Source: 01] | Goal | Modes available (default) [Committee] | Key screens | Risks to design against |
 |---|---|---|---|---|
-| Retail investor | Understand and control exposure | Observe, Backtest, Paper; Supervised/autonomy only per jurisdiction policy [Open: O-01] | Dashboard, approval queue | Misreading PnL as promise; unclear rejection |
+| Retail investor | Understand and control exposure | Observe, Backtest, Paper; Supervised OFF for the first cell, Bounded OFF in every hypothesis (D-045) | Dashboard, approval queue | Misreading PnL as promise; unclear rejection |
 | Active trader | Fast supervised execution | Observe → Supervised | Orders, alerts | Fat-finger, over-trading |
 | Professional trader | Bounded autonomy on approved strategies | All, per cell enablement | Strategy registry, exposure | Limit evasion via order splitting |
 | Portfolio manager | Allocation across strategies/accounts | Observe → Bounded autonomous | Portfolio, attribution | Concentration, correlated risk |

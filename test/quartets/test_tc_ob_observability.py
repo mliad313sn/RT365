@@ -62,7 +62,7 @@ def test_alert_delivery_and_slo_safety_semantics(platform):  # type: ignore[no-u
     assert {ch for ch, al in platform.alerts.delivered if al is a} == {"pager", "email"}
     assert platform.accounts.get(ACCOUNT).autonomy_suspended
     cat = SliCatalog.load(ROOT / "observability" / "slis.yaml")
-    assert len(cat.names()) == 8 and cat.evaluate("risk_decision_latency_ms_p99", 10_000) == SafetyAction.NONE
+    assert len(cat.names()) == 9 and "time_to_halt_s" in cat.names() and cat.evaluate("risk_decision_latency_ms_p99", 10_000) == SafetyAction.NONE
     from rtobs.slis import Sli
 
     strict = SliCatalog(

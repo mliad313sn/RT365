@@ -36,6 +36,11 @@ slis:
     measurement_point: reconciliation_service
     target: null
     safety_semantic: supervised_on_break
+  - name: time_to_halt_s
+    definition: Kill Switch engage -> last open-order cancel and identity revocation recorded (seconds); 100% of approvals after activated_at blocked [D-044]
+    measurement_point: killswitch_service.activate (metric killswitch.time_to_halt_s); drill measures operator-action -> engaged separately
+    target: null
+    safety_semantic: informational
   - name: alert_delivery_s
     definition: alert -> operator ack
     measurement_point: notification

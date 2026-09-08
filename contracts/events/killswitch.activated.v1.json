@@ -98,9 +98,34 @@
       "title": "Emergency Policy Applied",
       "type": "string"
     },
+    "engaged_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Engaged At"
+    },
     "evidence_hash": {
       "title": "Evidence Hash",
       "type": "string"
+    },
+    "halt_elapsed_ms": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Halt Elapsed Ms"
     },
     "hook_failures": {
       "default": [],

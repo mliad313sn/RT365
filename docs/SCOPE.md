@@ -2,7 +2,7 @@
 
 | Owner | Reviewer (different line) | Approving body | First gate | Status |
 |---|---|---|---|---|
-| Product Director | Legal Agent | Product Council | A | Draft v1.0 |
+| Product Director | Legal Agent (review pending, GA-C4) | Product Council (advisory); Product Owner decides | A | v1.1 — billing scope added 2026-09-08 (D-046) |
 
 ## In scope [Source: 00, 02]
 Paper trading, human-approved execution, bounded autonomous execution across authorised instruments through certified adapters; the 17 functional groups in PRD.md.

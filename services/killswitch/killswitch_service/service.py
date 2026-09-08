@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -40,6 +41,9 @@ class Activation(StrictModel):
     deactivation_first_line: str | None = None
     deactivated_at: datetime | None = None
     deactivation_reason: str | None = None
+    # Time-to-halt measurement path (D-044, O-64): engage -> last cancel/revocation, wall clock of the process.
+    engaged_at: datetime | None = None
+    halt_elapsed_ms: int | None = None
 
 
 @dataclass
@@ -58,6 +62,7 @@ class KillSwitchHooks:
     audit: Callable[[str, str, dict[str, Any]], object] = lambda action, correlation_id, payload: None
     alert: Callable[[str, dict[str, Any]], object] = lambda name, payload: None
     halt_account: Callable[[str, str], object] = lambda account_id, reason: None
+    observe: Callable[[str, float], object] = lambda name, value: None  # metrics sink for time_to_halt_s (SLI catalogue)
 
 
 @dataclass
@@ -71,6 +76,7 @@ class KillSwitchService:
         self, level: KillSwitchLevel, target_id: str, *, reason: str, actor: Actor, now: datetime, correlation_id: str | None = None
     ) -> Activation:
         corr = correlation_id or new_id("ks")
+        started = time.perf_counter()  # measurement only; never a decision input
         if actor.kind == ActorKind.AGENT:
             self.hooks.alert("killswitch.agent_attempt", {"actor": actor.actor_id, "level": level.value, "target": target_id})
             self.hooks.audit("killswitch.denied", corr, {"actor": actor.actor_id, "reason": "agents cannot operate the Kill Switch"})
@@ -129,6 +135,7 @@ class KillSwitchService:
         # 5. preserve evidence snapshot
         snapshot = attempt("evidence_snapshot", lambda: self.hooks.evidence_snapshot(level, target_id), {})
         evidence = hash_of({"snapshot": snapshot, "cancelled": cancelled, "revoked": revoked, "at": now.isoformat()})
+        halt_elapsed_ms = int((time.perf_counter() - started) * 1000)
         activation = activation.model_copy(
             update={
                 "evidence_hash": evidence,
@@ -136,8 +143,11 @@ class KillSwitchService:
                 "cancelled_orders": cancelled,
                 "revoked_identities": revoked,
                 "hook_failures": tuple(failures),
+                "engaged_at": now,
+                "halt_elapsed_ms": halt_elapsed_ms,
             }
         )
+        attempt("observe", lambda: self.hooks.observe("killswitch.time_to_halt_s", halt_elapsed_ms / 1000.0), None)
         self._activations[activation.activation_id] = activation
         if level == KillSwitchLevel.ACCOUNT:
             attempt("halt_account", lambda: self.hooks.halt_account(target_id, reason), None)

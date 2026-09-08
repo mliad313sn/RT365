@@ -163,3 +163,27 @@ def test_strategy_level_switch_cancels_only_that_strategy(platform):  # type: ig
     act = platform.killswitch.activate(KillSwitchLevel.STRATEGY, "strat-other", reason="drill", actor=SRE, now=platform.now)
     assert act.cancelled_orders == (b.order.order_id,)
     assert platform.gateway.get(a.order.order_id).state == OrderState.ACKNOWLEDGED
+
+
+@pytest.mark.tc("TC-KS-009")
+@pytest.mark.req("FR-17")
+@pytest.mark.quartet("positive")
+def test_time_to_halt_is_measured_and_every_later_approval_is_blocked(supervised):  # type: ignore[no-untyped-def]
+    """Outcome target D-044: 100% of approvals after activated_at are blocked; the activation records engage time and elapsed halt time; the time_to_halt_s SLI is catalogued and observed."""
+    from conftest import PM
+
+    pending = [supervised.run_intent(supervised.make_intent()) for _ in range(5)]
+    assert all(r.approval_id for r in pending)
+    act = supervised.killswitch.activate(KillSwitchLevel.ACCOUNT, ACCOUNT, reason="drill", actor=RISK_OFFICER, now=supervised.now)
+    blocked = 0
+    for r in pending:
+        with pytest.raises(ControlDenied):
+            supervised.approve(r.approval_id, PM)
+        blocked += 1
+    assert blocked == len(pending) and supervised.broker.submissions_received == 0
+    assert act.engaged_at == act.activated_at and act.halt_elapsed_ms is not None and act.halt_elapsed_ms >= 0
+    assert supervised.metrics.percentile("killswitch.time_to_halt_s", 0.5) is not None
+    sli = supervised.slis.get("time_to_halt_s")
+    assert sli.target is None and "activated_at" in sli.definition  # ceiling is set at the first drill [Open: Q-16-1]
+    actions = [e.action for e in supervised.audit.by_correlation(supervised.audit.by_action("killswitch.engaged")[-1].correlation_id)]
+    assert actions.index("killswitch.engaged") < actions.index("killswitch.activated")

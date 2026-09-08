@@ -35,7 +35,7 @@ Ordered by gate dependency; a story is Ready only with the template fields and a
 | P5 | Trading Risk Committee numbers (H-09, O-07) and broker/data contracts (H-07, H-08) | E05, E03, E02 | Gate C | Trading Risk Committee, Finance |
 | P6 | Accessibility evidence and PWA (NFR-A11Y-01, ADR-012, O-51) | E10 | Gate F | Frontend Lead, Accessibility Lead |
 | P7 | E14 per D-046: metering from the audit chain (Gate D), NFR-BIL-01 boundary and quartet TC-BIL-001..004, services `tenant/notification/billing/support` (O-31); invoicing provider at Gate F | E14 | Gate D/F | Backend Lead, Enterprise Architect |
-| P8 | E12 per D-044: `time_to_halt_s` SLI, block-rate assertion after `activated_at` (TC-KS-009), drill measurement path (O-64) | E12 | Gate C | SRE Lead, QA Lead |
+| P8 | E12 per D-044: `time_to_halt_s` SLI, block-rate assertion after `activated_at` (TC-KS-009), drill measurement path (O-64) — **delivered in dev/sim 2026-09-08**; drill and ceiling remain (H-19, Q-16-1) | E12 | Gate C | SRE Lead, QA Lead |
 | P9 | E06/E01 per D-045: persona-role vs `enabled_feature` test (TC-ID-006), CustomerType × mode NOCELL test, disclosure/consent/classification fields on CustomerProfile (council P-3, P-4) | E06, E01 | Gate D | Backend Lead, Compliance Agent |
 
 ## Story template [Source: 14] + [Committee]

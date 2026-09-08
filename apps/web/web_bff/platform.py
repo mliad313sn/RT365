@@ -882,6 +882,7 @@ def build_sim_platform(
             audit=ks_audit,
             alert=lambda n, p: alerts.raise_alert(n, p),
             halt_account=halt_account,
+            observe=lambda name, value: metrics.observe(name, value),
         ),
     )
 
