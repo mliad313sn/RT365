@@ -22,7 +22,7 @@
 | O-14 | Decision | Launch locales | Product Director | Gate F | Open |
 | O-15 | Gap | On-call model and support hours per market | SRE Lead, Support Lead | Gate F | Open |
 | O-16 | Gap | Measurable outcome targets for Gate A | Product Council | Gate A | Decided 2026-09-08 (D-044): four definitional targets; time-to-halt ceiling [Open: Q-16-1, first drill] |
-| O-17 | Gap | Roadmap dates after capacity model | Executive Steering | Gate B | Form decided 2026-09-08 (D-057): gate-driven, no C–F dates; ROADMAP v1.1 edit pending (Product Director) |
+| O-17 | Gap | Roadmap dates after capacity model | Executive Steering | Gate B | Form decided 2026-09-08 (D-057): gate-driven, no C–F dates; ROADMAP v1.1 columns added 2026-09-08 (Product Council endorsement pending) |
 | O-18 | Gap | RPO/RTO per cell | Cloud Architect | Gate E | Open |
 | O-19 | Gap | Named deputies for emergency authority | Program Orchestrator | Gate C | Open |
 | R-01 | Risk | Non-deterministic path in risk/eligibility | Chief Risk Agent | continuous | Open |
