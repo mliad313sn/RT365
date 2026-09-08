@@ -771,7 +771,9 @@ def decide(
             account_snapshot, market_snapshot, validated_intent.intent.quantity * est_price, fx, fx_max_age_s, now
         )
     except FxUnavailable as exc:
-        return _halted(validated_intent, exc.reason_code, f"order cannot be valued in the account base currency: {exc}", now, pv, acct_id, mkt_id)
+        return _halted(
+            validated_intent, exc.reason_code, f"order cannot be valued in the account base currency: {exc}", now, pv, acct_id, mkt_id
+        )
 
     scope = LimitScope(
         tenant_id=account_snapshot.tenant_id,

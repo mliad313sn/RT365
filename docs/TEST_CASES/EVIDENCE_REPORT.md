@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-08T14:20:15.686197+00:00 at base commit `7d61bd14972d4a8d16c011f4349e3a9dc9677340`, working tree DIRTY, tested tree `1a23b8278a11544f28d7e31252279a37bbf46e81` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-08T14:37:53.435493+00:00 at base commit `cf662d3bc5014a833edce7c659aecbef3da5611e`, working tree DIRTY, tested tree `7caeaeed42ff8bb602687e779c947eea7a0d1f74` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
@@ -19,6 +19,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-DUR | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-E2E | 2 | 1 | 2 | 1 | yes | 6 | 0 |
 | TC-EX | 3 | 5 | 4 | 5 | yes | 17 | 0 |
+| TC-FX | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-GLO | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-ID | 1 | 1 | 3 | 1 | yes | 6 | 0 |
 | TC-KS | 8 | 2 | 1 | 3 | yes | 14 | 0 |
@@ -31,7 +32,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-SIG | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-TEN | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 
-Areas with a full quartet: 22/22.
+Areas with a full quartet: 23/23.
 
 ## Evidence records
 
@@ -131,6 +132,10 @@ Areas with a full quartet: 22/22.
 | TC-EX-010 | FR-13 | abuse | dev | A command authorised more than five minutes ago, or one whose authorisation was already consumed under a new key, is refused (IVA-21); a cancelled intent cannot be re-executed. | passed | `test/quartets/test_tc_ex_execution.py::test_stale_and_consumed_authorisations_are_refused` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-EX-010 | FR-13 | negative | dev | An altered command reusing a known idempotency key is refused as unauthorised before the inbox answers (IVA-25); an unknown account halts the intent instead of crashing (IVA-24). | passed | `test/quartets/test_tc_ex_execution.py::test_unauthenticated_command_learns_nothing_from_the_inbox` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-EX-011 | FR-13 | recovery | dev | A gateway rebuilt from its store after a crash with an order in flight: the fencing token is never reissued lower, the replayed command is deduplicated, the consumed grant and decision stay refused, and nothing reaches the broker. | passed | `test/quartets/test_tc_ex_execution.py::test_restart_with_order_in_flight_keeps_fencing_inbox_and_one_shot_grants` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-FX-001 | FR-05 | positive | sim | A JPY/KWD/USD book converts to the USD base through the FX snapshot: NAV, cash per currency and exposure are Decimal, rounded per ISO 4217 minor units; positions keep their instrument currency; triangulation only through the snapshot base. | passed | `test/quartets/test_tc_fx_valuation.py::test_multi_currency_book_values_in_base_with_fx_snapshot` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-FX-002 | FR-05 | negative | sim | A missing snapshot, a missing pair, an undefined budget or a stale snapshot make the NAV UNKNOWN (typed, value None, reason code); `nav()` raises a typed FX error; nothing falls back to a 1.0 rate. | passed | `test/quartets/test_tc_fx_valuation.py::test_missing_or_stale_rate_makes_nav_unknown_never_a_number` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-FX-003 | FR-05 | abuse | sim | Rate 0, negative, NaN/Infinity, unknown or lower-case ISO 4217 code, bad pair form, same-currency pair, duplicate pair, naive timestamp, unknown field and a snapshot id that does not match its content are rejected at the schema boundary; no MCP tool can write a rate and an intent cannot carry one. | passed | `test/quartets/test_tc_fx_valuation.py::test_fx_snapshot_schema_boundary_rejects_bad_rates_and_no_agent_can_supply_one` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-FX-004 | FR-05 | recovery | sim | UNKNOWN (missing, then stale) -> a fresh snapshot ingested through the store restores a numeric NAV; the audit trail shows the ingests under one correlation id and the store never serves a snapshot beyond knowledge time. | passed | `test/quartets/test_tc_fx_valuation.py::test_fresh_fx_snapshot_restores_numeric_nav` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-GLO-001 | NFR-GLO-01 | positive | dev | The world registry covers every ISO 3166-1 country/territory on all seven continents with an ISO 4217 currency; each can be proposed as a jurisdiction cell (proposed, never enabled). | passed | `test/quartets/test_tc_glo_global.py::test_every_country_on_every_continent_is_a_valid_cell_with_a_currency` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-GLO-002 | NFR-GLO-01 | negative | dev | A cell for a code that is neither ISO 3166-1 nor user-assigned is refused; user-assigned codes (ZZ) are accepted only as simulated and say so. | passed | `test/quartets/test_tc_glo_global.py::test_unknown_country_codes_are_refused_and_simulated_codes_are_labelled` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-GLO-003 | NFR-GLO-01 | abuse | dev | Proposing every country enables nothing: no legal record, no flag, eligibility stays INELIGIBLE; a simulated cell can be exercised in sim but its legal record is labelled simulated in the audit. | passed | `test/quartets/test_tc_glo_global.py::test_world_coverage_never_means_legal_availability` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |

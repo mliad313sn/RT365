@@ -78,7 +78,9 @@ def test_multi_currency_book_values_in_base_with_fx_snapshot():  # type: ignore[
     assert jpy == Decimal("150") and jpy.as_tuple().exponent == 0
     assert clf == Decimal("0.0300") and clf.as_tuple().exponent == -4
     assert convert(Decimal("150"), "JPY", "USD", fx, now=FX_NOW, max_age_s=FX_BUDGET_S) == Decimal("1.00")  # inverse leg
-    assert convert(Decimal("1"), "EUR", "JPY", fx, now=FX_NOW, max_age_s=FX_BUDGET_S) == Decimal("188")  # EUR->USD->JPY = 187.5 -> half-even
+    assert convert(Decimal("1"), "EUR", "JPY", fx, now=FX_NOW, max_age_s=FX_BUDGET_S) == Decimal(
+        "188"
+    )  # EUR->USD->JPY = 187.5 -> half-even
     assert convert(Decimal("312.5"), "KWD", "USD", fx, now=FX_NOW, max_age_s=FX_BUDGET_S) == Decimal("1041.67")
     assert convert(Decimal("42.42"), "USD", "USD", None, now=FX_NOW, max_age_s=FX_BUDGET_S) == Decimal("42.42")  # identity needs no rate
     assert is_iso4217("JPY") and is_iso4217("XOF") and not is_iso4217("XXX") and not is_iso4217("ZZZ") and not is_iso4217("usd")
@@ -166,7 +168,13 @@ def test_fx_snapshot_schema_boundary_rejects_bad_rates_and_no_agent_can_supply_o
     good = {"USD/JPY": Decimal("150")}
 
     def build(rates: dict[str, Decimal], **kw: object) -> FxSnapshot:
-        args: dict[str, object] = {"base_currency": "USD", "rates": rates, "as_of": FX_NOW, "source": "sim-fx", "provenance": Provenance.SIMULATED}
+        args: dict[str, object] = {
+            "base_currency": "USD",
+            "rates": rates,
+            "as_of": FX_NOW,
+            "source": "sim-fx",
+            "provenance": Provenance.SIMULATED,
+        }
         args.update(kw)
         return FxSnapshot.build(**args)  # type: ignore[arg-type]
 

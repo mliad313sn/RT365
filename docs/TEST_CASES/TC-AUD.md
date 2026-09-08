@@ -2,7 +2,7 @@
 
 Control: Immutable audit — Requirement: NFR-AUD-01 — RTM row: NFR-AUD-01 — Owner: SRE Lead — Reviewer (≠ owner): IVA — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:20:15.686197+00:00 at `7d61bd14972d4a8d16c011f4349e3a9dc9677340` (tree dirty, tested tree `1a23b8278a11`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:37:53.435493+00:00 at `cf662d3bc5014a833edce7c659aecbef3da5611e` (tree dirty, tested tree `7caeaeed42ff`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|

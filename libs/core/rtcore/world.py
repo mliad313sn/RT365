@@ -299,9 +299,7 @@ COUNTRIES: dict[str, Country] = {r[0]: Country(*r) for r in _ROWS}
 # Minor units are the ISO 4217 exponents; the exception lists below are the only non-2 cases in this set. Seeded from
 # the public ISO register by the Data Architect and verified by a reviewer before any real cell uses them (H-29,
 # same convention as the country table) [Open: H-29].
-_MINOR_UNITS_0 = frozenset(
-    {"BIF", "CLP", "DJF", "GNF", "ISK", "JPY", "KMF", "KRW", "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF"}
-)
+_MINOR_UNITS_0 = frozenset({"BIF", "CLP", "DJF", "GNF", "ISK", "JPY", "KMF", "KRW", "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF"})
 _MINOR_UNITS_3 = frozenset({"BHD", "IQD", "JOD", "KWD", "LYD", "OMR", "TND"})
 _MINOR_UNITS_4 = frozenset({"CLF", "UYW"})  # fund codes (Chilean unidad de fomento, Uruguayan unidad previsional)
 _EXTRA_CURRENCIES = frozenset(_MINOR_UNITS_4)
