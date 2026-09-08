@@ -44,7 +44,7 @@ Nothing an agent can do substitutes for these. They are facts only the owner kno
 
 The loop we opened on Monday closed the same day: all twelve improvements we filed upstream were delivered in Meridian 5.10.0, which now carries a request register that reads this repository. Measured on the new version: 513/513 tests, the first hour works with no manual steps, and our loader wrote 134 RAID items with a second run creating nothing.
 
-A new list of twelve requirements (V-1..V-12) aims at the owner's actual goal — proving a project was worth doing, not only that it was run well. The gap is specific: Meridian has a business case and a benefits model, but neither is writable through the integration API, no gate enforces the case, nothing chases a benefit review, and there is no forecast-versus-realised report. One measured defect is included: our sixteen projects now carry two gate ladders.
+A new list of twelve requirements (V-1..V-12) aims at the owner's actual goal — proving a project was worth doing, not only that it was run well. The gap is specific: Meridian has a business case and a benefits model, but neither is writable through the integration API, no gate enforces the case, nothing chases a benefit review, and there is no forecast-versus-realised report. One item we published as their defect was ours: our sixteen projects carried two gate ladders because our loader never declared one, which their code has accepted since the feature shipped. It is withdrawn, re-filed narrower, and fixed on our side.
 
 ## 6. Risks I would raise at the table
 

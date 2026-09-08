@@ -28,7 +28,20 @@ import httpx
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = {"id": "RTX", "city": "RoboTrader (remote, dev/sim)"}
-PROGRAMME = {"id": "RBT", "name": "Global AI-MCP RoboTrader"}
+# Meridian scaffolds one gate ladder per project, chosen by the programme's `gateModel` (migration 036,
+# `shared/engine.js::normaliseGateModel`). Sending ours makes every project born with Gate A..F; not sending it
+# leaves Meridian's default four-gate ladder, which is why our first two loads carried ten milestones where six
+# were intended. That was our omission, not a Meridian defect [Source: Meridian shared/engine.js, routes/admin.js].
+# `at` is where the gate sits in the project window, strictly increasing and exclusive of 0 and 1.
+GATE_LADDER = [
+    {"name": "Gate A — Discovery", "at": 0.14, "owner": "Product Owner"},
+    {"name": "Gate B — Architecture", "at": 0.28, "owner": "Product Owner"},
+    {"name": "Gate C — Paper readiness", "at": 0.43, "owner": "Product Owner"},
+    {"name": "Gate D — Supervised pilot", "at": 0.57, "owner": "Product Owner"},
+    {"name": "Gate E — Capped autonomy", "at": 0.71, "owner": "Product Owner"},
+    {"name": "Gate F — Market release", "at": 0.86, "owner": "Product Owner"},
+]
+PROGRAMME = {"id": "RBT", "name": "Global AI-MCP RoboTrader", "gateModel": GATE_LADDER}
 DEMO = ("admin@meridian.example", "meridian-admin-2026")
 # Planning horizon per gate. Dates are placeholders until O-17 (roadmap dates after the capacity model) is decided.
 GATE_DATES = {"A": "2026-09-08", "B": "2026-10-30", "C": "2026-12-18", "D": "2027-02-26", "E": "2027-04-30", "F": "2027-06-30"}
@@ -40,6 +53,10 @@ GATE_EVIDENCE = {
     "E": "capital envelope, runtime monitoring, automatic halts, model thresholds, incident command",
     "F": "no unresolved critical; SLO, DR, accessibility, support, disclosures, legal terms, release dossier",
 }
+
+# The ladder carries each gate's exit evidence, so Meridian's gate criteria describe our gates, not its defaults.
+for _g, _letter in zip(GATE_LADDER, ("A", "B", "C", "D", "E", "F"), strict=True):
+    _g["evidence"] = GATE_EVIDENCE[_letter]
 PEOPLE = [
     "Product Owner",
     "Program Orchestrator",

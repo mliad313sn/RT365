@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-08T15:27:49.350565+00:00 at base commit `c991075d014343f731eeaa4a911340e31a1eb7d4`, working tree DIRTY, tested tree `f673199b3f638f99dfb34319e4ae30045ebd35ba` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-08T15:31:50.784178+00:00 at base commit `600fc397ec6f6d8bc47f4a1149af32c73bfa54f6`, working tree DIRTY, tested tree `0ca77ddfb9cfcb99d6003c8a9b9c160320597bcb` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
@@ -27,12 +27,13 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-NET | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-OB | 1 | 1 | 2 | 1 | yes | 5 | 0 |
 | TC-PKG | 1 | 1 | 1 | 2 | yes | 5 | 0 |
+| TC-PMO | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-RC | 1 | 2 | 1 | 1 | yes | 5 | 0 |
 | TC-RK | 5 | 31 | 4 | 2 | yes | 42 | 0 |
 | TC-SIG | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-TEN | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 
-Areas with a full quartet: 23/23.
+Areas with a full quartet: 24/24.
 
 ## Evidence records
 
@@ -183,6 +184,10 @@ Areas with a full quartet: 23/23.
 | TC-PKG-003 | NFR-SEC-02 | abuse | dev | A resource root pointed at a directory without the signed registry (or with a tampered one) fails closed: no silent fallback to the source tree, no service, no MCP server. | passed | `test/quartets/test_tc_pkg_cli.py::test_resource_root_never_falls_back_silently` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-PKG-004 | NFR-SEC-02 | recovery | dev | An installed or frozen build without a source tree recovers by pointing RT365_HOME at a complete resource bundle: the same signed policies, same checks, same probe result. | passed | `test/quartets/test_tc_pkg_cli.py::test_resource_root_override_restores_service_for_installed_builds` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-PKG-005 | NFR-GLO-01 | recovery | dev | With no system time-zone database (Windows, frozen builds) IANA zones still resolve from the bundled tzdata package, so `rt365 check` builds the venue calendars; the spec bundles that package (release run 34213524352 regression). | passed | `test/quartets/test_tc_pkg_cli.py::test_venue_calendars_resolve_zones_without_a_system_tz_database` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-PMO-001 | NFR-GOV-01 | positive | dev | test_ledger_readers_cover_the_lifecycle | passed | `test/contract/test_meridian_sync.py::test_ledger_readers_cover_the_lifecycle` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-PMO-002 | NFR-GOV-01 | negative | dev | The programme payload carries the six gates A..F as Meridian's `gateModel` contract requires (names, strictly increasing positions in the open interval, evidence), because a programme that does not declare a ladder gets Meridian's default four-gate one and every project is then born with two ladders. | passed | `test/contract/test_meridian_sync.py::test_the_programme_declares_our_gate_ladder_so_projects_are_not_born_with_meridian_defaults` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-PMO-003 | NFR-GOV-01 | abuse | dev | test_refuses_to_run_without_credentials | passed | `test/contract/test_meridian_sync.py::test_refuses_to_run_without_credentials` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-PMO-004 | NFR-GOV-01 | recovery | dev | The loader is a one-way projection of the ledgers (ADR-017): re-reading them yields the same rows, so an interrupted load is recovered by running it again; and the evidence file it writes carries no credential, because that file is committed. | passed | `test/contract/test_meridian_sync.py::test_a_reloaded_portfolio_converges_and_no_secret_reaches_the_evidence_file` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-RC-001 | FR-14 | positive | dev | After fills, internal positions/orders/cash reconcile cleanly against the broker statement; completion audited. | passed | `test/quartets/test_tc_rc_reconciliation.py::test_positions_and_orders_match_statement` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-RC-002 | FR-14 | negative | dev | A quantity/missing-fill break (S2) opens a ticket, raises an alert and drops the account from autonomy to Supervised. | passed | `test/quartets/test_tc_rc_reconciliation.py::test_break_moves_account_to_supervised` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-RC-003 | FR-14 | abuse | dev | A broker-side order with no internal counterpart is classified DUPLICATE (S1) and triggers the account Kill Switch. | passed | `test/quartets/test_tc_rc_reconciliation.py::test_phantom_broker_order_is_s1_duplicate_and_kills_account` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |

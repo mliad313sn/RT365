@@ -2,7 +2,7 @@
 
 Control: ARC — Requirement: - — RTM row: - — Owner: Backend Lead — Reviewer (≠ owner): pending — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:27:49.350565+00:00 at `c991075d014343f731eeaa4a911340e31a1eb7d4` (tree dirty, tested tree `f673199b3f63`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:31:50.784178+00:00 at `600fc397ec6f6d8bc47f4a1149af32c73bfa54f6` (tree dirty, tested tree `0ca77ddfb9cf`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|

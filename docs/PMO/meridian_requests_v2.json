@@ -39,7 +39,11 @@
   "requests": [
     {
       "id": "REQ-14",
-      "origin": ["V-1", "I-2", "M-05"],
+      "origin": [
+        "V-1",
+        "I-2",
+        "M-05"
+      ],
       "title": "Value objects in the write API v1: business case and benefits by external id",
       "status": "proposed",
       "priority": "highest",
@@ -52,11 +56,19 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-15",
-      "origin": ["V-2"],
+      "origin": [
+        "V-2"
+      ],
       "title": "The benefit review is a scheduled act: an overdue realisation date reaches the agenda and the exception list",
       "status": "proposed",
       "priority": "highest",
@@ -69,11 +81,19 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-16",
-      "origin": ["V-3"],
+      "origin": [
+        "V-3"
+      ],
       "title": "The gate cannot pass without a business case reconfirmed at that gate",
       "status": "proposed",
       "priority": "highest",
@@ -86,11 +106,19 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-17",
-      "origin": ["V-4"],
+      "origin": [
+        "V-4"
+      ],
       "title": "Forecast versus realised as one report, each benefit in its own unit",
       "status": "proposed",
       "priority": "high",
@@ -103,11 +131,19 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-18",
-      "origin": ["V-5"],
+      "origin": [
+        "V-5"
+      ],
       "title": "Prioritisation reads the value, risk and capacity the product already holds",
       "status": "proposed",
       "priority": "high",
@@ -120,11 +156,19 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-19",
-      "origin": ["V-6"],
+      "origin": [
+        "V-6"
+      ],
       "title": "Adoption per rollout wave, linked to the benefits the wave should move",
       "status": "proposed",
       "priority": "medium",
@@ -137,11 +181,20 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-20",
-      "origin": ["V-7", "PM-02"],
+      "origin": [
+        "V-7",
+        "PM-02"
+      ],
       "title": "Lessons offered as a checklist at the same gate on later projects",
       "status": "proposed",
       "priority": "medium",
@@ -154,28 +207,46 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-21",
-      "origin": ["V-8", "I-3", "M-04"],
-      "title": "One ladder per project: a declared gate_model must not also scaffold the four default gates",
+      "origin": [
+        "V-8",
+        "I-3",
+        "M-04"
+      ],
+      "title": "A book created before migration 036 cannot be migrated onto a programme gate ladder",
       "status": "proposed",
-      "priority": "high",
+      "priority": "medium",
       "effort": "S",
       "version": null,
       "decidedOn": null,
       "delivered": [],
-      "measure": "A project created under a programme with a declared ladder carries exactly that programme's gates and no others; an existing book migrates without duplicating or destroying dated milestones and their evidence; a field repository's second load still makes no creating writes.",
-      "remaining": "Defect measured on the RT365 re-test of 5.10.0: sixteen projects now carry both Gate A-F and Gate 1-4; the load produced 10 milestones where 6 were intended (docs/PMO.md section 5). Side effect of REQ-03 (server/migrations/036_gate_ladder.sql and scaffoldProject).",
+      "measure": "A programme whose ladder is declared after its projects already exist can adopt that ladder without duplicating milestones and without destroying dated milestones or their evidence; a field repository's second load still makes no creating writes.",
+      "remaining": "Withdrawn and re-filed on 2026-09-08, the same day it was raised. As first published this said Meridian scaffolds both ladders. It does not: shared/engine.js::normaliseGateModel and server/src/wbs.js scaffold one, chosen by the programme's gateModel, and POST /api/admin/programmes has accepted that field since 036. Our loader never sent it, which is why our projects carried ten milestones where six were intended; it now does (scripts/meridian_sync.py, TC-PMO-002). What remains is the genuine gap: an existing book, created before the feature or before the declaration, has no migration path onto a ladder.",
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-22",
-      "origin": ["V-9"],
+      "origin": [
+        "V-9"
+      ],
       "title": "Governance quality signals: decision latency, action ageing, gate cycle time, RAID review compliance, exception age",
       "status": "proposed",
       "priority": "medium",
@@ -188,11 +259,21 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-23",
-      "origin": ["V-10", "I-4", "M-06"],
+      "origin": [
+        "V-10",
+        "I-4",
+        "M-06"
+      ],
       "title": "A gate criterion may cite a typed external artefact reference, not only a document link",
       "status": "proposed",
       "priority": "medium",
@@ -205,11 +286,19 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-24",
-      "origin": ["V-11"],
+      "origin": [
+        "V-11"
+      ],
       "title": "A value dashboard for the executive, snapshotted per reporting period",
       "status": "proposed",
       "priority": "medium",
@@ -222,11 +311,19 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-25",
-      "origin": ["V-12"],
+      "origin": [
+        "V-12"
+      ],
       "title": "Publish the field-repository loop as a reusable pattern: a real schema and a repository-agnostic review command",
       "status": "proposed",
       "priority": "high",
@@ -239,11 +336,20 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-26",
-      "origin": ["V-13", "I-3"],
+      "origin": [
+        "V-13",
+        "I-3"
+      ],
       "title": "New: the value and learning objects must follow the configurable ladder, not the old four gates",
       "status": "proposed",
       "priority": "highest",
@@ -256,11 +362,19 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-27",
-      "origin": ["V-14"],
+      "origin": [
+        "V-14"
+      ],
       "title": "New: 'not measured' is not 'within tolerance' - an unmeasured benefit past its date must raise an exception",
       "status": "proposed",
       "priority": "high",
@@ -273,11 +387,20 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     },
     {
       "id": "REQ-28",
-      "origin": ["V-15", "PM-03"],
+      "origin": [
+        "V-15",
+        "PM-03"
+      ],
       "title": "New: carry the promise across the conversion - demand to project must seed the business case",
       "status": "proposed",
       "priority": "medium",
@@ -290,7 +413,13 @@
       "issue": null,
       "accepted": false,
       "released": false,
-      "history": [{ "at": "2026-09-08", "registerVersion": 3, "status": "proposed" }]
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 3,
+          "status": "proposed"
+        }
+      ]
     }
   ]
 }

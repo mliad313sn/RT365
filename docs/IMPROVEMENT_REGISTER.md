@@ -110,7 +110,7 @@ All twelve of §D were delivered upstream in 5.10.0 within a day of being filed,
 | V-5 | Portfolio prioritisation by value, confidence, risk exposure and capacity | high | M | yes |
 | V-6 | Adoption telemetry per rollout wave, linked to the benefits it should move | medium | M | yes |
 | V-7 | Lessons offered as a checklist at the same gate on later projects | medium | S | yes |
-| V-8 | One ladder per project (measured defect: our sixteen projects carry both Gate A–F and Gate 1–4) | high | S | yes — defect |
+| V-8 | ~~One ladder per project~~ **withdrawn as published (our loader, not their defect)**; re-filed narrower: a book created before migration 036 cannot be migrated onto a programme ladder | medium | S | yes — re-filed |
 | V-9 | Governance quality signals: decision latency, action ageing, gate cycle time, RAID review compliance, exception age | medium | S | yes |
 | V-10 | Evidence provenance for gate criteria: a typed external reference (commit, artefact, checksum), not a document link | medium | M | yes |
 | V-11 | A value dashboard for the executive, snapshotted per reporting period | medium | M | yes |
