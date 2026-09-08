@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-08T08:44:59.790245+00:00 at base commit `e437bd03c9484a51aeccbb27168703ca3ddabc59` (the working tree at generation time; CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-08T09:03:31.915211+00:00 at base commit `dde19790b4b080ddbb5305a3370df0128d546fbf` (the working tree at generation time; CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
@@ -18,7 +18,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-E2E | 2 | 1 | 2 | 1 | yes | 6 | 0 |
 | TC-EX | 3 | 5 | 4 | 4 | yes | 16 | 0 |
 | TC-ID | 1 | 1 | 2 | 1 | yes | 5 | 0 |
-| TC-KS | 7 | 2 | 1 | 2 | yes | 12 | 0 |
+| TC-KS | 8 | 2 | 1 | 2 | yes | 13 | 0 |
 | TC-MD | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-NET | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-OB | 1 | 1 | 2 | 1 | yes | 5 | 0 |
@@ -114,6 +114,7 @@ Areas with a full quartet: 17/17.
 | TC-KS-006 | FR-17 | positive | dev | Runtime loss-limit breach -> risk.halt.v1 event -> Kill Switch at account level without human action. | passed | `test/quartets/test_tc_ks_killswitch.py::test_runtime_monitor_triggers_kill_switch` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-KS-007 | FR-17 | recovery | dev | Broker down during activation: the switch is engaged first; the failed hook is recorded and alerted (Risk review OBJ-1). | passed | `test/quartets/test_tc_ks_killswitch.py::test_kill_switch_engages_even_when_a_hook_fails` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-KS-008 | FR-17 | negative | dev | A STRATEGY-level switch cancels the strategy's open orders only and leaves other strategies' orders alone (Trading review). | passed | `test/quartets/test_tc_ks_killswitch.py::test_strategy_level_switch_cancels_only_that_strategy` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-KS-009 | FR-17 | positive | dev | Outcome target D-044: 100% of approvals after activated_at are blocked; the activation records engage time and elapsed halt time; the time_to_halt_s SLI is catalogued and observed. | passed | `test/quartets/test_tc_ks_killswitch.py::test_time_to_halt_is_measured_and_every_later_approval_is_blocked` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-MD-001 | FR-03 | positive | dev | Every stored snapshot carries market_ts, ingest_ts, provenance and quality; the universe includes delisted names as of date. | passed | `test/quartets/test_tc_md_marketdata.py::test_bar_stored_with_timestamps_and_provenance` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-MD-002 | FR-03 | negative | dev | Snapshot older than the per-asset-class freshness budget -> RK-FRESH rejection; autonomy would be suspended by SLO semantics. | passed | `test/quartets/test_tc_md_marketdata.py::test_stale_beyond_budget_rejected` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-MD-003 | FR-03 | abuse | dev | Poisoned tick (outlier) is flagged SUSPECT and rejected; backdated ingest is a clock anomaly; unentitled tenant is denied. | passed | `test/quartets/test_tc_md_marketdata.py::test_outlier_backdated_and_unentitled_data` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
