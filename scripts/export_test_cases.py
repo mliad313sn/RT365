@@ -39,6 +39,12 @@ AREAS = {
     "PKG": ("Distribution: rt365 CLI, resource root, installer fail-closed rules", "NFR-SEC-02", "SRE Lead", "Security Architect"),
     "DUR": ("Durable control state across restarts", "NFR-CON-01", "Backend Lead", "Integration Architect"),
     "TEN": ("Tenant isolation", "NFR-TEN-01", "Backend Lead", "Security Architect"),
+    "SIG": (
+        "Asymmetric signing: command authorisation and tool-registry trust set with rotation",
+        "NFR-SEC-01",
+        "Security Architect",
+        "MCP Security Agent",
+    ),
 }
 src = ROOT / "test" / "evidence" / "evidence_index.json"
 data = json.loads(src.read_text())

@@ -132,8 +132,9 @@ def test_revocation_mid_session_and_registry_revocation(platform):  # type: igno
 @pytest.mark.req("NFR-SEC-01")
 @pytest.mark.quartet("abuse")
 def test_forbidden_capabilities_are_structurally_impossible():  # type: ignore[no-untyped-def]
-    """mcp_servers never imports execution, broker, vault, kill switch or policy-mutation modules; egress denies vault/broker; unsigned registry refused."""
+    """mcp_servers never imports execution, broker, vault, kill switch, policy-mutation or signing modules; egress denies vault/broker; unsigned registry refused."""
     forbidden = {
+        "rtcore.signing",  # verify-only: the registry loader holds public material and no signing capability (D-053 §2.3 item 1)
         "execution_gateway",
         "broker_adapters",
         "killswitch_service",
