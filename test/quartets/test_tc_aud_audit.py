@@ -9,11 +9,25 @@ from pathlib import Path
 
 import pytest
 from audit_service.anchor import ANCHOR_FILENAME, AnchorError, AnchorRecord, FileAnchorPublisher
-from audit_service.store import AUDIT_EVENTS_TABLE, AuditEvent, AuditIntegrityError, AuditStore, ChainHead
+from audit_service.reestablish import inspect_chain, reestablish_witness
+from audit_service.store import (
+    ANCHOR_PUBLISHED,
+    AUDIT_EVENTS_TABLE,
+    AUDIT_SEALS_TABLE,
+    AUDIT_SEQUENCE,
+    WITNESS_REESTABLISHED,
+    AuditEvent,
+    AuditIntegrityError,
+    AuditStore,
+    ChainHead,
+    SealRefused,
+    WitnessAttestation,
+    WitnessLostError,
+)
 from conftest import ACCOUNT, AUDITOR, RISK_OFFICER, TENANT
 from killswitch_service.service import KillSwitchLevel
 from rtcore.resources import resource_root
-from rtcore.store import GENESIS, SqliteStore, StoreError, StoreIntegrityError, journal_digest, row_digest
+from rtcore.store import GENESIS, SEQUENCE_TABLE, SqliteStore, StoreError, StoreIntegrityError, journal_digest, row_digest
 from rtobs.alerts import Alert, AlertRouter
 from web_bff.platform import AUDIT_STORE_FILENAME, STORE_FILENAME, TENANT_B, build_sim_platform
 
@@ -633,3 +647,489 @@ def test_restore_then_verify_reopens_the_platform_and_the_startup_verdict_is_cle
     assert p2.run_intent(p2.make_intent()).order is not None  # the platform trades again only after both checks passed
     p2.audit.close()
     p2.store.close()
+
+
+# --- witness continuity and the seal floor (Red-Team Lead Case B and Case C; ADR-020 amendment 3 proposed) ----------
+# Case B measured before this change: delete ``audit_anchors.jsonl``, restart, and the platform started, an intent ran
+# to FILLED and one order reached the broker; the S1 ``audit.anchor_missing`` fired with ``auto_action: none``, so
+# nothing stopped. Case C measured before this change: truncate the chain, delete the witness, let an operator seal —
+# "the truncation is now witnessed as if it had never happened".
+#
+# Two behaviours, a quartet each:
+#   (1) a platform that *had* a witness and no longer has one does not open. The response is a refusal, not a Kill
+#       Switch: D-066 stands, because a Kill Switch activation is itself a store row and would write to the store
+#       under suspicion. The genesis case is distinguished honestly — a chain that has never been witnessed at all
+#       is ADR-020's existing behaviour and still opens.
+#   (2) a seal never witnesses a chain that contradicts what this store already recorded witnessing, whatever the
+#       witness says or does not say, and an ordinary seal can no longer create the first anchor for a non-empty
+#       chain. Re-establishing a lost witness is a separate, attested, audited operator act.
+#
+# The evidence the store keeps about its own witness is deliberately in two places, because they fail differently:
+# a ``SealRecord`` in the seals table (an operator seal) and an ``audit.anchor.published`` row *in the hash chain*
+# (a genesis or scheduled publication). Measured: the Case C rollback removes the seal records with the events,
+# because a seal is written after the events it seals — the chain row is what survives it.
+
+
+def _witness_marks(audit: AuditStore) -> list[dict[str, object]]:
+    """The publication rows the store wrote into its own chain: the evidence a tail truncation cannot remove."""
+    return [dict(e.payload) for e in audit.by_action(ANCHOR_PUBLISHED)]
+
+
+def _excise_tail_events_consistently(db: sqlite3.Connection, keep_events: int) -> None:
+    """A more careful offline attacker than ``_rollback_consistently``: remove the last audit events *and* their
+    journal entries, renumber and re-chain the journal and rebuild the state rows — but leave the store's seal
+    records in place, because a blunt rollback takes them with it (a seal is written after the events it seals).
+
+    The seam is satisfied and the chain is a valid prefix; only the store's own record of what it has already
+    sealed contradicts it. This is the attacker the seal floor exists for.
+    """
+    keys = [k for (k,) in db.execute("SELECT key FROM kv WHERE tbl=? ORDER BY key", (AUDIT_EVENTS_TABLE,)).fetchall()]
+    doomed = set(keys[keep_events:])
+    rows = db.execute("SELECT seq, op, tbl, key, value, correlation_id, at FROM journal ORDER BY seq").fetchall()
+    drop: set[int] = set()
+    for idx, (seq, _op, tbl, key, _v, _c, _a) in enumerate(rows):
+        if tbl == AUDIT_EVENTS_TABLE and key in doomed:
+            drop.add(int(seq))
+            if idx and rows[idx - 1][2] == SEQUENCE_TABLE and rows[idx - 1][3] == AUDIT_SEQUENCE:
+                drop.add(int(rows[idx - 1][0]))  # the sequence bump that allocated the event
+    kept = [r for r in rows if int(r[0]) not in drop]
+    db.execute("DELETE FROM journal")
+    prev = GENESIS
+    expected: dict[tuple[str, str], tuple[str, int]] = {}
+    for n, (_seq, op, tbl, key, value, corr, at) in enumerate(kept, start=1):
+        digest = journal_digest(prev, n, op, tbl, key, value, corr, at)
+        db.execute(
+            "INSERT INTO journal (seq, op, tbl, key, value, correlation_id, at, prev, digest) VALUES (?,?,?,?,?,?,?,?,?)",
+            (n, op, tbl, key, value, corr, at, prev, digest),
+        )
+        prev = digest
+        if op == "put":
+            expected[(tbl, key)] = (value, n)
+        else:
+            expected.pop((tbl, key), None)
+    db.execute("DELETE FROM kv")
+    for (tbl, key), (value, seq) in expected.items():
+        db.execute(
+            "INSERT INTO kv (tbl, key, value, created_seq, seq, digest) VALUES (?,?,?,?,?,?)",
+            (tbl, key, value, seq, seq, row_digest(tbl, key, value, seq)),
+        )
+
+
+def _trim_anchor_file(anchor_dir: Path, keep: int) -> None:
+    """The attacker trims the witness's tail instead of deleting it, so what is left agrees with the shorter chain."""
+    path = anchor_dir / ANCHOR_FILENAME
+    lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    path.write_text("\n".join(lines[:keep]) + "\n", encoding="utf-8")
+
+
+@pytest.mark.tc("TC-AUD-015")
+@pytest.mark.req("NFR-AUD-01")
+@pytest.mark.env("dev")
+@pytest.mark.quartet("positive")
+def test_a_witnessed_platform_opens_and_records_every_publication_it_makes(tmp_path):  # type: ignore[no-untyped-def]
+    """A platform whose witness is present opens, restarts and trades exactly as before, and every publication it makes is durably recorded by the store itself — an operator seal as a SealRecord, a genesis or scheduled publication as an ``audit.anchor.published`` row with its own correlation id. A chain that has never been witnessed at all still opens: that is the genesis case, and it is not the same thing as a witness that is gone."""
+    store_dir, anchor_dir = _dirs(tmp_path)
+    router = _router()
+    p1 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY, alert_router=router)
+    marks = _witness_marks(p1.audit)
+    assert marks and marks[0]["anchor_seq"] == 1 and marks[0]["length"] == 0 and marks[0]["trigger"] == "genesis"
+    assert p1.audit.all()[0].action == ANCHOR_PUBLISHED  # at the head of the chain: no tail truncation can remove it
+    assert all(e.correlation_id for e in p1.audit.by_action(ANCHOR_PUBLISHED))
+    p1.run_intent(p1.make_intent())
+    head = p1.audit.seal(correlation_id="seal:operator:1")
+    assert head.length == len(p1.audit) and p1.audit.seals()[-1].head == head and p1.audit.seals()[-1].anchor_seq is not None
+    floor = p1.audit.witness_floor()
+    assert floor is not None and floor.length == head.length and floor.head_hash == head.head_hash and floor.source == "seal"
+    assert p1.audit.verify().ok and not router.by_name("audit.anchor_missing")
+    p1.audit.close()
+    p1.store.close()
+
+    p2 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)  # restart: witness present
+    assert p2.startup_verification is not None and p2.startup_verification.ok
+    assert p2.run_intent(p2.make_intent()).order is not None and not p2.alerts.by_name("audit.anchor_missing")
+    assert len(_witness_marks(p2.audit)) >= 1 and p2.audit.witness_floor() is not None
+    p2.audit.close()
+    p2.store.close()
+
+    # the genesis case, distinguished honestly: no publisher was ever configured, so nothing this store recorded
+    # names a witness. Nothing is refused and nothing is fabricated.
+    unwitnessed = tmp_path / "never-witnessed"
+    u1 = build_sim_platform(store_dir=unwitnessed, authorisation_key=KEY)
+    u1.run_intent(u1.make_intent())
+    assert u1.audit.publisher is None and u1.audit.witness_floor() is None and not _witness_marks(u1.audit)
+    u1.audit.close()
+    u1.store.close()
+    u2 = build_sim_platform(store_dir=unwitnessed, authorisation_key=KEY)  # opens: it never had a witness to lose
+    assert len(u2.audit) > 0 and u2.audit.verify().ok
+    u2.audit.close()
+    u2.store.close()
+    mem = build_sim_platform()  # the memory default is unchanged
+    assert mem.audit.backend == "MemoryStore" and mem.audit.witness_floor() is None and mem.audit.verify().ok
+
+
+@pytest.mark.tc("TC-AUD-016")
+@pytest.mark.req("NFR-AUD-01")
+@pytest.mark.env("dev")
+@pytest.mark.quartet("negative")
+def test_a_platform_whose_witness_is_gone_refuses_to_open_and_writes_nothing(tmp_path):  # type: ignore[no-untyped-def]
+    """The witness this store's own records name is absent, or present but unreadable: composition raises WitnessLostError, the catalogued S1 ``audit.anchor_missing`` is delivered with AUD-WITNESS-LOST / AUD-WITNESS-UNREADABLE and the start-up correlation id, and nothing at all is written to the store under suspicion — no incident row, no Kill Switch activation, no new event. Restarting never clears it."""
+    store_dir, anchor_dir = _dirs(tmp_path)
+    p1 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    p1.run_intent(p1.make_intent())
+    p1.audit.seal(correlation_id="seal:operator:1")
+    before = len(p1.audit)
+    p1.audit.close()
+    p1.store.close()
+
+    (anchor_dir / ANCHOR_FILENAME).unlink()  # the replica is lost, or removed
+    router = _router()
+    with pytest.raises(WitnessLostError) as exc:
+        build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY, alert_router=router)
+    assert "AUD-WITNESS-LOST" in str(exc.value)
+    alert = router.by_name("audit.anchor_missing")[-1]
+    assert alert.severity == "S1" and alert.auto_action == "none"  # D-066 stands: no automatic write to this store
+    assert alert.payload["reason"] == "AUD-WITNESS-LOST" and alert.payload["correlation_id"].startswith("startup:")
+    assert alert.payload["length"] == before and alert.payload["floor_length"] == before and alert.payload["marks"] >= 1
+    assert _channels(router, alert) == ["pager", "email"]  # delivered, not merely raised
+    assert not router.by_name("limit.changed")  # nothing composed: nothing decided, ordered or submitted
+    assert not router.by_name("killswitch.hook_failed")
+
+    def audit_rows() -> int:
+        db = _audit_db(store_dir)
+        (n,) = db.execute("SELECT count(*) FROM kv WHERE tbl=?", (AUDIT_EVENTS_TABLE,)).fetchone()
+        db.close()
+        return int(n)
+
+    assert audit_rows() == before  # write nothing: the refusal appends no incident row of its own
+    for _ in range(2):  # a crash loop adds nothing: the refusal is a property of the two stores, not of the attempt
+        with pytest.raises(WitnessLostError):
+            build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    assert audit_rows() == before
+
+    # a witness that cannot be read is not a witness: same refusal, its own reason code, and the fix is to restore
+    # the replica, never to overwrite it
+    (anchor_dir / ANCHOR_FILENAME).write_text("garbage\n", encoding="utf-8")
+    unreadable = _router()
+    with pytest.raises(WitnessLostError) as exc2:
+        build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY, alert_router=unreadable)
+    assert "AUD-WITNESS-UNREADABLE" in str(exc2.value)
+    assert unreadable.by_name("audit.anchor_missing")[-1].payload["reason"] == "AUD-WITNESS-UNREADABLE"
+    assert audit_rows() == before
+
+    # an empty anchor directory is the same refusal as a missing file: "no witness" is one condition, however it
+    # was produced. Recovery is restore-then-verify (TC-AUD-009) or the attested act (TC-AUD-018), never a flag.
+    shutil.rmtree(anchor_dir)
+    with pytest.raises(WitnessLostError):
+        build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    assert audit_rows() == before
+
+
+@pytest.mark.tc("TC-AUD-017")
+@pytest.mark.req("NFR-AUD-01")
+@pytest.mark.env("dev")
+@pytest.mark.quartet("abuse")
+def test_red_team_case_b_deleting_the_witness_no_longer_lets_the_platform_trade(tmp_path):  # type: ignore[no-untyped-def]
+    """The Red-Team Lead's Case B, run as ``docs/PENTEST/probes/rt_probe_01_audit_witness.py`` runs it: build a durable platform, run an intent, seal, stop, delete ``audit_anchors.jsonl``, restart. Measured before: the platform started, an intent ran to FILLED and one order reached the broker. Now there is no platform to run an intent on. The same attacker who also rolls the store back — which takes the seal records with it — is refused too, on the publication row the chain carries."""
+    store_dir, anchor_dir = _dirs(tmp_path)
+    p1 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    p1.run_intent(p1.make_intent())
+    p1.audit.seal(correlation_id="seal:operator:1")
+    assert p1.broker.submissions_received == 1  # the platform that had its witness did trade: this is a refusal, not a break
+    p1.audit.close()
+    p1.store.close()
+    (anchor_dir / ANCHOR_FILENAME).unlink()
+
+    router = _router()
+    with pytest.raises(WitnessLostError):
+        build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY, alert_router=router)
+    assert router.by_name("audit.anchor_missing")[-1].payload["reason"] == "AUD-WITNESS-LOST"
+
+    # the probe's Case C rollback, run against the store: it removes the seal records with the events (measured),
+    # so the evidence that this store had a witness is the ``audit.anchor.published`` row at the head of the chain
+    store2, anchor2 = tmp_path / "state2", tmp_path / "worm2"
+    p2 = build_sim_platform(store_dir=store2, anchor_dir=anchor2, authorisation_key=KEY)
+    p2.run_intent(p2.make_intent())
+    sealed = p2.audit.seal(correlation_id="seal:operator:1")
+    p2.audit.close()
+    p2.store.close()
+    db = _audit_db(store2)
+    keys = [k for (k,) in db.execute("SELECT key FROM kv WHERE tbl=? ORDER BY key", (AUDIT_EVENTS_TABLE,)).fetchall()]
+    (cut,) = db.execute("SELECT MIN(seq) FROM journal WHERE tbl=? AND key=?", (AUDIT_EVENTS_TABLE, keys[-5])).fetchone()
+    _rollback_consistently(db, int(cut) - 2)
+    (seal_rows,) = db.execute("SELECT count(*) FROM kv WHERE tbl=?", (AUDIT_SEALS_TABLE,)).fetchone()
+    db.close()
+    assert seal_rows == 0 and sealed.length > 0  # the rollback took the seal records with it
+    SqliteStore(store2 / AUDIT_STORE_FILENAME).close()  # the seam accepts the rollback
+    (anchor2 / ANCHOR_FILENAME).unlink()
+    rolled = _router()
+    with pytest.raises(WitnessLostError) as exc:
+        build_sim_platform(store_dir=store2, anchor_dir=anchor2, authorisation_key=KEY, alert_router=rolled)
+    assert "AUD-WITNESS-LOST" in str(exc.value)
+    assert rolled.by_name("audit.anchor_missing")[-1].payload["marks"] >= 1
+    assert rolled.by_name("audit.anchor_missing")[-1].payload["floor_length"] is None  # no seal record survived
+
+
+@pytest.mark.tc("TC-AUD-018")
+@pytest.mark.req("NFR-AUD-01")
+@pytest.mark.env("dev")
+@pytest.mark.quartet("recovery")
+def test_re_establishing_a_lost_witness_is_an_explicit_attested_act_an_ordinary_seal_cannot_reach(tmp_path):  # type: ignore[no-untyped-def]
+    """A genuine replica loss is recoverable, and only through the named path. The ordinary gesture is refused: a seal over an absent witness raises SealRefused with AUD-SEAL-UNWITNESSED and publishes nothing. The named act requires an actor, a reason, the exact length and head hash of the chain and the anchor sequence this store last recorded publishing; it writes one audit row under the operator's correlation id, inside the anchor it publishes; a repeat is refused; and no parameter of the composition root can reach it."""
+    import inspect as inspect_mod
+
+    store_dir, anchor_dir = _dirs(tmp_path)
+    p = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    p.run_intent(p.make_intent())
+    p.audit.seal(correlation_id="seal:operator:1")
+    (anchor_dir / ANCHOR_FILENAME).unlink()  # the replica volume is destroyed under a running platform
+
+    # (a) the ordinary gesture cannot re-establish a witness, and it never could reach this path by habit
+    with pytest.raises(SealRefused) as exc:
+        p.audit.seal(correlation_id="operator:habit")
+    assert "AUD-SEAL-UNWITNESSED" in str(exc.value)
+    assert p.audit.publisher.latest() is None and not [s for s in p.audit.seals() if s.correlation_id == "operator:habit"]
+    alert = p.alerts.by_name("audit.anchor_missing")[-1]
+    assert alert.severity == "S1" and alert.payload["reason"] == "AUD-SEAL-UNWITNESSED" and alert.payload["correlation_id"] == "operator:habit"
+    p.audit.close()
+    p.store.close()
+    with pytest.raises(WitnessLostError):  # and a restart does not clear it either
+        build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+
+    # (b) the operator reads the chain with the read-only inspection: no store is opened for use to do it
+    seam = SqliteStore(store_dir / AUDIT_STORE_FILENAME)
+    report = inspect_chain(seam, FileAnchorPublisher(anchor_dir))
+    seam.close()
+    assert report.chain_ok and not report.witness_present and report.length > 0 and report.last_anchor_seq >= 1
+    assert set(dir(report)) & {"append", "put", "seal"} == set()
+
+    # (c) the attestation must describe this chain exactly: a wrong length, head, anchor sequence, actor or reason fails
+    good = dict(actor="ops:alice", reason="anchor replica volume destroyed", length=report.length, head_hash=report.head_hash, last_anchor_seq=report.last_anchor_seq)
+    for bad in (
+        {**good, "length": report.length - 1},
+        {**good, "head_hash": "99" * 32},
+        {**good, "last_anchor_seq": report.last_anchor_seq + 1},
+        {**good, "actor": ""},
+        {**good, "reason": ""},
+    ):
+        with pytest.raises(SealRefused) as bad_exc:
+            reestablish_witness(
+                store=SqliteStore(store_dir / AUDIT_STORE_FILENAME),
+                publisher=FileAnchorPublisher(anchor_dir),
+                attestation=WitnessAttestation(correlation_id="c1", **bad),  # type: ignore[arg-type]
+            )
+        assert "AUD-ATTESTATION-MISMATCH" in str(bad_exc.value)
+        assert FileAnchorPublisher(anchor_dir).latest() is None  # a refused attempt publishes nothing
+
+    # (d) the named act
+    corr = "incident:witness-loss:2026-09-08"
+    done = reestablish_witness(
+        store=SqliteStore(store_dir / AUDIT_STORE_FILENAME),
+        publisher=FileAnchorPublisher(anchor_dir),
+        attestation=WitnessAttestation(correlation_id=corr, **good),  # type: ignore[arg-type]
+    )
+    assert done.record.anchor_seq == 1 and done.record.correlation_id == corr and done.record.length == report.length + 1
+    assert done.row.action == WITNESS_REESTABLISHED and done.row.correlation_id == corr and done.row.actor == "ops:alice"
+    assert done.row.payload["reason"] == good["reason"] and done.row.payload["attested_length"] == report.length
+    assert done.row.payload["lost_anchor_seq"] == report.last_anchor_seq
+    assert done.record.length == done.row.seq + 1  # the row is inside the anchor it caused: the act witnesses itself
+
+    # (e) a repeat is refused: there is a witness again, so there is nothing to re-establish
+    with pytest.raises(SealRefused) as again:
+        reestablish_witness(
+            store=SqliteStore(store_dir / AUDIT_STORE_FILENAME),
+            publisher=FileAnchorPublisher(anchor_dir),
+            attestation=WitnessAttestation(correlation_id=corr, **good),  # type: ignore[arg-type]
+        )
+    assert "AUD-WITNESS-PRESENT" in str(again.value)
+
+    # (f) the platform opens again, the act is in the chain a restart reads, and composition cannot reach the path
+    router = _router()
+    p2 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY, alert_router=router)
+    assert p2.startup_verification is not None and p2.startup_verification.ok
+    assert [e.action for e in p2.audit.by_correlation(corr)] == [WITNESS_REESTABLISHED]
+    assert p2.run_intent(p2.make_intent()).order is not None
+    assert "attestation" not in inspect_mod.signature(build_sim_platform).parameters
+    p2.audit.close()
+    p2.store.close()
+
+
+@pytest.mark.tc("TC-AUD-019")
+@pytest.mark.req("NFR-AUD-01")
+@pytest.mark.env("dev")
+@pytest.mark.quartet("positive")
+def test_a_seal_on_a_chain_that_agrees_with_every_earlier_seal_publishes_as_before(tmp_path):  # type: ignore[no-untyped-def]
+    """The floor is not a new gate on the honest path: repeated seals on a growing chain publish, each raises the floor, and the floor a restart reads is the highest head this store recorded witnessing."""
+    store_dir, anchor_dir = _dirs(tmp_path)
+    p = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    first = p.audit.seal(correlation_id="seal:operator:1")
+    assert p.audit.witness_floor().length == first.length  # type: ignore[union-attr]
+    p.run_intent(p.make_intent())
+    second = p.audit.seal(correlation_id="seal:operator:2")
+    assert second.length > first.length and p.audit.witness_floor().length == second.length  # type: ignore[union-attr]
+    assert p.audit.verify().ok and not p.alerts.by_name("audit.chain_verification_failed")
+    p.audit.close()
+    p.store.close()
+    p2 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    floor = p2.audit.witness_floor()
+    assert floor is not None and floor.length == second.length and floor.head_hash == second.head_hash
+    third = p2.audit.seal(correlation_id="seal:operator:3")
+    assert third.length >= second.length and p2.audit.verify().ok and p2.audit.witness_floor().length == third.length  # type: ignore[union-attr]
+    p2.audit.close()
+    p2.store.close()
+
+
+@pytest.mark.tc("TC-AUD-020")
+@pytest.mark.req("NFR-AUD-01")
+@pytest.mark.env("dev")
+@pytest.mark.quartet("negative")
+def test_a_seal_never_witnesses_a_chain_that_contradicts_what_this_store_already_sealed(tmp_path):  # type: ignore[no-untyped-def]
+    """The attack Case C becomes once the witness may not simply be deleted: truncate the chain *and* trim the witness's tail so what is left agrees with it. The platform opens (there is a witness), pages AUD-ANCHOR-TAIL-REMOVED with auto-action none, and the operator's seal — the one action that would clear the alert — is refused with AUD-SEAL-BELOW-FLOOR and the catalogued S1. Nothing is published and no SealRecord is written."""
+    store_dir, anchor_dir = _dirs(tmp_path)
+    p1 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    p1.run_intent(p1.make_intent())
+    sealed = p1.audit.seal(correlation_id="seal:operator:1")
+    p1.audit.close()
+    p1.store.close()
+    db = _audit_db(store_dir)
+    _excise_tail_events_consistently(db, sealed.length - 5)
+    (seal_rows,) = db.execute("SELECT count(*) FROM kv WHERE tbl=?", (AUDIT_SEALS_TABLE,)).fetchone()
+    db.close()
+    assert seal_rows == 1  # this attacker kept the ledger of what was sealed; the events are gone
+    SqliteStore(store_dir / AUDIT_STORE_FILENAME).close()  # the seam is satisfied
+    _trim_anchor_file(anchor_dir, 2)  # ...and the witness now stops at a head the shortened chain still matches
+
+    router = _router()
+    p2 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY, alert_router=router)
+    assert p2.startup_verification is not None and not p2.startup_verification.ok
+    assert p2.startup_verification.reason == "AUD-ANCHOR-TAIL-REMOVED"
+    with pytest.raises(SealRefused) as exc:
+        p2.audit.seal(correlation_id="operator:recovery")
+    assert "AUD-SEAL-BELOW-FLOOR" in str(exc.value)
+    alert = router.by_name("audit.chain_verification_failed")[-1]
+    assert alert.severity == "S1" and alert.payload["reason"] == "AUD-SEAL-BELOW-FLOOR"
+    assert alert.payload["correlation_id"] == "operator:recovery" and alert.payload["floor_length"] == sealed.length
+    assert _channels(router, alert) == ["pager", "email"]
+    assert p2.audit.publisher.latest().anchor_seq == 2  # nothing was published on top of the trimmed witness
+    assert not [s for s in p2.audit.seals() if s.correlation_id == "operator:recovery"]
+    # ...and the attested path is refused for the same reason: a recovery never launders a truncation
+    with pytest.raises(SealRefused) as exc2:
+        p2.audit.reestablish(
+            WitnessAttestation(
+                actor="ops:alice",
+                reason="replica lost",
+                length=len(p2.audit),
+                head_hash=p2.audit.head_hash(),
+                last_anchor_seq=2,
+                correlation_id="operator:recovery",
+            )
+        )
+    assert "AUD-SEAL-BELOW-FLOOR" in str(exc2.value) or "AUD-WITNESS-PRESENT" in str(exc2.value)
+    p2.audit.close()
+    p2.store.close()
+
+
+@pytest.mark.tc("TC-AUD-021")
+@pytest.mark.req("NFR-AUD-01")
+@pytest.mark.env("dev")
+@pytest.mark.quartet("abuse")
+def test_red_team_case_c_the_recovery_no_longer_destroys_the_evidence_it_protects(tmp_path):  # type: ignore[no-untyped-def]
+    """The Red-Team Lead's Case C, run exactly as the probe runs it: seal a chain, roll five events off the tail so the seam still accepts the file, delete the witness, restart, and let an operator seal. Measured before: 'the truncation is now witnessed as if it had never happened'. Now the restart is refused, so the operator's seal never happens; the only path left is the attested one, and it writes an indelible row naming who did it and why — which is the point, because an attacker with write access to both stores can still take that path (a residual for the Product Owner, not a control)."""
+    store_dir, anchor_dir = _dirs(tmp_path)
+    p1 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    p1.run_intent(p1.make_intent())
+    sealed = p1.audit.seal(correlation_id="seal:operator:1")
+    p1.audit.close()
+    p1.store.close()
+    db = _audit_db(store_dir)
+    keys = [k for (k,) in db.execute("SELECT key FROM kv WHERE tbl=? ORDER BY key", (AUDIT_EVENTS_TABLE,)).fetchall()]
+    (cut,) = db.execute("SELECT MIN(seq) FROM journal WHERE tbl=? AND key=?", (AUDIT_EVENTS_TABLE, keys[-5])).fetchone()
+    _rollback_consistently(db, int(cut) - 2)
+    db.close()
+    (anchor_dir / ANCHOR_FILENAME).unlink()
+
+    router = _router()
+    with pytest.raises(WitnessLostError):  # the restart the probe performs
+        build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY, alert_router=router)
+    assert router.by_name("audit.anchor_missing")[-1].payload["reason"] == "AUD-WITNESS-LOST"
+    assert FileAnchorPublisher(anchor_dir).latest() is None  # the seal the probe performs next never happens
+
+    # the residual, pinned by a test so that nobody discovers it later: the attested path is still open to an
+    # actor who owns both stores. What it costs them is a row in the chain that says so, for ever.
+    seam = SqliteStore(store_dir / AUDIT_STORE_FILENAME)
+    report = inspect_chain(seam, FileAnchorPublisher(anchor_dir))
+    seam.close()
+    done = reestablish_witness(
+        store=SqliteStore(store_dir / AUDIT_STORE_FILENAME),
+        publisher=FileAnchorPublisher(anchor_dir),
+        attestation=WitnessAttestation(
+            actor="attacker",
+            reason="claims a replica loss",
+            length=report.length,
+            head_hash=report.head_hash,
+            last_anchor_seq=report.last_anchor_seq,
+            correlation_id="x",
+        ),
+    )
+    assert done.row.action == WITNESS_REESTABLISHED and done.row.actor == "attacker" and report.length < sealed.length
+    p2 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    rows = p2.audit.by_action(WITNESS_REESTABLISHED)
+    assert len(rows) == 1 and rows[0].actor == "attacker" and rows[0].payload["attested_length"] == report.length
+    assert rows[0].payload["lost_anchor_seq"] == report.last_anchor_seq  # the chain says a witness was replaced here
+    p2.audit.close()
+    p2.store.close()
+
+
+@pytest.mark.tc("TC-AUD-022")
+@pytest.mark.req("NFR-AUD-01")
+@pytest.mark.env("dev")
+@pytest.mark.quartet("recovery")
+def test_a_genuine_replica_loss_is_recoverable_and_the_floor_survives_the_recovery(tmp_path):  # type: ignore[no-untyped-def]
+    """The honest half of Case C: a replica genuinely lost with the chain intact is re-established, the platform opens, verifies and trades, and the floor afterwards is the re-established head — so the next truncation is still refused its seal. Restoring the last good copy stays the first choice and is unchanged (TC-AUD-009)."""
+    store_dir, anchor_dir = _dirs(tmp_path)
+    p1 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    p1.run_intent(p1.make_intent())
+    p1.audit.seal(correlation_id="seal:operator:1")
+    p1.audit.close()
+    p1.store.close()
+    shutil.rmtree(anchor_dir)  # the whole replica volume is gone; the chain is untouched
+
+    seam = SqliteStore(store_dir / AUDIT_STORE_FILENAME)
+    report = inspect_chain(seam, FileAnchorPublisher(anchor_dir))
+    seam.close()
+    assert report.chain_ok and not report.witness_present and report.floor_length is not None
+    corr = "incident:witness-loss:recovery"
+    done = reestablish_witness(
+        store=SqliteStore(store_dir / AUDIT_STORE_FILENAME),
+        publisher=FileAnchorPublisher(anchor_dir),
+        attestation=WitnessAttestation(
+            actor="ops:alice",
+            reason="replica volume lost",
+            length=report.length,
+            head_hash=report.head_hash,
+            last_anchor_seq=report.last_anchor_seq,
+            correlation_id=corr,
+        ),
+    )
+    router = _router()
+    p2 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY, alert_router=router)
+    assert p2.startup_verification is not None and p2.startup_verification.ok
+    assert p2.audit.verify().ok and p2.run_intent(p2.make_intent()).order is not None
+    floor = p2.audit.witness_floor()
+    assert floor is not None and floor.length >= done.record.length
+    assert [e.action for e in p2.audit.by_correlation(corr)] == [WITNESS_REESTABLISHED]
+    reestablished = p2.audit.seal(correlation_id="seal:operator:after-recovery")
+    p2.audit.close()
+    p2.store.close()
+
+    # the floor survives the recovery: a truncation below the re-established head is still refused its seal
+    db = _audit_db(store_dir)
+    _excise_tail_events_consistently(db, reestablished.length - 3)
+    db.close()
+    SqliteStore(store_dir / AUDIT_STORE_FILENAME).close()
+    p3 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
+    with pytest.raises(SealRefused) as exc:
+        p3.audit.seal(correlation_id="operator:again")
+    assert "AUD-SEAL-BELOW-FLOOR" in str(exc.value)
+    p3.audit.close()
+    p3.store.close()
+
