@@ -1,0 +1,284 @@
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: A-08 — les six indicateurs sortent, par site, sur le livre réel
+# Subtest: A-08 — un site sans avancement depuis trente jours est NOMMÉ
+# Subtest: A-08 — un refus est compté, sans dire qui ni sur quoi
+# Subtest: A-08 — la mesure est réservée au niveau groupe
+# Subtest: A-08 — la fenêtre se choisit, et la réponse porte sa date
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: R-03 — une semaine se saisit, se corrige, se retire, et atterrit à côté du plan
+# Subtest: R-03 — un lecteur ne saisit pas le réel d'autrui
+# Subtest: R-09 — le parseur tient les guillemets, les virgules et le BOM
+# Subtest: R-09 — la prévisualisation refuse ligne par ligne, sans rien écrire
+# Subtest: R-09 — un fichier propre s'applique en une transaction, tracée
+# Subtest: R-09 — le modèle se télécharge, par nature
+# Subtest: R-10 — une occurrence produit un ICS que tout agenda accepte
+# Subtest: R-12 — une suppression se restaure depuis son image, en ajoutant, jamais en réécrivant
+# Subtest: R-14 — l'export et le dossier de preuve laissent une trace nominative ; la navigation, non
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: M-01 · l'archive et le chemin de retour
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: authentication
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: identifier allocation is atomic
+# Subtest: optimistic concurrency covers every table that gets edited
+# Subtest: access paths
+# Subtest: SQL construction
+# Subtest: statement volume
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: PM-03 · qui paie écrit
+# Subtest: PM-03 · la justification continue
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: N-05 — le destinataire lit enfin sa propre boîte
+# Subtest: N-05 — une boîte est la mienne : je ne lis pas celle d'un autre
+# Subtest: N-05 — « lu » n'est pas « envoyé »
+# Subtest: N-05 — l'escalier fait monter ce qui traîne, sans rien renvoyer
+# Subtest: G-13 — la purge refuse de deviner une durée que personne n'a écrite
+# Subtest: G-13 — une durée écrite, et la purge balaie ce qui a fait son temps
+# Subtest: G-13 — la purge ne supprime jamais ce qui n'a pas encore été dit
+# Subtest: N-05 — un abonnement se pose, se relit et se retire
+# Subtest: N-05 — les heures de silence se règlent, et se règlent entièrement
+# Subtest: le transport sortant reste fermé tant que le mandant n'a rien nommé
+# Subtest: un abonnement décide enfin de ce qui SORT — et de rien d'autre
+# Subtest: sans aucun abonnement, la préférence globale gouverne comme avant
+# Subtest: earned value (R3.1)
+# Subtest: RAG (R3.4)
+# Subtest: roll-up (R3.7)
+# Subtest: critical path (R3.3)
+# Subtest: RAID (R3.6)
+# Subtest: gates (R3.5)
+# Subtest: change routing
+# Subtest: capacity
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: INT-04 · une seule liste d'actions, deux lecteurs
+# Subtest: INT-04 · la livraison
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: unconfigured federation answers 401 exactly like a wrong key
+# Subtest: only an admin may mint the inbound key; the response carries it once
+# Subtest: a wrong key is refused after configuration too
+# Subtest: C1 upserts sites and people, skips unknown sites, and is idempotent
+# Subtest: C1 refuses a malformed site code loudly rather than coercing (I-01)
+# Subtest: C5 builds the ops programme; re-sync updates in place; dropped items close or go
+# Subtest: C5 refuses non-SDP ids and undated projects
+# Subtest: synced rows refuse local edits with a message naming SDP
+# Subtest: the SDP- programme namespace is reserved (ADR-8)
+# Subtest: a site PM links an SDP change to their project; the write is audited
+# Subtest: linking is an ordinary project write: refused off-scope, invisible cross-site
+# Subtest: an activity pin must belong to the same project
+# Subtest: C3 returns the link keyed by the C2/C4 stable id, filtered by site
+# Subtest: C6 serves health and dates only — no budget, no cost
+# Subtest: unlink works for the PM and the link disappears from C3
+# Subtest: SDP proxies degrade honestly when the peer is not configured
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: a missing change-control threshold fails CLOSED, not open (I4)
+# Subtest: concern.raise: own delivery site only, group projects only (site G3)
+# Subtest: riskProfile counts bands and appetite lines (group G5)
+# Subtest: a group user cannot move a project into a programme outside their grant
+# Subtest: admin moves it, and the audit trail carries the imaged 'Project moved' row (I2)
+# Subtest: a site lead raises a concern on the group project now landing on their site
+# Subtest: a site lead still cannot raise on a group project elsewhere
+# Subtest: the raiser of a change request cannot decide it; a second pair of eyes can
+# Subtest: gate evidence: the owner never approves their own; site level never approves site-project gates
+# Subtest: evidence cannot arrive pre-approved, nor be re-tagged onto a gate afterwards (I3)
+# Subtest: a site room refers up; the group agenda carries it; a group decision retires it
+# Subtest: a referral addressed to 'programme' reaches only the programme it belongs to
+# Subtest: an action raised at group level lands on the owning site's weekly (rhythm-2)
+# Subtest: the meeting pack exports before the close (value I-3)
+# Subtest: the digest answers 'what changed', scoped and named (value I-2)
+# Subtest: the decision register joins control decisions and minuted ones (group G3)
+# Subtest: an admin-provisioned account must set its own password before day two
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: INT-02 · la clé
+# Subtest: INT-02 · la portée décide, et elle décide seule
+# Subtest: INT-02 · ce qu'une clé ne peut jamais faire
+# Subtest: INT-02 · la rotation, et le nom dans la piste
+# Subtest: INT-01 · le contrat publié
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: PG-01 · le service refuse PGlite
+# Subtest: I18N-01 · la langue est un registre, pas une condition
+# Subtest: MC-01 · le pays et l'entité légale d'un site
+# Subtest: SaaS-02 · un binaire ancien refuse une base plus récente
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: 0 · la mise en production tient ses promesses
+# Subtest: 1 · réglages de base — avant toute donnée
+# Subtest: 2 · la structure — site, programme, personnes
+# Subtest: 3 · comptes et habilitations
+# Subtest: 4 · demande → priorisation → projet
+# Subtest: 5 · cadrage — le cas d'affaire, les jalons, la référence
+# Subtest: 6 · le travail et l'argent
+# Subtest: 7 · maîtrise des modifications — le seuil et la seconde paire d'yeux
+# Subtest: 8 · preuves et jalons de gouvernance
+# Subtest: 9 · le rythme des comités
+# Subtest: 10 · valeur, PIR, clôture — et personne ne part sans signer
+# Subtest: 11 · capitaliser, restituer, sortir
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: PM-02 · ce que le jalon 4 réclamait sans pouvoir le recevoir
+# Subtest: PM-02 · qui propose n'adopte pas
+# Subtest: PM-02 · il traverse les sites, sans faire traverser les projets
+# Subtest: PM-02 · on le retrouve au moment où il sert
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: the locale comes from the app's own toggle first, then the browser
+# Subtest: a missing translation degrades to English, never to a broken token
+# Subtest: messages that carry data keep the data
+# Subtest: a refusal answers in the language the person chose
+# Subtest: what was recorded stays in one language
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: series and scope (R5.1, R5.11)
+# Subtest: agenda generation (R5.2, R5.3, R5.9)
+# Subtest: actions carry forward (R5.6)
+# Subtest: running and closing a meeting (R5.4, R5.5, R5.7, R5.8)
+# Subtest: scheduling
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: the money position separates spent from committed, and capex from opex
+# Subtest: availability is what a rotation leaves behind
+# Subtest: a commitment round-trips, and is corrected rather than frozen
+# Subtest: a site lead cannot commit the group's money
+# Subtest: a cost line carries capex/opex and the currency it was spent in
+# Subtest: a person carries how they actually work, and effort says whether it capitalises
+# Subtest: N-06 — un chargement réussi laisse un instantané, portant le compte
+# Subtest: N-06 — le serveur muet : on rend ce qu'on savait, en le datant
+# Subtest: N-06 — hors ligne, aucune commande d'écriture n'est dessinée
+# Subtest: N-06 — une session expirée n'est pas une coupure : il faut se reconnecter
+# Subtest: N-06 — la liaison revient : l'application cesse de se dire hors ligne
+# Subtest: N-06 / A-03 — l'instantané part avec la session : un poste partagé ne garde rien
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: an unconfigured instance says so, and offers nothing
+# Subtest: a configured instance builds an authorize URL with PKCE
+# Subtest: state is single-use and unknown state is refused
+# Subtest: claims are read from the token the server fetched itself
+# Subtest: a valid tenant identity is still nobody here unless the account exists
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: change requests are editable while pending (finding 1)
+# Subtest: the ledger can be corrected (finding 6)
+# Subtest: stages can be added and removed (finding 8)
+# Subtest: milestones are editable and removable (finding 8)
+# Subtest: cross-project dependencies are manageable (finding 7)
+# Subtest: people have a lifecycle (finding 4)
+# Subtest: sites and programmes are correctable (finding 8)
+# Subtest: accounts and grants are administrable (finding 3)
+# Subtest: no screen offers an action the account cannot perform
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: closing a period is a group act
+# Subtest: a site account cannot close the group's books
+# Subtest: closing a period freezes every project as it stood
+# Subtest: the frozen numbers do not move when the book does
+# Subtest: a closed period cannot be rewritten — the database refuses
+# Subtest: a correction is a new period that names the one it restates
+# Subtest: a closed period is scoped like everything else
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: schema and migrations (R2.2, R2.7)
+# Subtest: money (R2.4)
+# Subtest: optimistic concurrency (R2.5)
+# Subtest: audit (R6.1, R6.2, R6.3)
+# Subtest: scoped serialisation (R1.10 at the data layer)
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: priority pulls up on fit and value, down on risk and effort
+# Subtest: the queue ranks, totals and finds the line — and invents no line when none is agreed
+# Subtest: anyone who writes may ask; only the group decides
+# Subtest: a site lead asks, and the request records who asked and what for
+# Subtest: a site lead cannot decide their own request
+# Subtest: a decline must say why; an approval is scored and dated
+# Subtest: an approved request becomes a project, and keeps the thread
+# Subtest: priority is set at group level and lands on the project
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: the shutdown calendar belongs to the site; the MOC release does not
+# Subtest: a site declares a change freeze
+# Subtest: an ordinary milestone is untouched; intrusive work inside the freeze is refused
+# Subtest: management of change releases it — at group level, with a reference
+# Subtest: a rollout carries one row per site, and going live asks the freeze question
+# Subtest: a site carries its link and its readiness, not only its clock
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: un document se dépose sans artefact, mais ne s'approuve pas sans lui
+# Subtest: l'artefact doit vivre sur un hôte de confiance, en https
+# Subtest: des hôtes non configurés = approbation refusée, en disant quoi faire (fermé par défaut)
+# Subtest: le jalon ne se franchit pas sur une preuve vide
+# Subtest: changer le lien d'un document approuvé le fait retomber en revue, sur le registre
+# Subtest: le dossier de preuve cite l'artefact, et nomme ce qui n'en a pas
+# Subtest: une nouvelle révision nomme celle qu'elle remplace (lignée, R-13)
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: N-07 — sans hôtes de confiance, la sonde s'abstient et le dit
+# Subtest: N-07 — un lien qui répond est noté vivant, et le statut ne bouge pas
+# Subtest: N-07 — un lien mort n'est jamais une désapprobation
+# Subtest: N-07 — un refus d'accès n'est pas une perte
+# Subtest: N-07 — HEAD refusé se replie sur GET plutôt que de conclure
+# Subtest: N-07 — trois échecs avant d'avertir, et le message ne retire rien
+# Subtest: N-07 — la sonde n'interroge que les hôtes déjà autorisés
+# Subtest: N-07 — la mesure que le comité a demandée est calculée
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: PM-08 · clore, ce sont trois signatures
+# Subtest: PM-04 · « terminé » cesse d'être une opinion
+# Subtest: INT-08 · une invitation, pas un fichier
+# Subtest: INT-06 · le transport Teams, fermé par défaut
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: the gate itself
+# Subtest: enforcement over HTTP (R1.4 — hiding a button is not enforcement)
+# Subtest: S-17 · a group account does not chair every site's room
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: the sweep finds what is due and queues it once, however often it runs
+# Subtest: an unconfigured instance says queued, never sent
+# Subtest: a transport that works marks sent; one that throws marks failed and keeps the reason
+# Subtest: the queue is readable from administration, and says whether a transport exists
+# Subtest: an auditor gets everything about one project as a single artifact
+# Subtest: the pack is bounded by 'as at', because that is the whole point
+# Subtest: the pack is scoped: a project you cannot see is not evidenced to you
+# Subtest: the dataset is one flat row per project, in the caller's scope
+# Subtest: the CSV quotes every field, so a comma in a project name stays one column
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: INT-05 · le contrat de lecture
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: PM-06 · la cible résiduelle
+# Subtest: PM-06 · la provision nomme son risque
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: une absence se déclare avec son suppléant, bornée et motivée
+# Subtest: un site ne déclare que les absences de ses gens
+# Subtest: le suppléant prend l'autorité de l'absent — jamais plus — et l'audit nomme les deux
+# Subtest: le suppléant ne décide pas une demande émise par lui, ni par l'absent
+# Subtest: la délégation expire avec l'absence — la session retombe sur elle-même
+# Subtest: le digest d'un retour de rotation couvre l'absence et le dit (R-02)
+# Subtest: R-11 — français pour qui l'a choisi, suppléant pour qui est absent, silence pour qui l'a demandé
+# Subtest: les préférences s'éditent par leur propriétaire, et par personne d'autre en douce
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: S-06 — un document déposé sans propriétaire porte son auteur, et ne s'approuve pas seul
+# Subtest: S-06 — un document dont le propriétaire a été retiré n'est plus approuvable
+# Subtest: S-13 — l'exemption d'administrateur est explicite, et c'est une décision, pas un oubli
+# Subtest: S-07 — l'émetteur d'une demande est celui qui la pose, quoi qu'il prétende
+# Subtest: S-01 — le serveur refuse de stocker autre chose qu'une adresse http(s)
+# Subtest: S-01 — et le client refuse d'en faire un href, même si un ancien enregistrement en porte un
+# Subtest: S-05 — NaN et Infinity ne franchissent pas la porte (la base les accepterait)
+# Subtest: S-03 — la liste des comptes ne publie que les comptes de démonstration
+# Subtest: S-02 — une écriture qui annonce une origine étrangère est refusée
+# Subtest: S-04 — une cellule qui commence par = sort neutralisée du CSV
+# Subtest: A-07 — chaque refus d'autorité nomme la suite à donner, dans les deux langues
+# Subtest: N-05 — « hebdomadaire » ne reçoit pas comme « immédiat »
+# Subtest: G-08 — un échec de connexion laisse un compte, et rien de plus
+# Subtest: G-10 — l'interrupteur termine toutes les sessions, y compris la sienne
+# Subtest: G-10 — un compte non administrateur n'a pas d'interrupteur
+# Subtest: G-17 — ce qui sort dit ce que c'est, et à qui
+# Subtest: S-15 — le balayage : une tentative sur chaque compte, depuis une seule adresse
+# Subtest: S-15 — la devinette répartie : un compte, des adresses qui changent
+# Subtest: S-15 — une connexion réussie ne blanchit pas l'adresse des autres
+# Subtest: S-15 — bout en bout : le onzième essai sur le même compte est refusé
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: PM-01 · qui pose la borne
+# Subtest: PM-01 · ce que la marge mesure
+# Subtest: PM-01 · le constat se fait tout seul
+# Subtest: PM-01 · la réponse
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: UAT · every account can reach every screen it is offered
+# Subtest: UAT · end-to-end paths the benches described
+# Subtest: UAT · robustness
+#   seeded 12 projects · 10 users · 7 meeting series
+# Subtest: attainment is a fraction of the intended MOVE, so it reads the same in both directions
+# Subtest: valueProfile counts what is promised, measured and still promising nothing
+# Subtest: a benefit round-trips every field it stores
+# Subtest: the team that delivered may measure a benefit but may not rule on it
+# Subtest: the post-implementation review is a group act, and a shortfall needs a reason
+# Subtest: benefit.review is group-level in the gate itself, not only in the route
+# Subtest: a benefit can be removed, and the removal keeps what it promised
+# tests 449
+# suites 80
+# pass 449
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 110965.903869
