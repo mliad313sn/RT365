@@ -2,7 +2,7 @@
 
 Control: Identity, privileged access, maker-checker, mode ladder — Requirement: FR-01 — RTM row: FR-01 — Owner: Backend Lead — Reviewer (≠ owner): Security Architect — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:43:13.826235+00:00 at `f991349c30554303b5f12368f4eb7bfe0c4cbf6d` (tree dirty, tested tree `e660f3df4771`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:44:53.342334+00:00 at `02b9e9e92cca83c89385b98dedca922704f43e39` (tree dirty, tested tree `e85220959f2e`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|

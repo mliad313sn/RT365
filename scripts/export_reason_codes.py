@@ -14,7 +14,7 @@ from web_bff.reason_codes import REASON_CODES  # noqa: E402
 used: set[str] = set()
 for f in list((ROOT / "services").rglob("*.py")):
     used |= set(re.findall(r'"((?:RK|CP|RT)-[A-Z0-9-]+)"', f.read_text()))
-used = {u for u in used if not u.endswith("-UNDEFINED")} | {"RK-CAP-UNDEFINED", "RK-FRESH-UNDEFINED"}
+used = {u for u in used if not u.endswith("-UNDEFINED")} | {"RK-CAP-UNDEFINED", "RK-FRESH-UNDEFINED", "RK-FX-UNDEFINED"}
 missing = sorted(u for u in used if u not in REASON_CODES and not u.endswith("-UNDEFINED"))
 lines = [
     "# REASON_CODES — plain-language dictionary [Source: 09; C8 §2]",

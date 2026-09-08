@@ -39,6 +39,7 @@ from identity_service.accounts import Account, AccountRegistry, Tenant
 from identity_service.makerchecker import MakerChecker
 from killswitch_service.service import KillSwitchHooks, KillSwitchLevel, KillSwitchService
 from market_data.calendar import SessionCalendar
+from market_data.fx import FxStore
 from market_data.instruments import InstrumentMaster
 from market_data.service import MarketDataService
 from market_data.store import BitemporalStore
@@ -65,7 +66,7 @@ from rtcore.lines import Actor, ActorKind, Role, system_actor
 from rtcore.money import ZERO
 from rtcore.planes import Plane, PlaneGuard, enter
 from rtcore.resources import resource_root
-from rtcore.schemas.account import AccountMode, AccountSnapshot, EmergencyPolicy, OpenOrder, TradingStatus
+from rtcore.schemas.account import AccountMode, AccountSnapshot, EmergencyPolicy, NavStatus, OpenOrder, TradingStatus
 from rtcore.schemas.compliance import (
     ClassificationBasis,
     ClassificationEvidence,
@@ -77,6 +78,7 @@ from rtcore.schemas.compliance import (
     RestrictedLists,
 )
 from rtcore.schemas.decision import DecisionRecord, Outcome
+from rtcore.schemas.fx import FxSnapshot
 from rtcore.schemas.intent import TradeIntent, ValidatedIntent
 from rtcore.schemas.market import InstrumentAttributes, MarketSnapshot
 from rtcore.schemas.order import OrderCommand, OrderRecord
@@ -129,6 +131,9 @@ SIM_DISCLOSURE_VERSION = "SIM-DISCL-v0.1"  # fixture disclosure pack version; ap
 SIM_LEGAL_RECORD_ID = "SIM-LEGAL-FIXTURE-001"  # SIM- prefix: valid only on the simulated cell, never a legal opinion (D-012)
 BASE_TIME = datetime(2026, 9, 7, 14, 0, tzinfo=UTC)  # a Monday, session open
 BACKTEST_START = datetime(2026, 9, 4, 14, 0, tzinfo=UTC)  # a Friday, session open
+# dev/sim fixture only: the FX freshness budget a valuation is allowed to use. It is *not* a policy value — the
+# budget per currency pair, venue and asset class is a Trading Risk Committee decision [Open: O-07, O-29].
+FX_MAX_AGE_S = Decimal("5")
 STORE_FILENAME = "control_state.sqlite"
 AUDIT_STORE_FILENAME = "audit_state.sqlite"  # the audit trail is its own store (B-5): control state and its evidence never share a file  # one file per platform under store_dir (ADR-018 proposed; R-05)
 
@@ -143,6 +148,7 @@ class SimPlatform:
     accounts: AccountRegistry
     ledger: Ledger
     market: MarketDataService
+    fx: FxStore
     feed: SimulatedFeed
     broker: SimulatedBroker
     leases: LeaseStore
@@ -173,6 +179,7 @@ class SimPlatform:
     applied_fill_refs: set[str] = field(default_factory=set)
     applied_changes: set[str] = field(default_factory=set)
     executor_id: str = "executor-a"
+    fx_max_age_s: Decimal | None = FX_MAX_AGE_S  # dev/sim fixture; the real budget is a committee decision [Open: O-07]
     store: Store = field(default_factory=MemoryStore)  # lease, outbox/inbox, gateway indexes, Kill Switch activations
 
     # --- clock ----------------------------------------------------------------------------------------
@@ -189,8 +196,33 @@ class SimPlatform:
         except KeyError:
             return TENANT
 
+    # --- FX ----------------------------------------------------------------------------------------------
+    def ingest_fx(self, snapshot: FxSnapshot, *, correlation_id: str, now: datetime | None = None) -> FxSnapshot:
+        """The only write path for a rate. Knowledge time is the platform clock, so no reader sees it earlier.
+
+        There is deliberately no MCP tool and no intent field behind this: rates are operator/feed data, and the
+        analytics plane has no route to it (ADR-001, F-3).
+        """
+        at = now or self.now
+        self.fx.put(snapshot, knowledge_ts=at)
+        self.audit.append(
+            correlation_id=correlation_id,
+            tenant=TENANT,
+            account=None,
+            actor="market_data.fx",
+            action="fx.snapshot.ingested",
+            payload=snapshot.audit_payload(),
+            ts=at,
+        )
+        self.metrics.inc("fx.snapshots.ingested")
+        return snapshot
+
+    def fx_for_decision(self, now: datetime | None = None) -> FxSnapshot | None:
+        at = now or self.now
+        return self.fx.latest(as_of=at, knowledge_ts=at)
+
     # --- snapshot providers ------------------------------------------------------------------------------
-    def account_snapshot(self, account_id: str, now: datetime | None = None) -> AccountSnapshot | None:
+    def account_snapshot(self, account_id: str, now: datetime | None = None, correlation_id: str | None = None) -> AccountSnapshot | None:
         now = now or self.now
         try:
             acct = self.accounts.get(account_id)
@@ -203,12 +235,13 @@ class SimPlatform:
                 side=o.command.side,
                 quantity=o.remaining_quantity,
                 notional=o.remaining_quantity * (o.command.limit_price or self._last_price(o.command.instrument_id, now)),
+                currency=self.ledger.currency_of(o.command.instrument_id, self.ledger.book(account_id)),
                 submitted_at=o.updated_at,
             )
             for o in self.gateway.open_orders(account_id)
         )
         flags = self.killswitch.flags_for(tenant_id=acct.tenant_id, account_id=account_id)
-        return self.ledger.snapshot(
+        snapshot = self.ledger.snapshot(
             account_id,
             now=now,
             mode=acct.mode,
@@ -223,7 +256,30 @@ class SimPlatform:
             autonomy_suspended=acct.autonomy_suspended,
             liquidation_policy_ref=acct.liquidation_policy_ref,
             correlation_groups={"sim-equities": (INSTRUMENT, INSTRUMENT_2)},
+            fx=self.fx_for_decision(now),
+            fx_max_age_s=self.fx_max_age_s,
         )
+        if snapshot.valuation is not None and snapshot.valuation.status == NavStatus.UNKNOWN:
+            # An unvaluable book is an operational event, not a silent zero: reason code, values and thresholds.
+            self.audit.append(
+                correlation_id=correlation_id or f"valuation:{account_id}:{now.isoformat()}",
+                tenant=acct.tenant_id,
+                account=account_id,
+                actor="portfolio.ledger",
+                action="portfolio.valuation.unknown",
+                payload={
+                    "account_id": account_id,
+                    "base_currency": snapshot.base_currency,
+                    "reason_code": snapshot.valuation.reason_code,
+                    "detail": snapshot.valuation.detail,
+                    "fx_snapshot_id": snapshot.valuation.fx_snapshot_id,
+                    "fx_max_age_s": str(self.fx_max_age_s),
+                    "currencies": sorted(snapshot.cash_by_currency),
+                },
+                ts=now,
+            )
+            self.metrics.inc("portfolio.valuation.unknown")
+        return snapshot
 
     def _last_price(self, instrument_id: str, now: datetime) -> Decimal:
         snap = self.market.store.latest(instrument_id, as_of=now, knowledge_ts=now)
@@ -715,6 +771,7 @@ def build_sim_platform(
 
     tracker = IntentTracker(audit_hook=audit3)
     store, master, cal = BitemporalStore(), InstrumentMaster(), SessionCalendar()
+    fx_store = FxStore()  # rates enter only here, and only from an operator/feed path (F-3)
     intent_queue = IntentQueue(
         tracker,
         outbox,
@@ -941,6 +998,7 @@ def build_sim_platform(
         accounts=accounts,
         ledger=ledger,
         market=market,
+        fx=fx_store,
         feed=feed,
         broker=broker,
         leases=leases,
@@ -1006,9 +1064,10 @@ def build_sim_platform(
         sign_command=sign_command,
         strategy_owner=strategy_owner,
         eligibility_inputs=elig_inputs,
-        account_snapshot=lambda vi, at: platform.account_snapshot(vi.intent.account_id, at),
+        account_snapshot=lambda vi, at: platform.account_snapshot(vi.intent.account_id, at, vi.correlation_id),
         market_snapshot=lambda vi, at: platform.market_snapshot(vi.intent.instrument_id, at),
         policy=lambda: platform.policy,
+        fx_inputs=lambda vi, at: (platform.fx.latest(as_of=at, knowledge_ts=at), platform.fx_max_age_s),
         approvals=approvals,
         gateway=gateway,
         leases=leases,

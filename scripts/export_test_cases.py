@@ -17,6 +17,12 @@ AREAS = {
     "AP": ("Human approval, maker != checker", "FR-12", "Backend Lead", "Chief Risk Agent"),
     "EX": ("Execution gateway: idempotency, fencing, failover", "FR-13", "Backend Lead", "Trading Domain Lead / Integration Architect"),
     "RC": ("Reconciliation and break management", "FR-14", "Backend Lead", "Trading Domain Lead"),
+    "FX": (
+        "FX as a deterministic decision input: cross-currency NAV, cash and limits, fail closed when missing or stale",
+        "FR-05",
+        "Backend Lead",
+        "Chief Risk Agent",
+    ),
     "CP": ("Compliance eligibility, dual key, surveillance, retention", "FR-15", "Backend Lead", "Compliance Agent"),
     "KS": ("Kill Switch", "FR-17", "Backend Lead", "Chief Risk Agent"),
     "NET": ("Plane topology / network policy", "NFR-SEC-01", "Cloud Architect", "Security Architect"),
