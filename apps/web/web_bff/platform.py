@@ -55,7 +55,7 @@ from market_data.instruments import InstrumentMaster
 from market_data.service import MarketDataService
 from market_data.store import BitemporalStore
 from mcp_servers.allowlist import AllowlistStore
-from mcp_servers.egress import EgressPolicy
+from mcp_servers.egress import EgressGuard, EgressPolicy
 from mcp_servers.identity import AgentIdentity, IdentityIssuer, Principal
 from mcp_servers.registry import ToolRegistry, load_registry
 from mcp_servers.revocation import RevocationList
@@ -186,6 +186,7 @@ class SimPlatform:
     registry: ToolRegistry
     runtime: ToolRuntime
     egress: EgressPolicy
+    egress_guard: EgressGuard  # the allowlist as a control on the call path, not an object on a shelf (RT-F1)
     revocations: RevocationList
     limits_mc: MakerChecker
     alerts: AlertRouter
@@ -739,6 +740,7 @@ def build_sim_platform(
     command_signer: Ed25519CommandAuthoriser | None = None,
     command_trust_set: TrustSet | None = None,
     alert_router: AlertRouter | None = None,
+    registry_trust_set: TrustSet | None = None,
 ) -> SimPlatform:
     root = resource_root()  # source checkout, installed bundle or frozen executable; fails closed when absent (ADR-016)
     # --- the alert path, before any store is opened (SRE review F-02 / SRE-R1; ADR-020 amendment 2) ------------------
@@ -1111,21 +1113,31 @@ def build_sim_platform(
         nonce_path=nonce_path,
         scope_valid=lambda tenant_id, account_id: accounts.get_in_tenant(account_id, tenant_id) is not None,
     )
-    registry = load_registry(registry_path or root / "mcp" / "policies" / "tool_registry.signed.json")
+    # A registry outside the resource root loads only against a trust set the composition root supplies in
+    # process; a trust set found beside the artefact is never one (RT-F6, TC-AI-028/030).
+    registry = load_registry(registry_path or root / "mcp" / "policies" / "tool_registry.signed.json", trust_set=registry_trust_set)
     allowlists = AllowlistStore.load_dir(root / "mcp" / "policies", revocations, tenants=(TENANT,), audit=audit2)
     if second_tenant:
         # The second tenant's grants are a test fixture; shipping them under mcp/policies is the MCP Security Agent's call.
         allowlists.add(AllowlistStore.load_file(root / "test" / "fixtures" / "policies" / f"allowlist.{TENANT_B}.yaml", revocations))
     egress = EgressPolicy.load(root / "mcp" / "policies" / "egress.yaml")
+
+    def mcp_audit(action: str, corr: str, tenant: str, payload: dict[str, Any]) -> object:
+        return audit.append(
+            correlation_id=corr, tenant=tenant, account=None, actor=str(payload.get("actor", "mcp_runtime")), action=action, payload=payload
+        )
+
+    # RT-F1: the allowlist is no longer an object that is loaded and never consulted. It is the guard the tool
+    # runtime binds to every call, and the only seam through which a handler could acquire an outbound client.
+    egress_guard = EgressGuard(egress, audit=mcp_audit, alert=lambda n, p: alerts.raise_alert(n, p))
     runtime = ToolRuntime(
         registry=registry,
         issuer=issuer,
         allowlists=allowlists,
-        audit=lambda action, corr, tenant, payload: audit.append(
-            correlation_id=corr, tenant=tenant, account=None, actor=str(payload.get("actor", "mcp_runtime")), action=action, payload=payload
-        ),
+        audit=mcp_audit,
         alert=lambda n, p: alerts.raise_alert(n, p),
         revocations=revocations,
+        egress=egress_guard,
     )
     limits_mc = MakerChecker(cooling_period=timedelta(hours=1), require_different_line=True, audit_hook=audit2)
     slis = SliCatalog.load(root / "observability" / "slis.yaml")
@@ -1155,6 +1167,7 @@ def build_sim_platform(
         registry=registry,
         runtime=runtime,
         egress=egress,
+        egress_guard=egress_guard,
         revocations=revocations,
         limits_mc=limits_mc,
         alerts=alerts,

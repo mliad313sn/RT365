@@ -11,7 +11,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "libs" / "core"))
 sys.path.insert(0, str(ROOT / "mcp" / "servers"))
 import yaml  # noqa: E402
-from mcp_servers.registry import RegistryUnsigned, load_registry  # noqa: E402
+from mcp_servers.registry import (  # noqa: E402
+    TRUST_ANCHOR_RELPATH,
+    TRUST_PIN_ENV,
+    RegistryUnsigned,
+    TrustAnchorRefused,
+    load_registry,
+    load_trust_set,
+)
 
 production = "--production" in sys.argv
 problems: list[str] = []
@@ -32,6 +39,19 @@ if production and (reg.dev_key_in_use or reg.fixture or reg.algorithm != "Ed2551
     )
 if reg.fixture:
     print("NOTE: registry is a sim FIXTURE (approvals pending); it embodies no approval and is refused outside dev/sim")
+# The trust anchor: the file that says which keys to trust is itself an artefact of the resource root, pinned by
+# digest, never read from beside an artefact [Committee: REVIEW_2026-09-08_threat_model_redteam RT-F6; TC-AI-028..031].
+try:
+    trust = load_trust_set(ROOT / "mcp" / "policies" / "tool_registry.signed.json")
+    print(f"trust anchor: OK — {'/'.join(TRUST_ANCHOR_RELPATH)}, {len(trust)} key(s), digest matches the pin")
+except TrustAnchorRefused as exc:
+    print(f"NOTE: no usable trust anchor — {exc}")
+    if production:
+        problems.append(
+            f"production requires a pinned trust anchor at <resource root>/{'/'.join(TRUST_ANCHOR_RELPATH)} "
+            f"(pin it in rtcore.trust.PINNED_TRUST_SETS or name its sha256 in {TRUST_PIN_ENV} as a recorded operator act); "
+            "an Ed25519 registry cannot be verified without one (D-053, H-20)"
+        )
 src = json.loads((ROOT / "mcp" / "policies" / "tool_registry.json").read_text())
 signed = json.loads((ROOT / "mcp" / "policies" / "tool_registry.signed.json").read_text())["registry"]
 if src != signed:

@@ -27,8 +27,9 @@ from typing import Any
 import jsonschema
 from rtcore.errors import RTError
 from rtcore.ids import canonical_json
+from rtcore.resources import ResourceRootMissing, resource_root
 from rtcore.schemas.base import StrictModel
-from rtcore.trust import ALGORITHM_ED25519, TrustSet
+from rtcore.trust import ALGORITHM_ED25519, TrustSet, UntrustedTrustSet, load_pinned_trust_set, pin_env_var
 
 DEV_KEY = "dev-only-registry-key-replace-before-gate-B"
 KEY_ENV = "RT_MCP_REGISTRY_KEY"
@@ -38,6 +39,9 @@ ALGORITHM_HMAC = "HMAC-SHA256"
 ALGORITHMS = frozenset({ALGORITHM_HMAC, ALGORITHM_ED25519})
 REGISTRY_PURPOSE = "rt365.tool-registry.v1"  # domain separation from command authorisation (one key, one purpose)
 TRUST_SET_FILENAME = "registry_keys.json"
+TRUST_SET_PURPOSE = "tool-registry"  # the purpose the trust-set file must declare for itself
+TRUST_ANCHOR_RELPATH = ("mcp", "policies", "trust", TRUST_SET_FILENAME)  # resolved from the resource root, never from an artefact
+TRUST_PIN_ENV = pin_env_var(TRUST_SET_PURPOSE)  # RT365_TRUST_SET_SHA256_TOOL_REGISTRY
 ALLOWED_TOOLS = frozenset(
     {"read_market_snapshot", "read_account_state", "calculate_indicator", "run_simulation", "get_strategy_docs", "submit_trade_intent"}
 )
@@ -99,6 +103,14 @@ class RegistryUnsigned(RTError):
     """Signature missing/invalid, wrong key, wrong environment or fixture outside sim; every MCP server refuses to serve."""
 
 
+class TrustAnchorRefused(RegistryUnsigned):
+    """The trust set is not an anchor: absent, unpinned, mismatched, for another purpose, or merely adjacent to the artefact.
+
+    A subclass of ``RegistryUnsigned`` so that every existing caller — the CLI, ``verify_tool_registry.py``, the
+    composition root and the stdio host — keeps failing closed without change [Committee: RT-F6].
+    """
+
+
 class ToolSpec(StrictModel):
     name: str
     tool_class: str  # read | write
@@ -153,14 +165,44 @@ def signing_key() -> tuple[str, bool]:
     return DEV_KEY, True
 
 
-def trust_set_path(registry_path: Path) -> Path:
+def trust_set_path(registry_path: Path | None = None) -> Path:
+    """The trust anchor: ``<resource root>/mcp/policies/trust/registry_keys.json``.
+
+    ``registry_path`` is accepted and ignored for the callers that still pass it: the anchor is a property of the
+    resource root the process was started against (ADR-016), never of the directory an artefact was found in
+    [Committee: REVIEW_2026-09-08_threat_model_redteam RT-F6].
+    """
+    try:
+        return resource_root().joinpath(*TRUST_ANCHOR_RELPATH).resolve()
+    except ResourceRootMissing as exc:
+        raise TrustAnchorRefused(f"TRUST-ANCHOR-NO-ROOT: no resource root, so there is no trust anchor: {exc}") from exc
+
+
+def adjacent_trust_set_path(registry_path: Path) -> Path:
+    """Where an attacker who can write beside an artefact would put a trust set (probe 04). Never trusted."""
     return registry_path.parent / "trust" / TRUST_SET_FILENAME
 
 
 def load_trust_set(registry_path: Path) -> TrustSet:
-    """The public trust set shipped next to the registry; absent means empty (nothing asymmetric loads)."""
-    path = trust_set_path(registry_path)
-    return TrustSet.load(path) if path.exists() else TrustSet(purpose="tool-registry")
+    """The trust anchor for the tool registry: resolved from the resource root, pinned by digest, fail closed.
+
+    Three refusals, each with its own reason code: a trust set found *beside* the artefact that is not the anchor
+    is refused rather than silently ignored (TRUST-ANCHOR-ADJACENT — a bundle carrying both a forged registry and
+    a matching trust set is the attack); an absent anchor is refused (TRUST-ANCHOR-ABSENT); an anchor whose
+    sha256 is not pinned, or does not match the pin, is refused (TRUST-ANCHOR-UNPINNED / -PIN-MISMATCH).
+    No secret is involved: the pin is a public digest carried by the binary or named by the operator.
+    """
+    anchor = trust_set_path(registry_path)
+    adjacent = adjacent_trust_set_path(registry_path)
+    if adjacent.exists() and adjacent.resolve() != anchor:
+        raise TrustAnchorRefused(
+            f"TRUST-ANCHOR-ADJACENT: a trust set beside the artefact ({adjacent}) is not a trust anchor; "
+            f"the anchor for {TRUST_SET_PURPOSE!r} is {anchor}"
+        )
+    try:
+        return load_pinned_trust_set(anchor, purpose=TRUST_SET_PURPOSE)
+    except UntrustedTrustSet as exc:
+        raise TrustAnchorRefused(str(exc)) from exc
 
 
 def _envelope(content: dict[str, Any], key_id: str, algorithm: str, signed_at: str, fixture: bool) -> dict[str, Any]:

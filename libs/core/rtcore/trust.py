@@ -13,7 +13,10 @@ Verification uses public inputs only, so constant-time behaviour is not required
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
+import os
+import re
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -129,6 +132,78 @@ def signed_message(purpose: str, key_id: str, message: bytes) -> bytes:
 # --- trust set -------------------------------------------------------------------------------------------------------
 class UntrustedKey(RTError):
     """key_id unknown, algorithm not allowed, key outside its validity window, or retired (revoked)."""
+
+
+# --- the trust set's own integrity: a pinned fingerprint ---------------------------------------------------------------
+# ADR-019 verifies artefacts against a trust set and says nothing about who may write the trust set itself. The
+# Red-Team & Pen-Test Lead wrote his own (REVIEW_2026-09-08_threat_model_redteam RT-F6, probe 04). A trust set is
+# therefore trusted only when its SHA-256 matches a fingerprint pinned outside the file: a constant compiled into
+# the binary, or an explicit operator act at start-up that names the exact digest. A fingerprint is public
+# material, so this adds no secret and no key custody [Committee: D-053] [Open: H-20, O-126].
+PIN_ENV_PREFIX = "RT365_TRUST_SET_SHA256_"
+PINNED_TRUST_SETS: dict[str, str] = {
+    # purpose -> sha256 hex of mcp/policies/trust/<file>. Empty until a ceremony key exists (H-20): with no pin
+    # nothing asymmetric loads from a file, which is the fail-closed state, not a fallback to "trust the file".
+}
+_HEX64 = re.compile(r"^[0-9a-f]{64}$")
+
+
+class UntrustedTrustSet(RTError):
+    """The trust set itself is absent, unpinned, or does not match the fingerprint pinned for its purpose."""
+
+
+def pin_env_var(purpose: str) -> str:
+    """The one environment variable that may pin a purpose's trust set (public digest, never a secret)."""
+    return PIN_ENV_PREFIX + re.sub(r"[^A-Z0-9]+", "_", purpose.upper())
+
+
+def file_fingerprint(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def pinned_fingerprint(purpose: str) -> tuple[str | None, str]:
+    """``(digest, source)`` for a purpose: the compiled-in pin, else the operator's, else ``(None, "unpinned")``.
+
+    A malformed operator value is a refusal, never a fallback: an operator who cannot name 64 hex characters has
+    not performed the act the control requires.
+    """
+    compiled = PINNED_TRUST_SETS.get(purpose)
+    if compiled:
+        if not _HEX64.match(compiled):
+            raise UntrustedTrustSet(f"TRUST-ANCHOR-PIN-MALFORMED: compiled pin for {purpose!r} is not a sha256 digest")
+        return compiled, "code"
+    value = os.environ.get(pin_env_var(purpose), "").strip().lower()
+    if not value:
+        return None, "unpinned"
+    if not _HEX64.match(value):
+        raise UntrustedTrustSet(f"TRUST-ANCHOR-PIN-MALFORMED: {pin_env_var(purpose)} must be a 64-character sha256 digest of the trust set")
+    return value, "operator"
+
+
+def load_pinned_trust_set(path: Path, *, purpose: str) -> TrustSet:
+    """Load a trust set only when it exists, matches the pin for ``purpose`` and declares that purpose.
+
+    Fail closed on every other outcome. Reason codes: TRUST-ANCHOR-ABSENT, TRUST-ANCHOR-UNPINNED,
+    TRUST-ANCHOR-PIN-MALFORMED, TRUST-ANCHOR-PIN-MISMATCH, TRUST-ANCHOR-PURPOSE, TRUST-ANCHOR-MALFORMED.
+    """
+    if not path.is_file():
+        raise UntrustedTrustSet(f"TRUST-ANCHOR-ABSENT: no trust set for {purpose!r} at {path}")
+    pin, source = pinned_fingerprint(purpose)
+    digest = file_fingerprint(path)
+    if pin is None:
+        raise UntrustedTrustSet(
+            f"TRUST-ANCHOR-UNPINNED: the trust set at {path} (sha256 {digest}) is not pinned for {purpose!r}; "
+            f"pin it in PINNED_TRUST_SETS or set {pin_env_var(purpose)} to that digest as a recorded operator act"
+        )
+    if not hmac.compare_digest(pin, digest):
+        raise UntrustedTrustSet(f"TRUST-ANCHOR-PIN-MISMATCH: the trust set at {path} has sha256 {digest}; the pin ({source}) expects {pin}")
+    try:
+        loaded = TrustSet.load(path)
+    except (ValueError, TypeError, KeyError, json.JSONDecodeError, UntrustedKey) as exc:
+        raise UntrustedTrustSet(f"TRUST-ANCHOR-MALFORMED: the trust set at {path} cannot be read: {exc}") from exc
+    if loaded.purpose != purpose:
+        raise UntrustedTrustSet(f"TRUST-ANCHOR-PURPOSE: the trust set at {path} declares purpose {loaded.purpose!r}, not {purpose!r}")
+    return loaded
 
 
 def _ts(value: str | datetime | None) -> datetime | None:
