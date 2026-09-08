@@ -278,8 +278,12 @@ def test_truncated_tail_stale_and_missing_anchor_fail_closed(tmp_path):  # type:
     assert p3.alerts.by_name("audit.anchor_missing")[-1].payload["reason"] == "AUD-ANCHOR-MISSING"
     p3.audit.close()
     p3.store.close()
-    p4 = build_sim_platform(store_dir=store3, anchor_dir=anchor3, authorisation_key=KEY)  # restart with events but no anchor
-    assert p4.audit.latest_anchor() is None and not p4.audit.verify().ok  # a restart does not fabricate a fresh anchor
+    # a restart with events and no anchor never fabricated one, and since ADR-020 amendment 3 it does not even open:
+    # a platform whose own records name a witness that is gone is refused (TC-AUD-016/017 are the quartet for it).
+    # This assertion is strictly stronger than the one it replaces ("started, and verify() said no").
+    with pytest.raises(WitnessLostError):
+        build_sim_platform(store_dir=store3, anchor_dir=anchor3, authorisation_key=KEY)
+    assert FileAnchorPublisher(anchor3).latest() is None  # and nothing fabricated an anchor on the way out
 
 
 @pytest.mark.tc("TC-AUD-008")
@@ -595,9 +599,13 @@ def test_both_stores_rewritten_consistently_are_caught_at_startup_not_at_the_nex
     # nothing able to run the Kill Switch the failure calls for
     sv = p2.startup_verification
     assert sv is not None and not sv.ok and sv.reason == "AUD-CHAIN-HEAD-MISMATCH" and sv.anchor_length is not None
-    alert = router.by_name("audit.chain_verification_failed")[-1]
-    assert alert.severity == "S1" and alert.payload["reason"] == sv.reason and alert.payload["correlation_id"].startswith("startup:")
+    fired = router.by_name("audit.chain_verification_failed")
+    alert = [a for a in fired if a.payload["reason"] == sv.reason][-1]
+    assert alert.severity == "S1" and alert.payload["correlation_id"].startswith("startup:")
     assert _channels(router, alert) == ["pager", "email"]
+    # ADR-020 amendment 3: the forged chain also contradicts the seal record this store kept, so the scheduled
+    # publication during composition was refused before the start-up verification ran. Two S1s, both true.
+    assert [a for a in fired if a.payload["reason"] == "AUD-SEAL-BELOW-FLOOR"]
     # ...and the auto-action ran this time, because by this point there is a platform to halt
     assert any(a.level.value == "PLATFORM" for a in p2.killswitch.active())
     assert not [a for a in router.by_name("alert.autoaction_failed") if a.payload["alert"] == "audit.chain_verification_failed"]
@@ -970,8 +978,8 @@ def test_a_seal_on_a_chain_that_agrees_with_every_earlier_seal_publishes_as_befo
     p.audit.close()
     p.store.close()
     p2 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
-    floor = p2.audit.witness_floor()
-    assert floor is not None and floor.length == second.length and floor.head_hash == second.head_hash
+    floor = p2.audit.witness_floor()  # the restart's own scheduled publications raise it further
+    assert floor is not None and floor.length >= second.length
     third = p2.audit.seal(correlation_id="seal:operator:3")
     assert third.length >= second.length and p2.audit.verify().ok and p2.audit.witness_floor().length == third.length  # type: ignore[union-attr]
     p2.audit.close()
@@ -983,7 +991,7 @@ def test_a_seal_on_a_chain_that_agrees_with_every_earlier_seal_publishes_as_befo
 @pytest.mark.env("dev")
 @pytest.mark.quartet("negative")
 def test_a_seal_never_witnesses_a_chain_that_contradicts_what_this_store_already_sealed(tmp_path):  # type: ignore[no-untyped-def]
-    """The attack Case C becomes once the witness may not simply be deleted: truncate the chain *and* trim the witness's tail so what is left agrees with it. The platform opens (there is a witness), pages AUD-ANCHOR-TAIL-REMOVED with auto-action none, and the operator's seal — the one action that would clear the alert — is refused with AUD-SEAL-BELOW-FLOOR and the catalogued S1. Nothing is published and no SealRecord is written."""
+    """The attack Case C becomes once the witness may not simply be deleted: truncate the chain *and* trim the witness's tail so that what is left of it agrees with what is left of the chain. The platform opens — there is a witness, and it agrees — but the store's own seal ledger does not: the start-up verification returns AUD-SEAL-BELOW-FLOOR, and the operator's seal, the one action that would clear the alert, is refused with the same reason and the catalogued S1. Nothing is published and no SealRecord is written."""
     store_dir, anchor_dir = _dirs(tmp_path)
     p1 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY)
     p1.run_intent(p1.make_intent())
@@ -1001,7 +1009,8 @@ def test_a_seal_never_witnesses_a_chain_that_contradicts_what_this_store_already
     router = _router()
     p2 = build_sim_platform(store_dir=store_dir, anchor_dir=anchor_dir, authorisation_key=KEY, alert_router=router)
     assert p2.startup_verification is not None and not p2.startup_verification.ok
-    assert p2.startup_verification.reason == "AUD-ANCHOR-TAIL-REMOVED"
+    assert p2.startup_verification.reason == "AUD-SEAL-BELOW-FLOOR"  # the witness agrees; this store's ledger does not
+    assert any(a.level.value == "PLATFORM" for a in p2.killswitch.active())  # the catalogued auto-action ran
     with pytest.raises(SealRefused) as exc:
         p2.audit.seal(correlation_id="operator:recovery")
     assert "AUD-SEAL-BELOW-FLOOR" in str(exc.value)
