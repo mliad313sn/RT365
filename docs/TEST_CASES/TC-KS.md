@@ -2,7 +2,7 @@
 
 Control: Kill Switch — Requirement: FR-17 — RTM row: FR-17 — Owner: Backend Lead — Reviewer (≠ owner): Chief Risk Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:53:14.477297+00:00 at `48650eda8aff77972e8d6c81c28e9a3fce99dd88` (tree dirty, tested tree `2628132e3ba5`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:54:14.743042+00:00 at `0e5ff460283b2f7b872a85b0e81a73026e2f8384` (tree dirty, tested tree `07005370aafa`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
