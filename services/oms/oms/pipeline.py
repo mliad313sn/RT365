@@ -7,6 +7,7 @@ bus (ADR-005) and the same functions are invoked by consumers with inbox dedupe.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -54,6 +55,17 @@ class PipelineResult(StrictModel):
     final_state: IntentState
 
 
+# SLI emission points owned by this coordinator [Source: 10; observability/slis.yaml]. The pipeline is the only
+# place that sees a decision request, the snapshot it decided on and the ack that followed, so it is where the
+# control-plane SLIs are emitted. Names are the ones slis.yaml declares; a change here is a change there.
+M_DECISION_REQUESTS = "control_plane.decision_requests"
+M_DECISIONS_RECORDED = "control_plane.decisions_recorded"
+M_DECISION_UNAVAILABLE = "control_plane.decision_unavailable"
+M_FRESHNESS_S = "pipeline.market_data_freshness_s"
+M_DECISION_LATENCY_MS = "pipeline.risk_decision_latency_ms"
+M_ORDER_ACK_LATENCY_MS = "pipeline.order_ack_latency_ms"
+ACK_STATES = ("ACKNOWLEDGED", "PARTIALLY_FILLED", "FILLED", "BROKER_REJECTED")
+
 # Explicit map; an unknown mode is refused, never defaulted to LIVE (review P13).
 TARGET_FOR_MODE = {
     AccountMode.BACKTEST: ExecutionTarget.SIM,
@@ -84,6 +96,10 @@ class TradePipeline:
     # FX is read here, at decision time, and handed to the engine as data: (snapshot, freshness budget). The default
     # supplies neither, which is fail-closed for a cross-currency book and a no-op for a single-currency one (F-3).
     fx_inputs: Callable[[ValidatedIntent, datetime], tuple[FxSnapshot | None, Decimal | None]] = lambda vi, at: (None, None)
+    # Observability hooks [F-03, SRE step 0]. Measurement only: nothing here is ever a decision input, and the
+    # default pair is a no-op so a caller that wires no registry behaves exactly as before.
+    count: Callable[[str], object] = lambda name: None
+    observe: Callable[[str, float], object] = lambda name, value: None
 
     def _emit(self, name: str, vi: ValidatedIntent, payload: Any, now: datetime) -> None:
         self.outbox.publish(
@@ -99,6 +115,22 @@ class TradePipeline:
             )
         )
 
+    # --- measurement (never a decision input) ------------------------------------------------------------
+    def _observe_freshness(self, mkt: MarketSnapshot | None, now: datetime) -> None:
+        """market_data_freshness_s at the point the decision actually used the snapshot (the RK-FRESH input)."""
+        if mkt is not None:
+            self.observe(M_FRESHNESS_S, (now - mkt.market_ts).total_seconds())
+
+    def _observe_decision_latency(self, intent_id: str) -> None:
+        """risk_decision_latency_ms: intent enqueue -> decision record write, on the monotonic clock of this process.
+
+        In-process only: there is no trace-context carrier between services, so this cannot be joined across a
+        deployed cell today [Open: R-05, SRE-R10].
+        """
+        elapsed = self.tracker.since_create_ms(intent_id)
+        if elapsed is not None:
+            self.observe(M_DECISION_LATENCY_MS, elapsed)
+
     # --- stages ---------------------------------------------------------------------------------------
     def process(self, vi: ValidatedIntent, *, now: datetime) -> PipelineResult:
         inbox = self.inbox or Inbox()
@@ -107,10 +139,14 @@ class TradePipeline:
 
     def _process(self, vi: ValidatedIntent, now: datetime) -> PipelineResult:
         intent_id = str(vi.intent.intent_id)
+        # control_plane_availability, first end: one request counted per intent actually processed (a deduped
+        # replay is answered from the inbox and is not a second request).
+        self.count(M_DECISION_REQUESTS)
         with enter(Plane.CONTROL):
             try:
                 ei = self.eligibility_inputs(vi, now)
             except Exception as exc:  # unknown account/customer/instrument: fail closed, never crash the consumer (IVA-24)
+                self.count(M_DECISION_UNAVAILABLE)
                 self.tracker.transition(
                     intent_id, IntentState.HALTED, now=now, detail={"reason": f"inputs unavailable: {type(exc).__name__}"}
                 )
@@ -132,6 +168,8 @@ class TradePipeline:
                     "risk.integrity_violation", {"intent_id": intent_id, "correlation_id": vi.correlation_id, "stage": "eligibility"}
                 )
             if elig.outcome != EligibilityOutcome.ELIGIBLE:
+                # A refusal is a control-plane decision, and a successful one: availability counts answers, not approvals.
+                self.count(M_DECISIONS_RECORDED)
                 self.tracker.transition(intent_id, IntentState.INELIGIBLE, now=now, detail={"reason_codes": list(elig.reason_codes)})
                 return PipelineResult(
                     validated_intent=vi, eligibility=elig, decision=None, approval_id=None, order=None, final_state=IntentState.INELIGIBLE
@@ -140,9 +178,12 @@ class TradePipeline:
 
             acct = self.account_snapshot(vi, now)
             mkt = self.market_snapshot(vi, now)
+            self._observe_freshness(mkt, now)
             fx, fx_budget = self.fx_inputs(vi, now)
             decision = decide(vi, acct, mkt, self.policy(), now, fx, fx_budget)
             self.audit("risk.decided.v1", vi.correlation_id, vi.tenant_id, vi.intent.account_id, decision.model_dump(mode="json"))
+            self.count(M_DECISIONS_RECORDED)
+            self._observe_decision_latency(intent_id)
             self._emit("risk.decided.v1", vi, decision, now)
             if "RK-INTEG" in decision.reason_codes:
                 self.alert("risk.integrity_violation", {"intent_id": intent_id, "correlation_id": vi.correlation_id})
@@ -192,10 +233,12 @@ class TradePipeline:
         item = self.approvals.get(record.approval_id)
         vi, decision = item.validated_intent, item.decision
         intent_id = str(vi.intent.intent_id)
+        self.count(M_DECISION_REQUESTS)  # a re-decision is a control-plane decision request like any other
         with enter(Plane.CONTROL):
             self._emit("approval.recorded.v1", vi, record, now)
             acct = self.account_snapshot(vi, now)
             mkt = self.market_snapshot(vi, now)
+            self._observe_freshness(mkt, now)
             fx, fx_budget = self.fx_inputs(vi, now)
             fresh = decide(vi, acct, mkt, self.policy(), now, fx, fx_budget)
             self.audit(
@@ -205,6 +248,7 @@ class TradePipeline:
                 vi.intent.account_id,
                 {**fresh.model_dump(mode="json"), "approval_id": record.approval_id},
             )
+            self.count(M_DECISIONS_RECORDED)
             if acct is None or fresh.outcome == Outcome.HALTED:
                 self.tracker.transition(
                     intent_id,
@@ -289,9 +333,14 @@ class TradePipeline:
                 "target": command.execution_target.value,
             },
         )
+        # order_ack_latency_ms: authorised command -> broker ack, measured by the caller. The gateway itself is a
+        # protected path and is not instrumented from here; this is the command-to-ack wall time including the lease.
+        ack_started = time.perf_counter()
         with enter(Plane.CONTROL):
             lease = self.leases.acquire(i.account_id, self.executor_id, now=now)
             order = self.gateway.submit(command, executor_id=self.executor_id, fencing_token=lease.fencing_token, now=now)
+        if order.state.value in ACK_STATES:
+            self.observe(M_ORDER_ACK_LATENCY_MS, (time.perf_counter() - ack_started) * 1000.0)
         state_map = {
             "SUBMITTED": IntentState.SUBMITTED,
             "ACKNOWLEDGED": IntentState.ACKNOWLEDGED,

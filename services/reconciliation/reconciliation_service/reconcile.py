@@ -50,6 +50,23 @@ class ReconciliationResult(StrictModel):
     def clean(self) -> bool:
         return not self.breaks
 
+    @property
+    def positions_reconciled(self) -> int:
+        """Instruments compared that carry no break of any kind.
+
+        Deliberately conservative [F-03]: an order-level break that names an instrument counts that instrument as
+        unreconciled, so the figure never overstates completeness. Erring downward is the safe direction for an
+        SLI whose safety semantic is ``supervised_on_break``.
+        """
+        return max(0, self.positions_compared - len({b.instrument_id for b in self.breaks if b.instrument_id}))
+
+    @property
+    def completeness_pct(self) -> Decimal | None:
+        """reconciliation_completeness_pct, or ``None`` when nothing was compared — an empty comparison is not 100%."""
+        if self.positions_compared == 0:
+            return None
+        return Decimal(self.positions_reconciled) * Decimal("100") / Decimal(self.positions_compared)
+
 
 def reconcile(
     *,

@@ -62,7 +62,7 @@ from risk_engine.monitors import RuntimeMetrics, evaluate_runtime
 from risk_engine.policy import RiskPolicy, apply_limit_change, load_policy
 from rtcore.envelope import make_event
 from rtcore.errors import ControlDenied
-from rtcore.ids import hash_of
+from rtcore.ids import hash_of, new_id
 from rtcore.journal_anchor import DEFAULT_ANCHOR_EVERY as DEFAULT_JOURNAL_ANCHOR_EVERY
 from rtcore.journal_anchor import DEFAULT_MAX_LAG as DEFAULT_MAX_JOURNAL_LAG
 from rtcore.journal_anchor import JournalAnchor
@@ -361,12 +361,20 @@ class SimPlatform:
         plane: Plane = Plane.ANALYTICS,
         now: datetime | None = None,
         tenant_id: str | None = None,
+        correlation_id: str | None = None,
     ) -> ValidatedIntent:
-        """Seal the intent under the tenant of its account; ``tenant_id`` overrides only for defence-in-depth tests."""
+        """Seal the intent under the tenant of its account; ``tenant_id`` overrides only for defence-in-depth tests.
+
+        ``correlation_id`` lets a caller that has already opened a trace (the synthetic probe) carry **its** id
+        through the intent, so one id covers the spans, the audit rows and the events [F-14]. Omitted, the queue
+        mints one as before.
+        """
         account_id = raw.get("account_id") if isinstance(raw, dict) else raw.account_id
         tenant = tenant_id or self.tenant_for(str(account_id))
         with enter(plane):
-            return self.intent_queue.submit(raw, tenant_id=tenant, submitted_by=submitted_by, now=now or self.now)
+            return self.intent_queue.submit(
+                raw, tenant_id=tenant, submitted_by=submitted_by, now=now or self.now, correlation_id=correlation_id
+            )
 
     def run_intent(
         self,
@@ -421,6 +429,10 @@ class SimPlatform:
             statement=statement,
             now=now,
         )
+        # reconciliation_completeness_pct (F-03): observed at the caller, computed by the reconciliation service
+        # from the run it just performed. A run that compared nothing has no percentage and emits none.
+        if result.completeness_pct is not None:
+            self.metrics.observe("reconciliation.completeness_pct", float(result.completeness_pct))
         corr = f"recon:{account_id}:{now.isoformat()}"
         tenant = self.tenant_for(account_id)
         payload = {
@@ -600,28 +612,46 @@ class SimPlatform:
 
     # --- synthetic probe [C9] ---------------------------------------------------------------------------------
     def synthetic_probe(self, now: datetime | None = None) -> dict[str, Any]:
+        """One correlation id end to end, and the verdict is the verdict for the id returned [F-14, SRE-R10].
+
+        The probe used to key its spans on ``probe-<timestamp>`` and return the intent's own correlation id, so
+        the operator was handed an id under which no span existed while completeness was judged under another.
+        The id is now minted first and carried into the intent, so the spans, the audit rows, the events and the
+        returned id are one id. ``trace_correlation_id`` is returned beside it so that a future divergence is
+        visible in the probe's own output instead of being assumed away.
+        """
         now = now or self.now
-        corr = f"probe-{now.isoformat()}"
+        corr = new_id("probe")
         with self.tracer.span("market_snapshot", corr):
             snap = self.market_snapshot(INSTRUMENT, now)
         with self.tracer.span("signal", corr):
             raw = self.make_intent(quantity="1")
         with self.tracer.span("intent", corr):
-            vi = self.submit_intent(raw, submitted_by="probe", now=now)
+            vi = self.submit_intent(raw, submitted_by="probe", now=now, correlation_id=corr)
             self.intent_queue.pop()
         with self.tracer.span("eligibility", corr), self.tracer.span("risk", corr):
             result = self.pipeline.process(vi, now=now)
         if result.order is not None:
             self.tracer.record("order_command", corr)
             self.tracer.record("broker_ack", corr, ok=result.order.state.value != "BROKER_REJECTED")
-        self.tracer.record("audit", corr, ok=len(self.audit.by_correlation(vi.correlation_id)) > 0)
-        missing = self.tracer.missing(corr)
+        self.tracer.record("audit", corr, ok=len(self.audit.by_correlation(corr)) > 0)
+        # A pipeline that stopped before execution produced no order command and no broker ack. That is the
+        # control working, not a hole in the trace, so it is declared — and the tracer only forgives the tail
+        # (a declared stage that precedes a stage which ran is still reported missing).
+        not_reached = () if result.order is not None else ("order_command", "broker_ack")
+        verdict = self.tracer.verdict(corr, not_reached=not_reached)
         self.metrics.inc("probe.runs")
         return {
-            "correlation_id": vi.correlation_id,
+            "correlation_id": corr,
+            "trace_correlation_id": verdict.correlation_id,
+            "intent_id": str(vi.intent.intent_id),
             "snapshot": snap.snapshot_id if snap else None,
             "final_state": result.final_state.value,
-            "missing_spans": list(missing),
+            "stages_recorded": list(verdict.recorded),
+            "stages_not_reached": list(verdict.not_reached),
+            "missing_spans": list(verdict.missing),
+            "failed_spans": list(verdict.failed),
+            "trace_complete": verdict.complete,
         }
 
 
@@ -729,6 +759,9 @@ def build_sim_platform(
             raise
     metrics = MetricsRegistry()
     tracer = Tracer()
+    # The alert path measures itself: dispatch time per channel now, alert_delivery_s once an operator acknowledges
+    # (SRE-R5). Wired here because the router is built before the registry exists; measurement only.
+    alerts.observe = metrics.observe
     # Every platform (live or a throwaway backtest) owns a private PlaneGuard: nothing an agent can call
     # touches the process-global guard or its deny evidence (MCP review OBJ-1).
     guard = PlaneGuard()
@@ -1105,6 +1138,10 @@ def build_sim_platform(
         on_authorised=on_authorised,
         inbox=Inbox(control_store, table="oms.pipeline_inbox", model=PipelineResult),
         alert=lambda n, pl: alerts.raise_alert(n, pl),
+        # SLI emission (F-03): control-plane availability, market-data freshness, risk-decision and order-ack
+        # latency. Measurement only — no counter or timer is ever read back as a decision input.
+        count=lambda name: metrics.inc(name),
+        observe=lambda name, value: metrics.observe(name, value),
     )
 
     # --- kill switch wiring (P4) ----------------------------------------------------------------------------
@@ -1353,6 +1390,9 @@ def run_sim_backtest(
         submit_and_process=submit_and_process,
         settle_bar=settle,
         cost_model=cost,
+        # signal_latency_ms is emitted here, labelled runner=backtest: it is a property of this run, not of a
+        # deployed platform — no live signal loop exists in this tree [Open].
+        observe=p.metrics.observe,
     )
     sv = p.strategies.get(STRATEGY, STRATEGY_VERSION)
     return runner.run(

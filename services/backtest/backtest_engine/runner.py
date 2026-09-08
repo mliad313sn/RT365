@@ -16,6 +16,7 @@ from rtcore.money import ZERO
 from rtcore.schemas.base import StrictModel
 from rtcore.schemas.intent import Side, TradeIntent
 from rtcore.schemas.market import MarketSnapshot
+from strategy_service.signals import timed_signal
 
 from backtest_engine.costs import CostModel
 from backtest_engine.metrics import BacktestMetrics, compute_metrics
@@ -57,6 +58,7 @@ class BacktestRunner:
         submit_and_process: Callable[[TradeIntent, datetime], dict[str, Any]],
         settle_bar: Callable[[datetime], tuple[Decimal, ...]],  # marks, polls fills, returns per-trade pnl closed on this bar
         cost_model: CostModel,
+        observe: Callable[..., object] | None = None,  # signal_latency_ms emission; measurement only, never an input
     ) -> None:
         self._history = history
         self._position_qty = position_qty
@@ -65,6 +67,7 @@ class BacktestRunner:
         self._submit = submit_and_process
         self._settle = settle_bar
         self._costs = cost_model
+        self._observe = observe
 
     def run(
         self,
@@ -107,7 +110,14 @@ class BacktestRunner:
                 continue
             nav_series.append(self._nav())
             gross_series.append(self._gross())
-            signal = strategy.on_snapshot(hist, position_qty=self._position_qty(instrument_id), nav=self._nav())
+            signal = timed_signal(
+                strategy,
+                hist,
+                position_qty=self._position_qty(instrument_id),
+                nav=self._nav(),
+                observe=self._observe,
+                runner="backtest",
+            )
             if signal is not None:
                 new_intent = intent_builder(signal, hist[-1], self._position_qty(instrument_id))
                 if new_intent is not None:
