@@ -1,0 +1,1 @@
+POST /api/meetings/occurrences/MS-SUWK22-20260908/decisions -> 409: {"error":"This meeting is closed — its decisions are final"}

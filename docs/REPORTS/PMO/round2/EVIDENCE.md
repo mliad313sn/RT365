@@ -226,6 +226,31 @@ date; **on a different day the loader would open a new occurrence and re-post al
 [Source: `scripts/meridian_sync.py:existing_decisions`, `open_occurrence`]. That latent defect is
 ours and is unchanged.
 
+### 4.1b A third run, after the record was frozen — the loader stops
+
+Run three, after the hand drive and after the weekly was closed:
+
+```
+POST /api/meetings/occurrences/MS-SUWK22-20260908/decisions -> 409:
+  {"error":"This meeting is closed — its decisions are final"}
+exit=1, 1,246 ms
+```
+[Measured: `load_4_meridian_sync_run3_aborted.txt`]
+
+**Why, exactly, and it is not a Meridian defect.** Between run 1 (16:00) and run 3 (16:22) this
+repository's `docs/DECISION_LOG.md` gained three rows — **D-067, D-068, D-069** (commit `c18e3a5`,
+16:06, written by another session working in the same tree, §15). The loader correctly saw three
+decisions it had not yet published, re-opened the day's occurrence — which now returns the **closed**
+one — and posted into it. Meridian refused, exactly as it should. `meridian_sync.py::_write` aborts
+on the first status ≥ 300, so the whole run stopped.
+
+**The consequence a real integrator must plan for:** *the day the record is frozen is the day the
+one-way loader stops being able to land new facts.* Our loader has no notion of a closed occurrence
+and no route to the next one. This is our defect, and it is the exact shape of Meridian's own
+**REQ-16 — "raise an action into the next scheduled occurrence, without opening it"** — registered,
+`status: open`, `answerToSource: "D-33.14 holds: the API still never OPENS a meeting."`
+Freezing the record and keeping a one-way sync alive are, today, in tension.
+
 ### 4.2 The hand drive and the probes
 
 **334 requests · median 16.1 ms · p95 104.8 ms · max 204.1 ms · 8.3 s of server time.**
@@ -859,6 +884,23 @@ Meridian working copies (not in this repository):
 (`cbe99ef`), the latter still running on :4183 with the empty book.
 
 ---
+
+## 15. A caveat about the measurement environment
+
+This repository was being written by other sessions while this round ran. `docs/DECISION_LOG.md`
+gained D-067..D-069 at 16:06 (commit `c18e3a5`) and `docs/RAID_LOG.md` was touched at 16:04, both
+*after* loader run 1 at 16:00; commit `4c57d15` ("Round-2 Meridian follow-up probes (work in
+progress)") was made by another session over this session's in-progress files. All round-2 evidence
+files are present and unaltered at `HEAD`, and every count in this document is the count at the
+moment its evidence file was written — but two figures are snapshots of a moving ledger and are
+labelled here rather than silently reconciled:
+
+- **66 decisions loaded** (§4.1) was the whole of `docs/DECISION_LOG.md` at 16:00; the file held 69
+  rows by 16:22.
+- **165 RAID items** (§4.1) was the open register at 16:00.
+
+The three-decision drift is what produced §4.1b, so it is evidence rather than noise. Nothing else
+in this document depends on a ledger read after its evidence file was written.
 
 ## 14. What this document is not
 
