@@ -14,6 +14,7 @@ write path (Risk review F-04), RT-RECON fed from open tickets and two-person aut
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
@@ -30,7 +31,7 @@ from compliance_engine.jurisdiction import JurisdictionRegistry
 from compliance_engine.retention import RetentionService
 from compliance_engine.surveillance import StrategyDeclaration
 from data_providers.simulated import SimulatedFeed
-from execution_gateway.authorisation import CommandAuthoriser
+from execution_gateway.authorisation import CommandAuthoriser, Ed25519CommandAuthoriser
 from execution_gateway.gateway import ExecutionGateway
 from execution_gateway.lease import LeaseStore
 from identity_service.accounts import Account, AccountRegistry, Tenant
@@ -79,6 +80,7 @@ from rtcore.schemas.intent import TradeIntent, ValidatedIntent
 from rtcore.schemas.market import InstrumentAttributes, MarketSnapshot
 from rtcore.schemas.order import OrderCommand, OrderRecord
 from rtcore.store import MemoryStore, SqliteStore, Store
+from rtcore.trust import TrustSet
 from rtobs.alerts import Alert, AlertRouter
 from rtobs.metrics import MetricsRegistry
 from rtobs.slis import SliCatalog
@@ -242,6 +244,21 @@ class SimPlatform:
         return tuple(out)
 
     # --- intents -------------------------------------------------------------------------------------------
+    def rotate_command_signer(self, signer: Ed25519CommandAuthoriser) -> None:
+        """Rotation step 2 of 3 (add the new key to the trust set; re-point the pipeline; retire the old key).
+
+        Only the composition root calls this; the gateway's verifier is untouched because it reads the trust set.
+        """
+        self.pipeline.sign_command = signer.sign
+        self.audit.append(
+            correlation_id=f"rotation:{signer.key_id}",
+            tenant=TENANT,
+            account=None,
+            actor="composition_root",
+            action="command.signer.rotated",
+            payload={"key_id": signer.key_id, "algorithm": "Ed25519"},
+        )
+
     def make_intent(self, **overrides: Any) -> dict[str, Any]:
         from uuid import uuid4
 
@@ -596,6 +613,8 @@ def build_sim_platform(
     executor_id: str = "executor-a",
     authorisation_key: bytes | None = None,
     second_tenant: bool = False,
+    command_signer: Ed25519CommandAuthoriser | None = None,
+    command_trust_set: TrustSet | None = None,
 ) -> SimPlatform:
     root = resource_root()  # source checkout, installed bundle or frozen executable; fails closed when absent (ADR-016)
     # Durable control state (ADR-010 seam): None keeps every store in memory (the default for tests and backtests);
@@ -768,7 +787,18 @@ def build_sim_platform(
     # Control-plane command authorisation key: created here, handed only to the pipeline (sign) and the gateway
     # (verify). No MCP/AI component, tool, handler or BFF route ever receives it (IVA V-C2). A caller-supplied key is the
     # vault/KMS path of a deployment (O-53): it lets a restarted process verify commands its predecessor signed.
-    authoriser = CommandAuthoriser(authorisation_key) if authorisation_key is not None else CommandAuthoriser.generate()
+    # Asymmetric path (D-053, ADR-019 proposed), selected explicitly: the signer stays here, the gateway receives a
+    # PublicKeyCommandVerifier over the trust set (rotation = add a key, re-point the signer, retire the old key).
+    # The default stays the in-process HMAC authoriser so no existing dev/sim outcome changes.
+    sign_command: Callable[[OrderCommand], OrderCommand]
+    verify_command: Callable[[OrderCommand], str | None]
+    if command_signer is not None:
+        sign_command = command_signer.sign
+        verify_command = command_signer.verifier(command_trust_set).verify
+    else:
+        authoriser = CommandAuthoriser(authorisation_key) if authorisation_key is not None else CommandAuthoriser.generate()
+        sign_command = authoriser.sign
+        verify_command = authoriser.verifier().verify
     decisions: dict[str, DecisionRecord] = {}
 
     def execution_permitted(command: OrderCommand, at: datetime) -> str | None:
@@ -821,7 +851,7 @@ def build_sim_platform(
         alert=lambda n, p: alerts.raise_alert(n, p),
         broker_for_account=lambda a: accounts.get(a).broker,
         guard=guard,
-        verify_command=authoriser.verifier().verify,
+        verify_command=verify_command,
         execution_permitted=execution_permitted,
         store=control_store,
     )
@@ -959,7 +989,7 @@ def build_sim_platform(
         tracker=tracker,
         outbox=outbox,
         audit=audit_pipeline,
-        sign_command=authoriser.sign,
+        sign_command=sign_command,
         strategy_owner=strategy_owner,
         eligibility_inputs=elig_inputs,
         account_snapshot=lambda vi, at: platform.account_snapshot(vi.intent.account_id, at),

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RT365 public-key trust set (D-053, ADR-019 proposed)",
+  "description": "Public material only. One file per purpose (tool-registry, order-command, risk-policy). Loaded by rtcore.trust.TrustSet; rotation is add (overlap) then retire; a retired key verifies nothing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["purpose", "keys"],
+  "properties": {
+    "purpose": {"type": "string", "enum": ["tool-registry", "order-command", "risk-policy"]},
+    "note": {"type": "string"},
+    "keys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key_id", "algorithm", "public_key", "valid_from", "revoked", "ceremony"],
+        "properties": {
+          "key_id": {"type": "string", "minLength": 1},
+          "algorithm": {"type": "string", "enum": ["Ed25519"]},
+          "public_key": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "valid_from": {"type": "string", "format": "date-time"},
+          "valid_until": {"type": ["string", "null"], "format": "date-time"},
+          "revoked": {"type": "boolean"},
+          "ceremony": {"type": "string", "description": "security/signing/ceremonies/<key_id>.md, or 'sim-only: generated in process'"}
+        }
+      }
+    }
+  }
+}
