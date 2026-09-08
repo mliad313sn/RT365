@@ -25,3 +25,4 @@ alerts:
   - {name: mcp.handler_error, condition: "handler raised", severity: S2, auto_action: none, runbook: "-"}
   - {name: execution.unexpected_fill, condition: "over-fill or fill after terminal state", severity: S1, auto_action: killswitch_account, runbook: duplicate order}
   - {name: limit.changed, condition: "any", severity: info, auto_action: none, runbook: "-"}
+  - {name: execution.store_unavailable, condition: "StoreError at submit, retry or cancel; the gateway submits nothing", severity: S1, auto_action: none, runbook: store unavailable}

@@ -19,4 +19,5 @@
 | Limit changed | any | info | — | — |
 | execution.unauthorised_command | command without valid control-plane authorisation (forged/altered) [Committee: GATE_C V-C2] | S1 | none (page; the account id in a forged command is attacker-chosen, so no automatic halt — IVA-23) | credential compromise |
 | execution.live_under_block | order live at the broker while execution is blocked and the cancel failed or was not confirmed [Committee: REVALIDATION IVA-19] | S1 | killswitch_account | Kill Switch activation |
+| execution.store_unavailable | StoreError (unreadable or corrupt control store) at submit, retry or cancel; the gateway submits nothing and fails closed [Committee: ADR-018, BUILD_E07 C-11] | S1 | none (page; restore the store, run `verify()`, then resume; no automatic halt because the account id may be unknown at retry/cancel) | store unavailable |
 | execution.blocked_at_gateway | authorised command refused by Kill Switch / halt / mode / provenance at submit or retry [Committee: GATE_C V-C1] | S1 | none (page) | Kill Switch activation |

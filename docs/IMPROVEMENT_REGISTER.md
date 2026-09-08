@@ -35,7 +35,7 @@ Effort key: S = days · M = weeks · L = a release. "Who" names the accountable 
 ## B. Build gaps by epic (agents can build; 2nd-line review and gate evidence still required)
 | # | Improvement | Epic / prompt | Gate | Who | Effort | Source |
 |---|---|---|---|---|---|---|
-| B-1 | Durable stores: lease, outbox/inbox, decision index, nonce journal, revocations, Kill Switch activation state (Postgres/Kafka adapters per ADR-010) | E07, E09, E05 (goals/build/E07, E09, E05) | C (shadow) | Backend Lead | L | R-05, O-55, R-23, O-33 |
+| B-1 | Durable stores: lease, outbox/inbox, decision index, nonce journal, revocations, Kill Switch activation state (Postgres/Kafka adapters per ADR-010) | E07, E09, E05 (goals/build/E07, E09, E05) | C (shadow) | Backend Lead | L | R-05, O-55, R-23, O-33; **built in dev/sim 2026-09-08** (ADR-018, D-058, merge 880b2bc): seam + SQLite for lease, outbox/inbox, gateway indexes, Kill Switch activations; still open: Postgres/Kafka adapters, intent tracker and decision index, nonce/revocation journals on the seam, audit store (B-5) |
 | B-2 | IdP/MFA/passkeys integration replacing dev header auth; PIM elevation with real sessions; CSP and output encoding on the BFF | E01, E10 | B/C | Backend Lead, Frontend Lead | M | R-06, R-30, R-34, O-51 |
 | B-3 | Tenant isolation: multi-tenant allowlist store, scoped BFF reads, TC-TEN quartet, tenant-escape red-team case | E01, E09 | B | Backend Lead | M | R-22, RT-03 |
 | B-4 | Asymmetric command authorisation and registry signing (Ed25519/KMS) with rotation; verify-only handles | E07, E09, E13 | C | Backend Lead, Security Architect | M | O-53, O-22, R-44 |
