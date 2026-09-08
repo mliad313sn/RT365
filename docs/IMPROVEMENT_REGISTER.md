@@ -101,7 +101,7 @@ Sections B, C, D, E and F are delegated to the Product Owner agent and its couns
 | # | Improvement | Why | Who | Effort | Source |
 |---|---|---|---|---|---|
 | E-1 | Agent write-scope guard enforced beyond Edit/Write (Bash-path writes) or replaced by branch-level checks in CI (path ownership per author) | R-46 | Product Owner, MCP Security Agent | M | R-46, O-58 |
-| E-2 | Verify that the harness honours `hooks:` in agent frontmatter; otherwise move the guard to project settings — **probed 2026-09-08: frontmatter hooks not enforced; guard moved to `.claude/settings.json`; payload identity pending** | O-58 | Product Owner | S | O-58 |
+| E-2 | Verify that the harness honours `hooks:` in agent frontmatter; otherwise move the guard to project settings — **closed 2026-09-08: frontmatter hooks are advisory; the project-level hook enforces the roster using the `agent_type` the harness passes** | O-58 | Product Owner | S | O-58 |
 | E-3 | Council convening automation: one command that runs the member agents, the challenger and the IVA for a queue item and fills the recommendation | speed of the decision loop | product-owner delegate | M | PO_DECISION_QUEUE |
 | E-4 | Two-way Meridian link once I-2 exists: decisions and actions recorded in the room flow back into the ledgers | ledger/PMO drift | Program Orchestrator | M | ADR-017 |
 | E-5 | Windows/macOS executables signed; installer verifies signature, not only SHA-256 | O-23 | Security Architect | S after A-18 | O-23 |

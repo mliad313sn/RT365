@@ -53,6 +53,11 @@ def test_agents_are_generated_from_goals_and_owners_may_edit_their_artefacts(): 
         assert ok, reason
         assert _hook(agent, path) == 0
     assert _hook("independent-validation-agent", "services/risk/engine.py", tool="Read") == 0  # reads are never blocked
+    # project-level hook (O-58): the harness names the sub-agent as agent_type in the payload; the main session has none
+    payload = {"tool_name": "Write", "tool_input": {"file_path": "docs/SESSIONS/x.md"}, "agent_type": "counsel-ai-safety"}
+    assert main(["--root", str(ROOT)], stdin=json.dumps(payload)) == 0
+    assert main(["--root", str(ROOT)], stdin=json.dumps({**payload, "tool_input": {"file_path": "services/risk/x.py"}})) == 2
+    assert main(["--root", str(ROOT)], stdin=json.dumps({"tool_name": "Write", "tool_input": {"file_path": "services/risk/x.py"}})) == 0
 
 
 @pytest.mark.tc("TC-AGT-002")
