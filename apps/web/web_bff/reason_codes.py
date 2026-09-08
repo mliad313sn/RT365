@@ -265,6 +265,23 @@ REASON_CODES: dict[str, tuple[str, str, str]] = {
         "Nothing to change on any order. Operations restore the external anchor or the audit trail; the check is never disabled "
         "to make the platform start.",
     ),
+    # A store that would not open at all. The two classes have opposite recoveries, so the alert names which one it
+    # is: an integrity refusal is a suspected tampering incident, an availability refusal is an environment fault
+    # (SRE review F-02, runbook RB-13; ADR-020 amendment 2).
+    "STORE-OPEN-REFUSED": (
+        "Integrity",
+        "A store refused to open: a row, its journal or the replay of that journal against the stored state does not match.",
+        "Nothing to change on any order; the platform will not start and nothing reaches a broker. Operations copy the files as "
+        "found before any repair, then restore the control store, the audit store and the external anchor as a matched set and "
+        "verify; the check is never disabled to make the platform start.",
+    ),
+    "STORE-OPEN-UNAVAILABLE": (
+        "Availability",
+        "A store could not be read at all when the platform started: the file, the disk or the mount is unavailable, or another "
+        "writer holds it.",
+        "Nothing to change on any order; the platform will not start and nothing reaches a broker. Operations restore access to "
+        "the storage; this is an environment fault, not an integrity finding, and no file is edited to clear it.",
+    ),
 }
 
 
