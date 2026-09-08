@@ -72,8 +72,8 @@ Order recommended by Independent Validation (COUNCIL_2026-09-08_gate_A_iva §4):
 
 | Gate | Environment it authorises | Entry | Council(s) | IVA recommendation | Decision (human Product Owner) |
 |---|---|---|---|---|---|
-| A — Discovery | (none; charter and hypothesis) | charter drafted | Product Council, Compliance & Legal Committee | REJECT (2026-09-07); **VETO recommended 2026-09-08** (COUNCIL_2026-09-08_gate_A_iva §7) on evidence grounds V-A1 hypothesis absent, V-A2 charter unapproved, V-A3 targets unset — all closable by Product Owner decisions | **pending** — decide row 0, H-02, O-11/H-03, O-16, O-01, O-02, then re-convene |
-| B — Architecture | development, simulation | Gate A | ARB, Security & Privacy Board | ACCEPT WITH CONDITIONS (2026-09-07); conditions remediated in dev/sim, re-validation O-56 | **pending** |
+| A — Discovery | (none; charter and hypothesis) | charter drafted | Product Council, Compliance & Legal Committee | REJECT (2026-09-07); **VETO recommended 2026-09-08** (COUNCIL_2026-09-08_gate_A_iva §7) on evidence grounds V-A1 hypothesis absent, V-A2 charter unapproved, V-A3 targets unset — all closable by Product Owner decisions | **Passed with conditions — D-048 (2026-09-08, commit 2edc87d)**; conditions GA-C1..GA-C8 tracked as O-66..O-72, H-25..H-27; next: Gate B |
+| B — Architecture | development, simulation | Gate A passed (D-048) | ARB, Security & Privacy Board | ACCEPT WITH CONDITIONS (2026-09-07); conditions remediated in dev/sim, re-validation O-56 | **pending** |
 | C — Paper readiness | shadow, paper | Gate B | Trading Risk Committee, CAB | REJECT (2026-09-07): V-C3 broker certification, V-C4 numeric limits | **pending** |
 | D — Supervised pilot | supervised pilot | Gate C | Model Risk Committee, Security & Privacy Board, Compliance & Legal Committee, CAB | not convened | **pending** |
 | E — Capped autonomy | capped autonomous pilot | Gate D | Trading Risk Committee, CAB | not convened | **pending** |

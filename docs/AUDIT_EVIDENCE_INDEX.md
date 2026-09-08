@@ -8,8 +8,8 @@ Rule: an entry with a location but no reviewer/IVA signature is *evidence submit
 
 | # | Gate | Criterion | Evidence type | Location | Owner | Reviewer | Date | IVA verified |
 |---|---|---|---|---|---|---|---|---|
-| 1 | A | Approved charter | DECISION_LOG entry | PRODUCT_CHARTER.md v1.1; D-042 (ratifies D-001..D-004; H-02 closed) under D-040 | Product Director | product-owner agent (D-040) | 2026-09-08 | |
-| 1b | A | Jurisdiction hypothesis | JURISDICTION_MATRIX row | JURISDICTION_MATRIX.md v1.1 hypothesis row (D-043); country fact [Open: Q-11-1]; legal basis No; sim keeps ZZ | Product Director / Compliance Agent | product-owner agent (D-040) | 2026-09-08 | |
+| 1 | A | Approved charter | DECISION_LOG entry | PRODUCT_CHARTER.md v1.1; D-042 (ratifies D-001..D-004; H-02 closed) under D-040 | Product Director | Compliance Agent (review pending, GA-C2) | 2026-09-08 | GATE_A_2026-09-08: V-A2 closed |
+| 1b | A | Jurisdiction hypothesis | JURISDICTION_MATRIX row | JURISDICTION_MATRIX.md v1.1 hypothesis row (D-043); country fact [Open: Q-11-1]; legal basis No; sim keeps ZZ | Product Director / Compliance Agent | Legal Agent (review pending, GA-C2) | 2026-09-08 | GATE_A_2026-09-08: V-A1 closed as hypothesis |
 | 2 | B | Threat model approved | THREAT_MODEL.md + board minutes | THREAT_MODEL.md; deltas in SESSIONS/REVIEW_C5_C1_C9_security_redteam.md; board minutes none | Security Architect | | | |
 | 2b | B | Data flows, ADRs, capacity model, control ownership | docs | DATA_FLOWS.md; ADRs/ADR-001..012; CAPACITY_MODEL.md (skeleton); RACI.md + CODEOWNERS | Enterprise Architect | | | |
 | 3 | C | Determinism test report | TC-RK-001..004 | TEST_CASES/TC-RK.md; TEST_CASES/EVIDENCE_REPORT.md; CI job "Determinism gate" | QA Lead | | | |
@@ -49,3 +49,4 @@ Four independent challenge packets were issued against the dev/sim build and ans
 | 29 | B | Build-agent prompts for E01..E15 (previously referenced but absent, O-31) | prompts | goals/build/README.md, E01..E15 | Program Orchestrator | | 2026-09-07 | |
 | 30 | A | Gate A council convened by the Product Owner: Product Council option analyses, Compliance & Legal challenge, Independent Validation check | council packets | SESSIONS/COUNCIL_2026-09-08_gate_A_product_director.md, _compliance_legal.md, _iva.md; recommendations in PO_DECISION_QUEUE.md; IVA recommendation VETO (human decisions absent; closable by the Product Owner's decisions) | product-owner delegate (convener) | | 2026-09-08 | |
 | 31 | D | Dual-key role pair remediated (council finding F-1) | quartet | TEST_CASES/TC-CP.md (TC-CP-007); R-49; T-51 | Backend Lead | Compliance Agent (pending) | 2026-09-08 | |
+| 32 | A | Gate A re-convened: chair recommendations and IVA verdict, decision D-048 | gate report | GATE_REPORTS/GATE_A_2026-09-08.md (commit 2edc87d); conditions GA-C1..GA-C8 → O-66..O-72, H-25..H-27 | gate-a convener | 2nd line pending (GA-C2) | 2026-09-08 | APPROVE WITH CONDITIONS |
