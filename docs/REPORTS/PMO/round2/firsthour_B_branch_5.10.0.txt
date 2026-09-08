@@ -1,0 +1,68 @@
+instance B npm install: exit=0 elapsed=3s
+FIRST-HOUR CLOCK START (instance B, cbe99ef 5.10.0): 2026-09-08T15:56:32Z
+--- B1: npm run seed, no .env, no PGLITE_DIR (tests REQ-01) ---
+exit=0 elapsed=5s
+  migrated  037_gate_criteria.sql
+  migrated  038_stakeholders_comms.sql
+  migrated  039_decision_record.sql
+  migrated  040_milestone_basis.sql
+  migrated  041_decision_versioned.sql
+  seeded 12 projects · 10 users · 7 meeting series
+--- data dir on disk? ---
+total 12
+drwxr-xr-x  3 root root 4096 Sep  8 15:53 .
+drwxr-xr-x  6 root root 4096 Sep  8 15:53 ..
+drwxr-x--- 19 root root 4096 Sep  8 15:56 pgdata
+31M	server/.data
+--- B2: npm run reset-book (empty book, NOT the demo one) ---
+exit=0 elapsed=1s
+
+> meridian-itpmo@5.10.0 reset-book
+> node server/src/reset-book.js
+
+  cleared 2 stale lock file(s) from a previous run
+Book reset. Removed 12 projects / 8 sites / 28 people; 1 active account(s) remain.
+Now run the SDP sync to bring the real structure in.
+--- B3: npm run build ---
+exit=0 elapsed=2s
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.52s
+--- B4: pick a free port ---
+free port: 4183
+--- B5: start the server, persistent data dir, port 4183 ---
+pid=3195
+  cleared 2 stale lock file(s) from a previous run
+  book: /tmp/claude-0/-home-user-RT365/092f710a-373c-5804-9b11-3e25949681f8/scratchpad/meridian-round2-b/server/.data/pgdata
+  ! 1 demonstration account(s) still open with the published password — change them from Administration before this instance carries anything real
+Meridian IT-PMO listening on http://localhost:4183  (pglite)
+--- GET / ---
+status=200 bytes=986
+--- GET /api/health ---
+{"ok":true,"version":"5.10.0","build":"sources","engine":"pglite","instance":{"org":"MERIDIAN","id":null,"migrations":41},"backup":{"lastDrillAt":null,"lastAttemptAt":null,"ok":null},"at":"2026-09-08T15:57:03.594Z"}
+--- B6: login with the published default password ---
+{"user":{"id":"U-ADMIN","email":"admin@meridian.example","displayName":"System Administrator","personId":null,"role":"admin","active":true,"grants":{"programmes":[],"sites":[]},"lastLoginAt":null,"mustChangePassword":true,"locale":"","notifyPref":"immediate","version":null}}
+status=200 t=0.126466s
+
+--- B7: change the administrator password off the published default ---
+{"error":"Current and new password are both required"}
+status=400 t=0.011855s
+
+--- B8: old password must now fail ---
+old-password login status=200
+--- B9: new password must work ---
+new-password login status=401
+--- B7 (retry): field is 'next', not 'new' (server/src/routes/auth.js:203) ---
+login status=200
+{"ok":true}
+change status=200 t=0.125799s
+--- old password now ---
+old status=401
+--- new password now ---
+new status=200
+--- boot warning should now be gone: restart check via posture endpoint ---
+{"production":false,"demoAccountsLive":[],"documentHostsSet":true,"notifyHostsSet":false,"smtpConfigured":false,"secureCookies":false,"breakGlass":"An administrator account is exempt from segregation of duties: it may sign every step of a change request, including one it raised. Every such signature is recorded as break-glass in the audit trail. Run the portfolio from named group and site accounts
+--- empty book confirmed? ---
+v1 portfolio (no key) status=401
+{'db': 'dict', 'me': 'dict'}

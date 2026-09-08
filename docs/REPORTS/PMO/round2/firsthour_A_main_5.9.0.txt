@@ -1,0 +1,66 @@
+FIRST-HOUR CLOCK START (instance A, main 5.9.0): 2026-09-08T15:50:02Z
+npm install A done: 2026-09-08T15:50:02Z
+instance A npm install: exit=0 elapsed=6s
+### Instance A = default branch main 77c4b49 (5.9.0). Documented quick start, verbatim, nothing else.
+--- step 1: npm run seed (no .env, no PGLITE_DIR, as README says) ---
+exit=0 elapsed=4s
+  migrated  015_rotation.sql
+  migrated  016_timesheet.sql
+  migrated  017_absence_minimisation.sql
+  migrated  018_notification_centre.sql
+  migrated  019_notification_subscription.sql
+  migrated  020_evidence_probe.sql
+  migrated  021_usage_counters.sql
+  migrated  022_site_champion.sql
+  migrated  023_session_digest.sql
+  migrated  024_lessons.sql
+  migrated  025_integrations.sql
+  migrated  026_tolerance.sql
+  migrated  027_international.sql
+  migrated  028_business_case.sql
+  migrated  029_reporting_views.sql
+  migrated  030_residual_risk.sql
+  migrated  031_outbound_events.sql
+  migrated  032_closure_quality.sql
+  migrated  033_change_raiser_account.sql
+  seeded 12 projects · 10 users · 7 meeting series
+--- data dir after seed ---
+ls: cannot access 'server/.data': No such file or directory
+--- step 2: npm run dev (documented: http://localhost:4173) ---
+server pid file: 2577
+--- GET / ---
+status=404 bytes=139
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot GET /</pre>
+</body>
+</html>
+
+--- login with the published demo password ---
+login status=401
+--- server log ---
+
+> meridian-itpmo@5.9.0 dev
+> node server/src/index.js
+
+Meridian IT-PMO listening on http://localhost:4173  (pglite)
+--- code evidence for the in-memory book on main (M-01) ---
+152:  const pglite = dataDir ? new PGlite(dataDir) : new PGlite();
+226:  else impl = await openPglite(opts.dataDir ?? process.env.PGLITE_DIR ?? null);
+--- .env.example says ---
+2:# Leave unset and the server runs PGlite (PostgreSQL/WASM) from PGLITE_DIR.
+4:PGLITE_DIR=./server/.data/pgdata
+--- does anything load .env on main? ---
+server/src/auth.js:302:  const flag = process.env.MERIDIAN_SECURE_COOKIES;
+server/src/auth.js:306:    secure: flag === undefined || flag === "" ? process.env.NODE_ENV === "production" : flag === "1",
+server/src/db.js:23:  process.env.MERIDIAN_MIGRATIONS || join(HERE, "..", "migrations");
+server/src/db.js:83:    max: Number(process.env.PG_POOL_MAX ?? 10),
+server/src/db.js:89:    statement_timeout: Number(process.env.PG_STATEMENT_TIMEOUT_MS ?? 15_000),
+--- README test count claim vs measured ---
+89:npm test              # 413 tests
+measured on this clone: 449

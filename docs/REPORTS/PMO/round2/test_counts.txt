@@ -1,0 +1,18 @@
+=== instance A (main 77c4b49, 5.9.0) npm test exit=0 elapsed=111s ===
+# tests 449
+# suites 80
+# pass 449
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 110965.903869
+=== instance B (cbe99ef, 5.10.0 unmerged branch) npm test exit=0 elapsed=134s ===
+# tests 520
+# suites 102
+# pass 520
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 133619.726821
