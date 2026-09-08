@@ -291,6 +291,46 @@ _ROWS: tuple[tuple[str, str, str, str, str], ...] = (
 
 COUNTRIES: dict[str, Country] = {r[0]: Country(*r) for r in _ROWS}
 
+# --- ISO 4217 currencies ---------------------------------------------------------------------------------------
+# The registry is the set of principal currencies of the country table (every country and territory above, so every
+# continent is covered) plus the fund codes the platform is asked to price in. ``XXX`` ("no currency", Antarctica) is
+# deliberately *not* a currency: an amount can never be denominated in it. Precious-metal codes (XAU, XAG, XPD, XPT)
+# and the remaining fund codes are out of scope until an instrument needs them [Open: F-3 follow-up].
+# Minor units are the ISO 4217 exponents; the exception lists below are the only non-2 cases in this set. Seeded from
+# the public ISO register by the Data Architect and verified by a reviewer before any real cell uses them (H-29,
+# same convention as the country table) [Open: H-29].
+_MINOR_UNITS_0 = frozenset(
+    {"BIF", "CLP", "DJF", "GNF", "ISK", "JPY", "KMF", "KRW", "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF"}
+)
+_MINOR_UNITS_3 = frozenset({"BHD", "IQD", "JOD", "KWD", "LYD", "OMR", "TND"})
+_MINOR_UNITS_4 = frozenset({"CLF", "UYW"})  # fund codes (Chilean unidad de fomento, Uruguayan unidad previsional)
+_EXTRA_CURRENCIES = frozenset(_MINOR_UNITS_4)
+
+
+def _minor(code: str) -> int:
+    if code in _MINOR_UNITS_0:
+        return 0
+    if code in _MINOR_UNITS_3:
+        return 3
+    if code in _MINOR_UNITS_4:
+        return 4
+    return 2
+
+
+CURRENCIES: dict[str, int] = {
+    code: _minor(code) for code in sorted(({c.currency for c in COUNTRIES.values()} - {NO_CURRENCY}) | _EXTRA_CURRENCIES)
+}
+
+
+def is_currency(code: str) -> bool:
+    """True only for an exact, upper-case ISO 4217 code in the registry. ``XXX`` and unknown codes are False (fail closed)."""
+    return code in CURRENCIES
+
+
+def currency_minor_units(code: str) -> int:
+    """ISO 4217 exponent (number of minor units) for a known code; raises KeyError for anything else."""
+    return CURRENCIES[code]
+
 
 def is_user_assigned(code: str) -> bool:
     """ISO 3166-1 user-assigned codes: valid only as simulated jurisdictions (never a legal basis)."""

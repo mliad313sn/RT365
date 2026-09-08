@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from approval_service.queue import ApprovalQueue, ApprovalRecord
@@ -26,6 +27,7 @@ from rtcore.schemas.account import AccountMode, AccountSnapshot
 from rtcore.schemas.base import StrictModel
 from rtcore.schemas.compliance import CustomerProfile, EligibilityDecision, EligibilityOutcome, JurisdictionCell, RestrictedLists
 from rtcore.schemas.decision import DecisionRecord, Outcome
+from rtcore.schemas.fx import FxSnapshot
 from rtcore.schemas.intent import ValidatedIntent
 from rtcore.schemas.market import InstrumentAttributes, MarketSnapshot
 from rtcore.schemas.order import ExecutionTarget, OrderCommand, OrderRecord, idempotency_key
@@ -79,6 +81,9 @@ class TradePipeline:
     on_authorised: Callable[[ValidatedIntent, DecisionRecord], object] = lambda vi, d: None
     inbox: Inbox | None = None
     alert: Callable[[str, dict[str, Any]], object] = lambda name, payload: None
+    # FX is read here, at decision time, and handed to the engine as data: (snapshot, freshness budget). The default
+    # supplies neither, which is fail-closed for a cross-currency book and a no-op for a single-currency one (F-3).
+    fx_inputs: Callable[[ValidatedIntent, datetime], tuple[FxSnapshot | None, Decimal | None]] = lambda vi, at: (None, None)
 
     def _emit(self, name: str, vi: ValidatedIntent, payload: Any, now: datetime) -> None:
         self.outbox.publish(
@@ -135,7 +140,8 @@ class TradePipeline:
 
             acct = self.account_snapshot(vi, now)
             mkt = self.market_snapshot(vi, now)
-            decision = decide(vi, acct, mkt, self.policy(), now)
+            fx, fx_budget = self.fx_inputs(vi, now)
+            decision = decide(vi, acct, mkt, self.policy(), now, fx, fx_budget)
             self.audit("risk.decided.v1", vi.correlation_id, vi.tenant_id, vi.intent.account_id, decision.model_dump(mode="json"))
             self._emit("risk.decided.v1", vi, decision, now)
             if "RK-INTEG" in decision.reason_codes:
@@ -190,7 +196,8 @@ class TradePipeline:
             self._emit("approval.recorded.v1", vi, record, now)
             acct = self.account_snapshot(vi, now)
             mkt = self.market_snapshot(vi, now)
-            fresh = decide(vi, acct, mkt, self.policy(), now)
+            fx, fx_budget = self.fx_inputs(vi, now)
+            fresh = decide(vi, acct, mkt, self.policy(), now, fx, fx_budget)
             self.audit(
                 "risk.redecided.v1",
                 vi.correlation_id,

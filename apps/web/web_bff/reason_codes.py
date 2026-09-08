@@ -78,6 +78,21 @@ REASON_CODES: dict[str, tuple[str, str, str]] = {
     "RK-FRESH-PROV": ("Data", "The snapshot provenance is not a licensed (or simulated) feed.", "Only licensed feeds may drive decisions."),
     "RK-FRESH-INTENT": ("Data", "The intent's market timestamp is in the future.", "Check the strategy clock."),
     "RK-FRESH-UNDEFINED": ("Policy", "No freshness budget is defined for this asset class.", "Trading Risk Committee sets it (O-07)."),
+    "RK-FX-MISSING": (
+        "Data",
+        "No exchange rate is available for a currency this account holds, so its value cannot be stated.",
+        "Nothing to change on the order; the FX source must deliver a rate for the pair before trading resumes.",
+    ),
+    "RK-FX-STALE": (
+        "Data",
+        "The exchange rates are older than the freshness budget (or dated in the future), so the account value is not current.",
+        "Nothing to change on the order; the FX source must publish a current snapshot.",
+    ),
+    "RK-FX-UNDEFINED": (
+        "Policy",
+        "No FX freshness budget is defined, and an undefined budget is never treated as unlimited.",
+        "Trading Risk Committee sets the budget per pair and asset class (O-07).",
+    ),
     "RK-INSTR-ID": ("Instrument", "Instrument in the intent does not match the snapshot.", "Resubmit with matching instrument."),
     "RK-INSTR-VENUE": ("Instrument", "Venue in the intent does not match the instrument's venue.", "Resubmit with the instrument's venue."),
     "RK-INSTR-PIT": (

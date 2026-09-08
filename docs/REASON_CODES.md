@@ -59,6 +59,9 @@ Every risk, eligibility and runtime reason code has an explanation and a 'what y
 | RK-FRESH-PROV | Data | The snapshot provenance is not a licensed (or simulated) feed. | Only licensed feeds may drive decisions. |
 | RK-FRESH-QUALITY | Data | The snapshot is flagged as suspect, stale or missing. | Wait for a clean snapshot. |
 | RK-FRESH-UNDEFINED | Policy | No freshness budget is defined for this asset class. | Trading Risk Committee sets it (O-07). |
+| RK-FX-MISSING | Data | No exchange rate is available for a currency this account holds, so its value cannot be stated. | Nothing to change on the order; the FX source must deliver a rate for the pair before trading resumes. |
+| RK-FX-STALE | Data | The exchange rates are older than the freshness budget (or dated in the future), so the account value is not current. | Nothing to change on the order; the FX source must publish a current snapshot. |
+| RK-FX-UNDEFINED | Policy | No FX freshness budget is defined, and an undefined budget is never treated as unlimited. | Trading Risk Committee sets the budget per pair and asset class (O-07). |
 | RK-HALT-INPUT | Halt | A required input (policy, account or market snapshot) was unavailable; the engine fails closed. | Nothing to change on the order; operations restore the input and the intent can be resubmitted. |
 | RK-HALT-KS | Halt | A Kill Switch is active at a level covering this order. | Wait for the two-person deactivation; no new risk is taken while active. |
 | RK-HALT-MODE | Halt | The account is HALTED. | A two-person restore by different lines of defense is required. |

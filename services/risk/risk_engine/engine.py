@@ -18,11 +18,13 @@ from decimal import Decimal
 from pathlib import Path
 
 from rtcore.clock import age_seconds, ensure_utc
+from rtcore.errors import FxUnavailable
 from rtcore.ids import deterministic_id
-from rtcore.money import ZERO, pct
+from rtcore.money import ZERO, convert, pct
 from rtcore.provenance import TRUSTED_FOR_DECISIONS, Provenance
-from rtcore.schemas.account import AccountMode, AccountSnapshot, TradingStatus
+from rtcore.schemas.account import AccountMode, AccountSnapshot, NavStatus, TradingStatus
 from rtcore.schemas.decision import CheckResult, DecisionRecord, EvaluatedCheck, Outcome
+from rtcore.schemas.fx import FxSnapshot
 from rtcore.schemas.intent import OrderType, Side, ValidatedIntent
 from rtcore.schemas.market import DataQuality, MarketSnapshot, SessionState
 
@@ -41,7 +43,9 @@ def _build_hash() -> str:
 ENGINE_BUILD_HASH = _build_hash()
 
 # Reason-code semantics. HALT reasons dominate; REJECT reasons next; APPROVAL reasons last.
-HALT_CODES = frozenset({"RK-HALT-INPUT", "RK-HALT-KS", "RK-HALT-MODE"})
+# FX is a decision input like any other: no trustworthy rate means no decision, not a decision on a guessed rate (F-3).
+FX_CODES = frozenset({"RK-FX-MISSING", "RK-FX-STALE", "RK-FX-UNDEFINED"})
+HALT_CODES = frozenset({"RK-HALT-INPUT", "RK-HALT-KS", "RK-HALT-MODE"}) | FX_CODES
 
 
 @dataclass(frozen=True)
@@ -52,6 +56,12 @@ class _Ctx:
     policy: RiskPolicy
     now: datetime
     scope: LimitScope
+    # FX enters as data, never as a lookup: ``decide`` converts every amount to the account base currency before the
+    # checks run and halts if it cannot. The engine performs no I/O and holds no rate of its own (F-3).
+    fx: FxSnapshot | None = None
+    fx_max_age_s: Decimal | None = None
+    notional_base: Decimal | None = None
+    open_notional_base: tuple[Decimal, ...] = ()
 
     @property
     def est_price(self) -> Decimal:
@@ -62,6 +72,9 @@ class _Ctx:
 
     @property
     def order_notional(self) -> Decimal:
+        """Order notional in the *account base currency* — the currency every limit and NAV ratio is expressed in."""
+        if self.notional_base is not None:
+            return self.notional_base
         return self.vi.intent.quantity * self.est_price
 
     @property
@@ -348,12 +361,16 @@ def chk_caps(ctx: _Ctx) -> list[EvaluatedCheck]:
 
 # ---- 7 gross / net exposure ------------------------------------------------------------
 def _book(ctx: _Ctx, *, include_order: bool) -> dict[str, tuple[Decimal, str, str, str]]:
-    """instrument -> (market_value, sector, country, currency) including open orders as if filled (review P3)."""
+    """instrument -> (base-currency value, sector, country, currency) including open orders as if filled (review P3).
+
+    Every amount is in the account base currency (``Position.base_value``, ``ctx.open_notional_base``,
+    ``ctx.order_notional``): exposure ratios are taken against a base-currency NAV, so mixed currencies are never
+    summed (F-3). ``currency`` is kept for the concentration-by-currency check, which groups rather than adds."""
     book: dict[str, tuple[Decimal, str, str, str]] = {
-        p.instrument_id: (p.market_value, p.sector, p.country, p.currency) for p in ctx.acct.positions
+        p.instrument_id: (p.base_value, p.sector, p.country, p.currency) for p in ctx.acct.positions
     }
     inst = ctx.mkt.instrument
-    for o in ctx.acct.open_orders:
+    for n, o in enumerate(ctx.acct.open_orders):
         mv, sector, country, ccy = book.get(
             o.instrument_id,
             (
@@ -363,11 +380,12 @@ def _book(ctx: _Ctx, *, include_order: bool) -> dict[str, tuple[Decimal, str, st
                 inst.currency,
             ),
         )
-        signed = o.notional if o.side in (Side.BUY, Side.BUY_TO_COVER) else -o.notional
+        notional = ctx.open_notional_base[n] if n < len(ctx.open_notional_base) else o.notional
+        signed = notional if o.side in (Side.BUY, Side.BUY_TO_COVER) else -notional
         book[o.instrument_id] = (mv + signed, sector, country, ccy)
     if include_order:
         mv, sector, country, ccy = book.get(inst.instrument_id, (ZERO, inst.sector, inst.country, inst.currency))
-        book[inst.instrument_id] = (mv + ctx.signed_qty * ctx.est_price, sector, country, ccy)
+        book[inst.instrument_id] = (mv + (ctx.order_notional if ctx.is_buy else -ctx.order_notional), sector, country, ccy)
     return book
 
 
@@ -689,14 +707,35 @@ def _halted(
     )
 
 
+def _fx_guard(
+    acct: AccountSnapshot, mkt: MarketSnapshot, notional: Decimal, fx: FxSnapshot | None, max_age_s: Decimal | None, now: datetime
+) -> tuple[Decimal, tuple[Decimal, ...]]:
+    """Express the order and every open order in the account base currency, or raise ``FxUnavailable`` (F-3).
+
+    Pure: ``convert`` is a Decimal function over the snapshot the caller handed in. The engine never fetches a rate,
+    so a decision is reproducible from its recorded inputs [Source: 05; NFR-DET-01].
+    """
+    base = acct.base_currency
+    notional_base = convert(notional, mkt.instrument.currency, base, fx, now=now, max_age_s=max_age_s)
+    open_base = tuple(convert(o.notional, o.currency or base, base, fx, now=now, max_age_s=max_age_s) for o in acct.open_orders)
+    return notional_base, open_base
+
+
 def decide(
     validated_intent: ValidatedIntent | None,
     account_snapshot: AccountSnapshot | None,
     market_snapshot: MarketSnapshot | None,
     policy: RiskPolicy | None,
     now: datetime,
+    fx: FxSnapshot | None = None,
+    fx_max_age_s: Decimal | None = None,
 ) -> DecisionRecord:
-    """Pure decision. Any missing input -> HALTED (fail closed). Never raises for domain reasons."""
+    """Pure decision. Any missing input -> HALTED (fail closed). Never raises for domain reasons.
+
+    ``fx`` is a decision *input*: the caller reads it from the bitemporal FX store at decision time and passes it
+    in, exactly as it passes the market and account snapshots. A book whose value is UNKNOWN, or an order the
+    engine cannot express in the account base currency, halts with RK-FX-MISSING / RK-FX-STALE / RK-FX-UNDEFINED.
+    """
     now = ensure_utc(now)
     pv = policy.policy_version if policy else "unavailable"
     acct_id = account_snapshot.snapshot_id if account_snapshot else "unavailable"
@@ -722,13 +761,36 @@ def decide(
             outcome=Outcome.REJECTED,
         )
 
+    # FX before anything else that reads money: an unknown NAV is an unavailable input, not a zero (F-3).
+    if account_snapshot.valuation is not None and account_snapshot.valuation.status == NavStatus.UNKNOWN:
+        v = account_snapshot.valuation
+        return _halted(validated_intent, v.reason_code or "RK-FX-MISSING", f"account value unknown: {v.detail}", now, pv, acct_id, mkt_id)
+    est_price = validated_intent.intent.limit_price if validated_intent.intent.limit_price is not None else market_snapshot.reference_price
+    try:
+        notional_base, open_base = _fx_guard(
+            account_snapshot, market_snapshot, validated_intent.intent.quantity * est_price, fx, fx_max_age_s, now
+        )
+    except FxUnavailable as exc:
+        return _halted(validated_intent, exc.reason_code, f"order cannot be valued in the account base currency: {exc}", now, pv, acct_id, mkt_id)
+
     scope = LimitScope(
         tenant_id=account_snapshot.tenant_id,
         account_id=account_snapshot.account_id,
         strategy_id=validated_intent.intent.strategy_id,
         instrument_id=validated_intent.intent.instrument_id,
     )
-    ctx = _Ctx(validated_intent, account_snapshot, market_snapshot, policy, now, scope)
+    ctx = _Ctx(
+        validated_intent,
+        account_snapshot,
+        market_snapshot,
+        policy,
+        now,
+        scope,
+        fx=fx,
+        fx_max_age_s=fx_max_age_s,
+        notional_base=notional_base,
+        open_notional_base=open_base,
+    )
 
     evaluated: list[EvaluatedCheck] = []
     for check in CHECKS:
