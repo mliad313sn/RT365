@@ -62,6 +62,7 @@ Effort key: S = days · M = weeks · L = a release. "Who" names the accountable 
 | C-3 | Decide the remaining decision packs in queue order (O-04, O-05, O-13, O-17, O-22, O-23 for B; O-07, O-12, O-19 for C; …) with their councils | every pack is a Product Owner decision now | B–F | product-owner delegate + councils | S each | PO_DECISION_QUEUE §A |
 | C-4 | Weekly loop: `make all`, `make pmo-sync`, run the weekly in Meridian, weekly report in docs/REPORTS | rhythm | continuous | Program Orchestrator | S/week | GOAL.md standing loop |
 | C-5 | Global RAID IDs for the council's local findings; RACI reviewers on AEI rows; O-72 wording | ledger hygiene | B | Program Orchestrator | S | O-67, O-71 |
+| C-6 | A decision that changes an architecture or security fact carries, as a condition of the decision itself, the owning-role artefact edit and its review; recorded after two of three new data flows were found missing from DATA_FLOWS in the same week the decisions were taken | REVIEW architecture v1.1 PO-B | Product Owner delegate, Program Orchestrator | S | this session |
 
 ## D. Meridian IT-PMO improvements (proposed upstream; detail and rationale in docs/PMO_MERIDIAN_ASSESSMENT.md §5)
 | # | Improvement | Effort |
