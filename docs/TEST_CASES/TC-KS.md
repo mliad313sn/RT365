@@ -2,7 +2,7 @@
 
 Control: Kill Switch — Requirement: FR-17 — RTM row: FR-17 — Owner: Backend Lead — Reviewer (≠ owner): Chief Risk Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:00:50.126223+00:00 at `f22834d042465b494e748499f7041a92cf91e8c1` (tree dirty, tested tree `9eff65811c3f`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:01:13.586551+00:00 at `724be374050381d76e7bc27d145cbbf21ad4ae99` (tree dirty, tested tree `29e931a09773`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
@@ -19,5 +19,6 @@ Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | 
 | abuse | TC-KS-002 | An AI agent attempting to operate the Kill Switch is denied, audited and alerted (S1). | pass | passed | `test/quartets/test_tc_ks_killswitch.py::test_agent_cannot_activate_or_deactivate` |
 | recovery | TC-KS-004 | Two persons from different lines deactivate; account restored via two-person rule; trading resumes; audit chain intact. | pass | passed | `test/quartets/test_tc_ks_killswitch.py::test_two_person_deactivation_restores_with_audit` |
 | recovery | TC-KS-007 | Broker down during activation: the switch is engaged first; the failed hook is recorded and alerted (Risk review OBJ-1). | pass | passed | `test/quartets/test_tc_ks_killswitch.py::test_kill_switch_engages_even_when_a_hook_fails` |
+| recovery | TC-KS-010 | A STRATEGY-level activation (no account halt to fall back on) and its pending first-person deactivation survive a restart: the rebuilt platform still halts intents and revokes agents; the second person completes the deactivation after the restart (R-23). | pass | passed | `test/quartets/test_tc_ks_killswitch.py::test_activation_survives_restart_and_two_person_deactivation_spans_it` |
 
-Quartet complete: yes. Records: 13.
+Quartet complete: yes. Records: 14.

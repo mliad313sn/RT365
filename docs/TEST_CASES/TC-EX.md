@@ -2,7 +2,7 @@
 
 Control: Execution gateway: idempotency, fencing, failover — Requirement: FR-13 — RTM row: FR-13 — Owner: Backend Lead — Reviewer (≠ owner): Trading Domain Lead / Integration Architect — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:00:50.126223+00:00 at `f22834d042465b494e748499f7041a92cf91e8c1` (tree dirty, tested tree `9eff65811c3f`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:01:13.586551+00:00 at `724be374050381d76e7bc27d145cbbf21ad4ae99` (tree dirty, tested tree `29e931a09773`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
@@ -22,5 +22,6 @@ Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | 
 | recovery | TC-EX-008 | With a broker that does not dedupe client ids, a retry after an outage adopts the existing order instead of sending a second one (Trading review OBJ-2). | pass | passed | `test/quartets/test_tc_ex_execution.py::test_retry_queries_non_deduping_broker_before_resubmitting` |
 | recovery | TC-EX-009 | An order left SUBMITTED by a broker outage is not re-sent once the account was halted during the outage. | pass | passed | `test/quartets/test_tc_ex_execution.py::test_retry_after_outage_rechecks_kill_switch` |
 | recovery | TC-EX-010 | An order that reached the broker during an outage is adopted on retry and, because the account was halted meanwhile, cancelled at the broker immediately (IVA-19). | pass | passed | `test/quartets/test_tc_ex_execution.py::test_order_adopted_on_retry_under_halt_is_cancelled_at_broker` |
+| recovery | TC-EX-011 | A gateway rebuilt from its store after a crash with an order in flight: the fencing token is never reissued lower, the replayed command is deduplicated, the consumed grant and decision stay refused, and nothing reaches the broker. | pass | passed | `test/quartets/test_tc_ex_execution.py::test_restart_with_order_in_flight_keeps_fencing_inbox_and_one_shot_grants` |
 
-Quartet complete: yes. Records: 16.
+Quartet complete: yes. Records: 17.

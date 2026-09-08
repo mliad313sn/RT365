@@ -96,6 +96,6 @@ def test_status_disagreement_is_a_break_and_broker_cancel_is_adopted(platform): 
     )
     assert ioc.order.state == OrderState.CANCELLED  # broker-side IOC cancel adopted by sync_statuses
     r = platform.run_intent(resting_limit_intent(platform))
-    platform.gateway._orders[r.order.order_id] = r.order.model_copy(update={"state": OrderState.CANCELLED})  # internal drift
+    platform.gateway._put_order(r.order.model_copy(update={"state": OrderState.CANCELLED}))  # internal drift, written behind the store seam
     res = platform.reconcile()
     assert any(b.break_type == BreakType.STATUS and b.severity == BreakSeverity.S1 for b in res.breaks)
