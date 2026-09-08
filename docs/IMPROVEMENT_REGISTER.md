@@ -105,6 +105,7 @@ Sections B, C, D, E and F are delegated to the Product Owner agent and its couns
 | E-3 | Council convening automation: one command that runs the member agents, the challenger and the IVA for a queue item and fills the recommendation | speed of the decision loop | product-owner delegate | M | PO_DECISION_QUEUE |
 | E-4 | Two-way Meridian link once I-2 exists: decisions and actions recorded in the room flow back into the ledgers | ledger/PMO drift | Program Orchestrator | M | ADR-017 |
 | E-5 | Windows/macOS executables signed; installer verifies signature, not only SHA-256 | O-23 | Security Architect | S after A-18 | O-23 |
+| E-6 | Agent runs must checkpoint: a build or council agent commits its packet skeleton and each green test file as it goes, so a harness termination (API rate limit, container reclaim) loses minutes, not the run. 2026-09-08 13:00 UTC: six background agents (E13, E11, E04 builds; IVA re-validation; S&P Board and ARB reviews) were terminated by the session usage limit with nothing committed and were relaunched from the head after the reset | R-46 lineage: harness dependence; O-58 | Product Owner delegate | S | this session |
 
 ## Status at a glance (2026-09-08, head of the branch)
 | Area | Complete | Open |
