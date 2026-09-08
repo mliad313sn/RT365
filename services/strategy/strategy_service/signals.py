@@ -6,6 +6,8 @@ so that replay tests can assert identical intents from identical snapshots (ADR-
 
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Protocol
@@ -41,6 +43,32 @@ class Strategy(Protocol):
     version: str
 
     def on_snapshot(self, history: tuple[MarketSnapshot, ...], *, position_qty: Decimal, nav: Decimal) -> Signal | None: ...
+
+
+M_SIGNAL_LATENCY_MS = "strategy.signal_latency_ms"
+
+
+def timed_signal(
+    strategy: Strategy,
+    history: tuple[MarketSnapshot, ...],
+    *,
+    position_qty: Decimal,
+    nav: Decimal,
+    observe: Callable[..., object] | None = None,
+    runner: str = "unknown",
+) -> Signal | None:
+    """Call a strategy and emit ``signal_latency_ms`` — snapshot to signal — when a signal is produced [F-03].
+
+    A run that produces no signal emits nothing: there is no signal, so there is no signal latency, and a zero
+    would be a measurement of something that did not happen. The ``runner`` label carries the provenance of the
+    observation, because a latency measured inside a backtest is a property of that run and not of a deployed
+    platform; there is no live signal loop in this tree today [Open].
+    """
+    started = time.perf_counter()
+    signal = strategy.on_snapshot(history, position_qty=position_qty, nav=nav)
+    if signal is not None and observe is not None:
+        observe(M_SIGNAL_LATENCY_MS, (time.perf_counter() - started) * 1000.0, runner=runner)
+    return signal
 
 
 class SmaCrossoverStrategy:

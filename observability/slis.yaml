@@ -1,48 +1,126 @@
 # SLI definitions fixed now; targets deferred until measured baselines and business approval [Source: 10] [Open: O-03].
 # safety_semantic: what the platform does automatically on breach [Committee C9 §3].
+#
+# Four fields per SLI carry the honesty of this file [F-03, F-07, docs/SESSIONS/REVIEW_2026-09-08_capacity_sre.md]:
+#   measurement_point  the *component* the SLI belongs to. It has never named a measurement.
+#   emission_point     where a measurement is actually emitted in this tree, or the literal "none".
+#   metrics            the metric names emitted there; empty when there is no emission point.
+#   direction          which way a breach lies. Declared, never inferred from the name: a name-inferred
+#                      direction judged alert_delivery_s and time_to_halt_s inverted (F-07/SRE-R2), so a fast
+#                      halt would have breached and a slow one would not.
+#   gap                what the emission does not cover, in plain words, so a gate reader is never left to
+#                      assume that a named component means a collectable baseline.
+# Every emission point below is in-process. There is no trace-context carrier, no exporter and no backend, so
+# nothing here can be joined across a deployed cell [Open: R-05, SRE-R4, SRE-R10]. No target is set here.
 slis:
   - name: control_plane_availability
     definition: successful control-plane decisions / total decision requests
     measurement_point: risk_engine
+    emission_point: oms.pipeline.TradePipeline (counters at the decision request and at the decision record write)
+    metrics: [control_plane.decision_requests, control_plane.decisions_recorded]
+    direction: lower_is_worse
     target: null
     safety_semantic: fail_closed
+    gap: >-
+      Counts intents this process decided, in process, since start-up; it is not a windowed availability and
+      there is no aggregation across processes or cells. A refusal counts as a successful decision (the control
+      plane answered); only a request that produced no decision record counts against it.
   - name: market_data_freshness_s
     definition: market_ts age at snapshot use (seconds)
     measurement_point: risk_engine.RK-FRESH
+    emission_point: oms.pipeline.TradePipeline._observe_freshness (at the snapshot the decision used)
+    metrics: [pipeline.market_data_freshness_s]
+    direction: higher_is_worse
     target: null
     safety_semantic: suspend_autonomy
+    gap: >-
+      Observed only where a decision consumes a snapshot, so an instrument nothing decides on is never observed;
+      ingest-side staleness of an unused feed is invisible. Age is measured against the decision clock, which in
+      sim and backtest is the fixture clock.
   - name: signal_latency_ms
     definition: snapshot -> signal
     measurement_point: strategy_service
+    emission_point: strategy_service.signals.timed_signal (labelled with the runner that called it)
+    metrics: [strategy.signal_latency_ms]
+    direction: higher_is_worse
     target: null
     safety_semantic: informational
+    gap: >-
+      The only caller in the tree is backtest_engine.runner, so every observation today carries runner=backtest
+      and is a property of that run, not of a deployed platform. There is no live signal loop. A run that
+      produces no signal emits nothing rather than a zero [Open].
   - name: risk_decision_latency_ms_p99
     definition: intent enqueue -> decision record write, p99 per cell
     measurement_point: oms.pipeline
+    emission_point: oms.pipeline.TradePipeline._observe_decision_latency (monotonic, from IntentTracker.create)
+    metrics: [pipeline.risk_decision_latency_ms]
+    direction: higher_is_worse
     target: null
     safety_semantic: suspend_autonomy
+    gap: >-
+      In-process only: the enqueue stamp is this process's monotonic clock, so an intent enqueued elsewhere or
+      before a restart yields no measurement. The registry's histograms are unbounded and sorted per query, so a
+      p99 is neither windowed nor cheap, and "per cell" does not exist yet [Open: SRE-R4].
   - name: order_ack_latency_ms
     definition: order command -> broker ack
     measurement_point: execution_gateway
+    emission_point: oms.pipeline.TradePipeline._authorise_and_execute (caller side, around lease + gateway submit)
+    metrics: [pipeline.order_ack_latency_ms]
+    direction: higher_is_worse
     target: null
     safety_semantic: cancel_only_review
+    gap: >-
+      Measured by the caller, not inside the gateway (a protected path), so it includes lease acquisition and is
+      an in-process call, not a network round trip; against the simulated broker it measures the simulator. An
+      order that never reaches an ack state emits nothing rather than a truncated time.
   - name: event_lag_ms
     definition: produce -> consume
     measurement_point: bus
+    emission_point: none
+    metrics: []
+    direction: higher_is_worse
     target: null
     safety_semantic: autoscale
+    gap: >-
+      There is nothing to measure between. A Kafka-compatible broker runs in the dev/sim compose stack, but no
+      code publishes to or consumes from it: Outbox.relay(fn) takes a callback and no caller passes a producer,
+      so events stay in process after the outbox write. This is not a missing counter; it needs a producer and a
+      consumer to exist first [Open: R-05].
   - name: reconciliation_completeness_pct
     definition: reconciled positions / total by EOD+T
     measurement_point: reconciliation_service
+    emission_point: reconciliation_service.ReconciliationResult.completeness_pct, observed by the caller (dev/sim SimPlatform.reconcile)
+    metrics: [reconciliation.completeness_pct]
+    direction: lower_is_worse
     target: null
     safety_semantic: supervised_on_break
+    gap: >-
+      Completeness of the run that just happened, not "by EOD+T": there is no scheduler and no EOD+T deadline in
+      the tree, so the time bound in the definition is unmeasured. Any break naming an instrument counts that
+      instrument as unreconciled (deliberately conservative), and a run that compared nothing reports no
+      percentage rather than 100%.
   - name: time_to_halt_s
     definition: Kill Switch engage -> last open-order cancel and identity revocation recorded (seconds); 100% of approvals after activated_at blocked [D-044]
     measurement_point: killswitch_service.activate (metric killswitch.time_to_halt_s); drill measures operator-action -> engaged separately
+    emission_point: killswitch_service.KillSwitchService.activate via KillSwitchHooks.observe
+    metrics: [killswitch.time_to_halt_s]
+    direction: higher_is_worse
     target: null
     safety_semantic: informational
+    gap: >-
+      Measures engage -> side effects recorded inside one process against the simulated broker. It does not
+      measure operator-action -> engaged, which only a drill can measure, and it has no baseline [Open: Q-16-1].
   - name: alert_delivery_s
     definition: alert -> operator ack
     measurement_point: notification
+    emission_point: rtobs.alerts.AlertRouter.acknowledge (alert_delivery_s); AlertRouter._dispatch (alert_dispatch_s)
+    metrics: [alerts.alert_delivery_s]
+    direction: higher_is_worse
     target: null
     safety_semantic: tested_daily
+    gap: >-
+      Both ends now exist in code — the alert carries raised_at and an acknowledgement records the delivery time
+      — but the second end has no producer: there is no notification component and no operator-facing
+      acknowledgement path, so nothing acknowledges an alert outside a test and the metric is emitted only when
+      something does. AlertRouter.unacknowledged() is the honest operational view until a notification channel
+      exists. What is missing is a component and a human path, not a counter [Open: SRE-R5, O-15].

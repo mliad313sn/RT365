@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
@@ -79,10 +80,19 @@ class IntentStatus(StrictModel):
 class IntentTracker:
     def __init__(self, audit_hook: Callable[[str, str, dict[str, object]], object] | None = None) -> None:
         self._status: dict[str, IntentStatus] = {}
+        # Monotonic enqueue stamps, in-process, for measurement only [F-03]: the state machine's clock is the
+        # business clock (which a sim or a backtest may move at will), so latency is never derived from it and
+        # this value is never a decision input, never audited and never part of IntentStatus.
+        self._enqueued: dict[str, float] = {}
         self._audit = audit_hook or (lambda action, correlation_id, payload: None)
 
     def exists(self, intent_id: str) -> bool:
         return intent_id in self._status
+
+    def since_create_ms(self, intent_id: str) -> float | None:
+        """Milliseconds since the intent was enqueued, or None if this process did not enqueue it (e.g. after a restart)."""
+        started = self._enqueued.get(intent_id)
+        return None if started is None else (time.perf_counter() - started) * 1000.0
 
     def create(self, intent_id: str, correlation_id: str, *, tenant_id: str, now: datetime) -> IntentStatus:
         if intent_id in self._status:
@@ -96,6 +106,7 @@ class IntentTracker:
             updated_at=now,
         )
         self._status[intent_id] = st
+        self._enqueued[intent_id] = time.perf_counter()
         self._audit("intent.state", correlation_id, {"intent_id": intent_id, "tenant_id": tenant_id, "state": st.state.value})
         return st
 

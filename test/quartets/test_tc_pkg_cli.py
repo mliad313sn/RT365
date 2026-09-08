@@ -4,6 +4,7 @@ and the fail-closed rules that survive packaging [Source: 06, 16; NFR-SEC-02; AD
 from __future__ import annotations
 
 import io
+import json
 import shutil
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -11,6 +12,7 @@ from pathlib import Path
 import pytest
 from rt365_cli.main import BUNDLED_RELATIVE_PATHS, main
 from rtcore.resources import MARKER, ResourceRootMissing, resource_root
+from rtobs.tracing import PIPELINE_STAGES
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -38,6 +40,10 @@ def test_cli_version_check_and_probe_run_in_sim(monkeypatch):  # type: ignore[no
     assert "registry: OK" in out and "FIXTURE" in out and "audit chain: OK" in out and "planes: OK" in out
     code, out, _ = _cli("probe", "--env", "sim")
     assert code == 0 and "final_state" in out and "missing_spans: []" in out
+    # F-14: the operator is handed one id, and the completeness verdict printed beside it is the verdict for that id
+    printed = dict(line.split(": ", 1) for line in out.splitlines() if ": " in line)
+    assert printed["trace_complete"] == "True" and printed["trace_correlation_id"] == printed["correlation_id"]
+    assert json.loads(printed["stages_recorded"]) == list(PIPELINE_STAGES) and json.loads(printed["failed_spans"]) == []
 
 
 @pytest.mark.tc("TC-PKG-002")

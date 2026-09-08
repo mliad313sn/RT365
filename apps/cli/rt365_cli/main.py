@@ -142,7 +142,19 @@ def cmd_probe(args: argparse.Namespace) -> int:
     result = p.synthetic_probe()
     for k, v in result.items():
         print(f"{k}: {json.dumps(v) if isinstance(v, list | dict) else v}")
-    return 0 if not result["missing_spans"] else 1
+    # The verdict printed is the verdict for the id printed [F-14]. A missing or failed span is an incident, not a
+    # warning: the command exits non-zero. Stages the pipeline correctly never reached are listed, not counted.
+    if result["trace_correlation_id"] != result["correlation_id"]:
+        print("probe: FAIL — the completeness verdict was computed under a different correlation id", file=sys.stderr)
+        return 1
+    if not result["trace_complete"]:
+        print(
+            f"probe: FAIL — missing spans {result['missing_spans']} / failed spans {result['failed_spans']} "
+            f"under correlation id {result['correlation_id']}",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
 
 
 def cmd_serve(args: argparse.Namespace) -> int:
