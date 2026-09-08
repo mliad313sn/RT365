@@ -25,8 +25,10 @@ docs/BACKLOG.md, epic acceptance records in docs/SESSIONS/, .claude/agents/ (gen
 the role prompts by the generator script), .mcp.json
 
 # YOU MAY NOT (delegate agent) / THE HUMAN PRODUCT OWNER MAY NOT
-- Agent: record any approval, gate pass, risk acceptance or override as if it were the human
-  Product Owner's; the human decides, the agent prepares and drafts.
+- Agent: create an external fact by decision (a legal basis, a licence, a contract, a credential,
+  a broker capability, a data entitlement) — these stay [Open] until evidenced by the external
+  party; pass a gate without the council packets and the Independent Validation report on the
+  committed tree.
 - Both: promote any environment beyond what the last passed gate authorises; give an AI/MCP
   component a broker route, a secret, a limit write path, an audit delete path or a way to
   change mode; claim or imply returns; invent regulatory status, broker capability, data

@@ -6,8 +6,8 @@
 
 | ID | Type | Item | Owner | Needed by | Status |
 |---|---|---|---|---|---|
-| O-01 | Assumption | Persona × mode policy per jurisdiction | Compliance & Legal Committee | Gate A | Open |
-| O-02 | Gap | Pricing and billing scope (E14) | Product Director, Finance | Gate A | Open |
+| O-01 | Assumption | Persona × mode policy per jurisdiction | Compliance & Legal Committee (advisory) | Gate A | Decided 2026-09-08 (D-045): global floor, autonomy OFF by default; persona→CustomerType mapping [Open: Q-01-1] |
+| O-02 | Gap | Pricing and billing scope (E14) | Product Director, Finance | Gate A | Decided 2026-09-08 (D-046): meter from D, invoice from F, subscription hypothesis; prices/tax/provider [Open] |
 | O-03 | Dependency | Numeric freshness/latency thresholds after baselines | SRE Lead | Gate E | Open |
 | O-04 | Decision | Service framework choice | ARB | Gate B | Open |
 | O-05 | Gap | Model providers, hosting, data-processing terms | Model Risk Lead, Privacy Lead | Gate B | Open |
@@ -16,12 +16,12 @@
 | O-08 | Gap | Liquidation policy content | Trading Risk Committee | Gate E | Open |
 | O-09 | Risk | Deletion right vs record retention (legal hold) | Legal Agent, Privacy Lead | Gate D | Open |
 | O-10 | Dependency | DPIA per launch jurisdiction | Privacy Lead | Gate D | Open |
-| O-11 | Gap | First launch jurisdiction hypothesis | Product Director, Compliance Agent | Gate A | Open |
+| O-11 | Gap | First launch jurisdiction hypothesis | Product Director, Compliance Agent | Gate A | Decided as hypothesis 2026-09-08 (D-043): first-party pilot cell; country fact [Open: Q-11-1, owner]; legal basis [Open: H-04] |
 | O-12 | Dependency | Data licensing for derived/redistributed data | Legal Agent, Data Architect | Gate C | Open |
 | O-13 | Decision | Time-series/snapshot storage cost model | Data Architect, Finance | Gate B | Open |
 | O-14 | Decision | Launch locales | Product Director | Gate F | Open |
 | O-15 | Gap | On-call model and support hours per market | SRE Lead, Support Lead | Gate F | Open |
-| O-16 | Gap | Measurable outcome targets for Gate A | Product Council | Gate A | Open |
+| O-16 | Gap | Measurable outcome targets for Gate A | Product Council | Gate A | Decided 2026-09-08 (D-044): four definitional targets; time-to-halt ceiling [Open: Q-16-1, first drill] |
 | O-17 | Gap | Roadmap dates after capacity model | Executive Steering | Gate B | Open |
 | O-18 | Gap | RPO/RTO per cell | Cloud Architect | Gate E | Open |
 | O-19 | Gap | Named deputies for emergency authority | Program Orchestrator | Gate C | Open |
@@ -74,8 +74,8 @@
 | O-58 | Dependency | Agent write-scope guard relies on the agent harness honouring `hooks:` in sub-agent frontmatter; where unsupported, the roster is advisory and CODEOWNERS/branch protection remain the only enforcement (they are the controls of record in any case) | Product Owner, MCP Security Agent | Gate B | Open |
 | O-59 | Dependency | The Windows `rt365.exe` is produced only by the release workflow on a `windows-latest` runner (no Windows build host in the dev environment); its first successful run and checksum must be recorded in AUDIT_EVIDENCE_INDEX (H-24); artefact signing pending O-23 | SRE Lead, Security Architect | Gate B | Open |
 | O-60 | Issue | Gate prompts contradicted themselves on the IVA-veto override (COUNCIL_2026-09-08_gate_A_iva IVA-A-01) | Program Orchestrator / Product Owner | before Gate A re-convening | Closed 2026-09-08 — PROHIBITIONS now forbid only a *silent* override; written override with risk acceptance per D-039 |
-| O-61 | Gap | Decision packs for O-01, O-02, O-11, O-16 were prompt templates; option analyses produced by the Gate A council on 2026-09-08 (SESSIONS/COUNCIL_2026-09-08_gate_A_*.md) and transcribed into PO_DECISION_QUEUE.md | product-owner delegate, Product Director | before Gate A re-convening | Pack ready — decision pending |
-| O-62 | Gap | D-039 (decision authority) recorded by the AI delegate from the owner's in-session instruction; the owner's explicit confirmation on a committed tree is the evidence of authorship (IVA-A-03) | Product Owner | before Gate A re-convening | Open — row 0 of PO_DECISION_QUEUE.md |
+| O-61 | Gap | Decision packs for O-01, O-02, O-11, O-16 were prompt templates; option analyses produced by the Gate A council on 2026-09-08 (SESSIONS/COUNCIL_2026-09-08_gate_A_*.md) and transcribed into PO_DECISION_QUEUE.md | product-owner delegate, Product Director | before Gate A re-convening | Closed 2026-09-08 — decided D-043..D-046 |
+| O-62 | Gap | D-039 (decision authority) recorded by the AI delegate from the owner's in-session instruction; the owner's explicit confirmation on a committed tree is the evidence of authorship (IVA-A-03) | Product Owner | before Gate A re-convening | Closed 2026-09-08 — owner reaffirmed and delegated all decisions (D-040, D-041); commits carry the owner's GitHub identity |
 | O-63 | Issue | H-01 'blocks A' vs O-19 'Gate C' for deputies; AEI row 25 stale after H-23 closure (IVA-A-04/05) | Program Orchestrator | before Gate A re-convening | Closed 2026-09-08 — deputy required by Gate C (first two-person act on real infrastructure, H-19); H-01 keeps Gate A for the roles themselves; AEI row 25 updated |
 | O-64 | Gap | No timed Kill Switch activation record; 'operator time-to-halt' has no measurement path until the drill (H-19) | SRE Lead | Gate D (target set at A) | Open |
 | O-65 | Risk | Evidence generated against a moving working tree; evidence headers embed the base commit, not the tested commit (IVA-A-06/07) | QA Lead, Product Owner | Gate B | Open — gate decisions must cite the commit CI evidenced; CI regenerates evidence at the pushed commit |

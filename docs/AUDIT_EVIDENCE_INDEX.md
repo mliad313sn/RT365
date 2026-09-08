@@ -8,8 +8,8 @@ Rule: an entry with a location but no reviewer/IVA signature is *evidence submit
 
 | # | Gate | Criterion | Evidence type | Location | Owner | Reviewer | Date | IVA verified |
 |---|---|---|---|---|---|---|---|---|
-| 1 | A | Approved charter | DECISION_LOG entry | PRODUCT_CHARTER.md; D-001..D-004 pending Executive Steering (MISSING_ACTIONS H-02) | Product Director | | | |
-| 1b | A | Jurisdiction hypothesis | JURISDICTION_MATRIX row | none — [Open: O-11]; sim uses ISO user-assigned code ZZ, explicitly not a jurisdiction | Product Director / Compliance Agent | | | |
+| 1 | A | Approved charter | DECISION_LOG entry | PRODUCT_CHARTER.md v1.1; D-042 (ratifies D-001..D-004; H-02 closed) under D-040 | Product Director | product-owner agent (D-040) | 2026-09-08 | |
+| 1b | A | Jurisdiction hypothesis | JURISDICTION_MATRIX row | JURISDICTION_MATRIX.md v1.1 hypothesis row (D-043); country fact [Open: Q-11-1]; legal basis No; sim keeps ZZ | Product Director / Compliance Agent | product-owner agent (D-040) | 2026-09-08 | |
 | 2 | B | Threat model approved | THREAT_MODEL.md + board minutes | THREAT_MODEL.md; deltas in SESSIONS/REVIEW_C5_C1_C9_security_redteam.md; board minutes none | Security Architect | | | |
 | 2b | B | Data flows, ADRs, capacity model, control ownership | docs | DATA_FLOWS.md; ADRs/ADR-001..012; CAPACITY_MODEL.md (skeleton); RACI.md + CODEOWNERS | Enterprise Architect | | | |
 | 3 | C | Determinism test report | TC-RK-001..004 | TEST_CASES/TC-RK.md; TEST_CASES/EVIDENCE_REPORT.md; CI job "Determinism gate" | QA Lead | | | |

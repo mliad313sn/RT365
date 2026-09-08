@@ -9,8 +9,8 @@ Rule: an action stays here until its evidence file exists. The orchestrator prep
 | ID | Action | Category | Owner | Blocks gate | Prepared by prompt | Evidence when done | Due | Status |
 |---|---|---|---|---|---|---|---|---|
 | H-01 | Appoint people to the 27 committee roles (Gate A); name deputies for two-person controls by Gate C (O-19, O-63) | Governance | Product Owner | A (roles) / C (deputies) | goals/decisions/O-19 | RACI.md complete | | Open |
-| H-02 | Ratify committee structure and decisions D-001..D-004 | Governance | Executive Steering | A | GOAL.md | DECISION_LOG entry | | Open |
-| H-03 | Choose first jurisdiction cell | Strategy | Product Director + Compliance | A | O-11 pack | JURISDICTION_MATRIX row | | Open |
+| H-02 | Ratify committee structure and decisions D-001..D-004 | Governance | Product Owner (agent under D-040) | A | GOAL.md | D-042 | 2026-09-08 | Closed |
+| H-03 | Choose first jurisdiction cell | Strategy | Product Owner (agent under D-040); **owner to supply the operating entity's country (Q-11-1)** | A | O-11 pack; COUNCIL_2026-09-08_gate_A_* | D-043; JURISDICTION_MATRIX hypothesis row | 2026-09-08 | Hypothesis recorded; country fact open |
 | H-04 | Engage external counsel; obtain legal opinion per cell | Legal | Legal Agent | D | external/legal_regulatory_engagement | signed legal record | | Open |
 | H-05 | Approve budget and cloud spend | Finance | Executive Steering | B | external/infrastructure_provisioning | budget approval | | Open |
 | H-06 | Sign model-provider terms and DPA | Procurement | Finance + Privacy | B | external/model_provider_procurement | filed contract | | Open |

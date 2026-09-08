@@ -19,5 +19,8 @@ Paper trading, human-approved execution, bounded autonomous execution across aut
 | Unsupported jurisdictions | Dual-key enablement; default off |
 | Manipulation-capable strategies | Surveillance pattern library used as registration filter |
 
+## Billing scope [Committee; D-046, O-02]
+Meter from Gate D, invoice from Gate F. Per-tenant subscription tiered by seats/accounts, prices from the cost model [Open: O-13]; usage metered from the audit chain for cost attribution only; invoicing and tax through an external provider once a third-party tenant exists [Open: provider, tax, Q-B01..Q-B04]. Permanently excluded without a separate decision: performance fees, per-trade fees, commission sharing, broker rebates, client money, referral payments. Billing has no route to the control or execution planes and never gates a halt, a Kill Switch or a disclosure (NFR-BIL-01).
+
 ## Assumptions [Open]
-O-11 first jurisdiction; O-02 pricing; O-05 model hosting.
+O-11 decided as hypothesis (D-043; country fact Q-11-1); O-02 decided (D-046; prices, tax, provider open); O-05 model hosting.
