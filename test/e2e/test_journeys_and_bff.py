@@ -55,7 +55,11 @@ def test_j03_supervised_order_end_to_end(client):  # type: ignore[no-untyped-def
     assert dec["reasons_explained"][0]["what_you_can_do"]
     audit = c.get("/v1/audit", params={"correlation_id": corr}, headers=hdr(RISK_OFFICER)).json()
     assert {"risk.decided.v1", "approval.recorded", "order.filled.v1"} <= {e["action"] for e in audit}
-    assert c.get("/v1/audit/verify", headers=hdr(RISK_OFFICER)).json()["ok"]
+    verify = c.get("/v1/audit/verify", headers=hdr(RISK_OFFICER)).json()
+    # the start-up verdict is reported apart from the verification the reader just asked for, so "nobody checked the
+    # witness until you did" is never displayed as "checked and fine": None here means no external witness is
+    # configured on this in-memory platform (D-066; ADR-020 amendment 2, DR review D-03)
+    assert verify["ok"] and verify["startup"] is None
     assert c.post("/v1/reconciliation/run", headers=hdr(TRADER)).status_code == 403  # traders cannot run reconciliation
     status = c.get("/v1/status", headers=hdr(RISK_OFFICER)).json()
     assert list(status)[0] == "1_global_status" and "5_pnl" in status and status["4_positions_orders"]["positions"]

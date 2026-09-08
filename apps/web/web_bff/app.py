@@ -383,7 +383,14 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
     @app.get("/v1/audit/verify")
     async def audit_verify(actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.VIEW_AUDIT)
-        return p.audit.verify().model_dump(mode="json")
+        # ``startup`` is what the platform concluded about its own witness when it started (D-066; ADR-020
+        # amendment 2), not a re-run: a reader must be able to tell "verified at boot and passed" from "nobody
+        # asked until you did" without inferring it from the process being alive (DR review D-03).
+        startup = p.startup_verification
+        return {
+            **p.audit.verify().model_dump(mode="json"),
+            "startup": startup.model_dump(mode="json") if startup is not None else None,
+        }
 
     @app.get("/v1/audit/export")
     async def audit_export(actor: Actor = Depends(human), correlation_id: str | None = None) -> dict[str, Any]:
@@ -497,6 +504,9 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
                 "data_freshness_s": (p.now - mkt.market_ts).total_seconds() if mkt else None,
                 "policy_version": p.policy.policy_version if p.policy else "UNAVAILABLE (fail closed)",
                 "audit_chain_ok": p.audit.verify().ok,
+                # False only when the platform started with a witness that disagreed; None when no external witness
+                # is configured, so "not checked" is never displayed as "checked and fine" (D-066, F-01).
+                "audit_startup_verified": p.startup_verification.ok if p.startup_verification is not None else None,
             },
             "2_capital_at_risk": {
                 "capital_in_use": str(snap.capital_in_use),
