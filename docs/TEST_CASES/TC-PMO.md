@@ -2,7 +2,7 @@
 
 Control: PMO — Requirement: - — RTM row: - — Owner: Backend Lead — Reviewer (≠ owner): pending — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:56:20.950210+00:00 at `0bc7beb7576a32493c52a4951eaf6a799c350f11` (tree dirty, tested tree `7337735ef85d`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T16:01:26.437508+00:00 at `dcba97471237662f24d71f34422c4d75915c8f2f` (tree clean, tested tree `fcc97a756758`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
