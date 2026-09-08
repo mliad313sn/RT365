@@ -934,7 +934,7 @@ Meridian working copies (not in this repository):
 
 ---
 
-## 15. A caveat about the measurement environment
+## 14. A caveat about the measurement environment
 
 This repository was being written by other sessions while this round ran. `docs/DECISION_LOG.md`
 gained D-067..D-069 at 16:06 (commit `c18e3a5`) and `docs/RAID_LOG.md` was touched at 16:04, both
@@ -951,7 +951,7 @@ labelled here rather than silently reconciled:
 The three-decision drift is what produced §4.1b, so it is evidence rather than noise. Nothing else
 in this document depends on a ledger read after its evidence file was written.
 
-## 14. What this document is not
+## 15. What this document is not
 
 It is not reviewed — author, reviewer and approver are the same person here, which this programme
 forbids for anything that gates a decision, and nothing here gates a decision. It certifies no

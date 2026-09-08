@@ -164,7 +164,7 @@ reports this programme GREEN and 100 % on track.
 intent: `docs/requests/rt365.json` (registerVersion 6, 31 requests), `CHANGELOG.md`, migration
 headers. RoboTrader facts: `docs/BACKLOG.md`, `docs/RAID_LOG.md`, `docs/DECISION_LOG.md`,
 `docs/MISSING_ACTIONS.md` as they stood at 16:00Z on 2026-09-08 — the ledgers moved during the
-session and the drift is recorded in `EVIDENCE.md` §15.
+session and the drift is recorded in `EVIDENCE.md` §14.
 
 ## 10. What this session did not do
 
