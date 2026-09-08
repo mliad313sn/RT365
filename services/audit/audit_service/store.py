@@ -203,7 +203,7 @@ class Reestablishment(StrictModel):
     """What the attested act produced: the new anchor, the audit row that records it, and the head it witnessed."""
 
     record: AnchorRecord
-    row: "AuditEvent"
+    row: AuditEvent
     head: ChainHead
 
 
@@ -343,9 +343,7 @@ class AuditStore:
             due = self._anchor_every and len(self._events) % self._anchor_every == 0
         if due:
             # Scheduled publication is best effort: a witness that cannot be written is an alert, never a lost event.
-            self._publish(
-                self.seal_head(), correlation_id=f"anchor:scheduled:{len(self._events)}", best_effort=True, trigger="scheduled"
-            )
+            self._publish(self.seal_head(), correlation_id=f"anchor:scheduled:{len(self._events)}", best_effort=True, trigger="scheduled")
         for listener in self._listeners:
             listener(event)
         return event
@@ -436,9 +434,7 @@ class AuditStore:
             self._seals.append(record)
             return head
 
-    def _publish(
-        self, head: ChainHead, *, correlation_id: str, best_effort: bool = False, trigger: str = "seal"
-    ) -> AnchorRecord | None:
+    def _publish(self, head: ChainHead, *, correlation_id: str, best_effort: bool = False, trigger: str = "seal") -> AnchorRecord | None:
         if self._publisher is None:
             return None
         if self._in_publish:  # a mark appended below must never re-enter publication through the scheduled cadence
@@ -635,7 +631,7 @@ class AuditStore:
         )
         raise WitnessLostError(f"{reason}: {detail} (fail closed)")
 
-    def reestablish(self, attestation: WitnessAttestation) -> "Reestablishment":
+    def reestablish(self, attestation: WitnessAttestation) -> Reestablishment:
         """The named operator act: re-establish a witness this store lost, over a chain the operator has read.
 
         It is not a seal and a seal cannot reach it. It is refused unless the witness really is absent, the
@@ -652,7 +648,7 @@ class AuditStore:
             self.last_reestablishment = self._reestablish(attestation, latest=latest, readable=readable)
             return self.last_reestablishment
 
-    def _reestablish(self, attestation: WitnessAttestation, *, latest: AnchorRecord | None, readable: bool) -> "Reestablishment":
+    def _reestablish(self, attestation: WitnessAttestation, *, latest: AnchorRecord | None, readable: bool) -> Reestablishment:
         if self._publisher is None:
             raise SealRefused(f"{ATTESTATION_MISMATCH}: there is no anchor publisher to re-establish (fail closed)")
         if latest is not None:

@@ -897,7 +897,9 @@ def test_re_establishing_a_lost_witness_is_an_explicit_attested_act_an_ordinary_
     assert "AUD-SEAL-UNWITNESSED" in str(exc.value)
     assert p.audit.publisher.latest() is None and not [s for s in p.audit.seals() if s.correlation_id == "operator:habit"]
     alert = p.alerts.by_name("audit.anchor_missing")[-1]
-    assert alert.severity == "S1" and alert.payload["reason"] == "AUD-SEAL-UNWITNESSED" and alert.payload["correlation_id"] == "operator:habit"
+    assert (
+        alert.severity == "S1" and alert.payload["reason"] == "AUD-SEAL-UNWITNESSED" and alert.payload["correlation_id"] == "operator:habit"
+    )
     p.audit.close()
     p.store.close()
     with pytest.raises(WitnessLostError):  # and a restart does not clear it either
@@ -911,7 +913,13 @@ def test_re_establishing_a_lost_witness_is_an_explicit_attested_act_an_ordinary_
     assert set(dir(report)) & {"append", "put", "seal"} == set()
 
     # (c) the attestation must describe this chain exactly: a wrong length, head, anchor sequence, actor or reason fails
-    good = dict(actor="ops:alice", reason="anchor replica volume destroyed", length=report.length, head_hash=report.head_hash, last_anchor_seq=report.last_anchor_seq)
+    good = dict(
+        actor="ops:alice",
+        reason="anchor replica volume destroyed",
+        length=report.length,
+        head_hash=report.head_hash,
+        last_anchor_seq=report.last_anchor_seq,
+    )
     for bad in (
         {**good, "length": report.length - 1},
         {**good, "head_hash": "99" * 32},
@@ -1141,4 +1149,3 @@ def test_a_genuine_replica_loss_is_recoverable_and_the_floor_survives_the_recove
     assert "AUD-SEAL-BELOW-FLOOR" in str(exc.value)
     p3.audit.close()
     p3.store.close()
-
