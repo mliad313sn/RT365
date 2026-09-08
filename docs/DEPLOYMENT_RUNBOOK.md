@@ -2,13 +2,17 @@
 
 | Owner | Reviewer (different line) | Approving body | First gate | Status |
 |---|---|---|---|---|
-| SRE Lead | Backend Lead | CAB | C | Draft v1.0 |
+| SRE Lead | Backend Lead | CAB | C | Draft v1.1, 2026-09-08 — trust set, store/anchor start-up order and history record added (O-126, O-134); **reviewer signature pending**; not accepted |
 
 1. Confirm CAB authorisation in DECISION_LOG.md and target environment ≤ gate-authorised ladder step.
 2. Verify artefact signature and SBOM/SCA status; refuse unsigned.
-3. Apply IaC change in the target cell; feature flags default off for new behaviour.
-4. Deploy Control and Execution planes behind the executor lease (standby first, then lease transfer, then old active drained) — no in-flight order may be orphaned (TC-EX-004).
-5. Run synthetic intent probe end to end; check trace completeness and alert delivery.
-6. Enable flags progressively per tenant/account; observe SLIs for the soak window.
-7. On any guardrail, integrity, reconciliation or observability failure → ROLLBACK_PLAN.md automatically [Source: 00].
-8. Record evidence in AUDIT_EVIDENCE_INDEX.md.
+3. **Verify the trust set ships with the artefact** (O-126): the file named by the deployment configuration is present, owned by the deployment identity, read-only, and its content hash matches the release manifest. **Absent or malformed means every asymmetric verification refuses** — fail closed by design, and at 03:00 indistinguishable from a mass credential compromise (INCIDENT_RESPONSE RB-11). The file does not exist in the tree today [Open: O-126, O-141].
+4. Apply IaC change in the target cell; feature flags default off for new behaviour. **No cell is provisioned today and `infra/` contains no IaC module** — this step has no target until H-05 [Open: H-05].
+5. **Bring the durable stores up in order and prove each one** (ADR-018, ADR-020): control store opens and `verify()` passes; audit store opens and its **chain** verifies; the anchor directory is reachable **and the published verification is called explicitly**. **A process that started is evidence of the chain check only — the witness is not checked at open**, so "it came up" never means "the witness is intact". Record the control-store journal rows, the audit chain length and the anchor count **at deploy**, so a later restart or drill has a before-figure to be compared against (INCIDENT_RESPONSE RB-14).
+6. Deploy Control and Execution planes behind the executor lease (standby first, then lease transfer, then old active drained) — no in-flight order may be orphaned (TC-EX-004). Note that in-flight **intents** do not resume across a restart: the control-plane intent tracker and decision index are in memory, so a pre-restart intent is refused as unknown and its order can be cancelled but not resumed (ADR-018 §Consequences) [Open: R-05].
+7. Run synthetic intent probe end to end; check trace completeness and alert delivery. **Both checks are weaker than they read today**: the tracer is in-process only with no propagation carrier across services, the probe keys its spans on a different correlation id from the one it returns, a fail-closed rejection legitimately produces "missing" order and ack spans, and the alert path records no delivery timestamp and no acknowledgement — so `alert_delivery_s` cannot be computed. Treat a green probe as a smoke test, not as observability evidence [Open: SRE-R4, SRE-R5].
+8. Enable flags progressively per tenant/account; observe SLIs for the soak window. **Eight of the nine SLIs have no emission point in the tree** — only `time_to_halt_s` is emitted — so "observe SLIs" is not yet executable [Open: O-03, SRE-R5].
+9. On any guardrail, integrity, reconciliation or observability failure → ROLLBACK_PLAN.md automatically [Source: 00].
+10. Record evidence in AUDIT_EVIDENCE_INDEX.md.
+
+**Before this runbook may be used to enter shadow** [Committee] — the SRE Lead's entry conditions, none of which is a number: the three fail-closed recoveries exist and have been drilled (INCIDENT_RESPONSE RB-11..RB-13); start-up integrity failures deliver an alert rather than only failing to boot [Open: SRE-R1]; the trust set is a real artefact with an owner and a review step (O-126, O-141); a witness-loss chaos drill has run (CHAOS_PLAN); and the two O(n) start-up verifications have measured curves against history length in time **and** memory (O-156, O-111, O-133). **This document authorises no environment and no gate** [Source: 00].
