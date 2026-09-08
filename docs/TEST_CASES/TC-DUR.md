@@ -2,7 +2,7 @@
 
 Control: Durable control state across restarts — Requirement: NFR-CON-01 — RTM row: NFR-CON-01 — Owner: Backend Lead — Reviewer (≠ owner): Integration Architect — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:12:12.958900+00:00 at `2102212dee4b0f709244c38613e1d00e0abc60c3` (tree dirty, tested tree `28e04c6fa8a8`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:14:10.043066+00:00 at `9e78104537c718553b7d1275a5f6fc34696997e6` (tree dirty, tested tree `4e3e1c96a0b2`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
