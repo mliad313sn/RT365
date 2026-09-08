@@ -2,7 +2,7 @@
 
 Control: Tenant isolation — Requirement: NFR-TEN-01 — RTM row: NFR-TEN-01 — Owner: Backend Lead — Reviewer (≠ owner): Security Architect — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:43:10.521546+00:00 at `1aa0629f28ea8f8f5839678be1b08948de0313a2` (tree dirty, tested tree `1221a20ac6d5`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:48:15.949441+00:00 at `5bf73b616d466abb75922409297f9ef323a3239c` (tree clean, tested tree `18b0a7418af7`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
