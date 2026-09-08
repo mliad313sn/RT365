@@ -3,7 +3,7 @@ PY ?= python3
 export RT_ENV ?= sim
 export PYTHONPATH := libs/core:services/market-data:services/strategy:services/backtest:services/portfolio:services/risk:services/compliance:services/approval:services/oms:services/execution:services/reconciliation:services/audit:services/killswitch:services/identity:mcp/servers:connectors/brokers:connectors/data-providers:observability:apps/web:apps/cli:test
 
-.PHONY: install lint typecheck test evidence schemas policy-check agents agents-check sbom secret-scan certify-broker run-bff package exe all
+.PHONY: install lint typecheck test evidence schemas policy-check agents agents-check sbom secret-scan certify-broker run-bff package exe pmo-sync all
 
 install:
 	$(PY) -m pip install -e ".[dev]"
@@ -56,6 +56,9 @@ run-bff:
 
 package:
 	scripts/build_package.sh
+
+pmo-sync:
+	$(PY) scripts/meridian_sync.py
 
 exe:
 	scripts/build_exe.sh

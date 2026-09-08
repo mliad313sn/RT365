@@ -48,3 +48,4 @@ Every artefact of blueprint §15 [Source: 15], its owner and the gate at which i
 | ADRs/ADR-013..016 | Enterprise Architect | B |
 | goals/build/README.md, E01..E15 (build-agent prompts); goals/profiles/ (expertise profiles); goals/approvers/ (council chairs with delegated approval scope); goals/counsel/ (specialist counsellors) — all generated into .claude/agents/ | Program Orchestrator / Product Owner | B |
 | TEST_CASES/TC-PKG.md, TC-AGT.md (generated) | QA Lead | B |
+| PMO.md (Meridian as lifecycle system), PMO_MERIDIAN_ASSESSMENT.md (real-case efficiency and improvement points), PMO/ (load evidence), ADRs/ADR-017.md | Product Owner / Program Orchestrator | A |

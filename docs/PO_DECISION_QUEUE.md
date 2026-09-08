@@ -68,6 +68,11 @@ Order recommended by Independent Validation (COUNCIL_2026-09-08_gate_A_iva §4):
 | H-17 | F | Activate technical jurisdiction flag (second person) | Compliance | named second approver | Compliance & Legal Committee | **pending** | Open |
 | H-18 | F | Launch decision | Governance | Executive Steering | Product Council + CAB | **pending** | Open |
 
+## B2. Tooling decisions taken under D-040
+| Item | Decision | Decided on |
+|---|---|---|
+| Lifecycle system | Meridian IT-PMO as portfolio and rhythm system, ledgers stay the truth, one-way sync (D-049, ADR-017); operate-for-real acts H-28 | 2026-09-08 |
+
 ## C. Gates
 
 | Gate | Environment it authorises | Entry | Council(s) | IVA recommendation | Decision (human Product Owner) |

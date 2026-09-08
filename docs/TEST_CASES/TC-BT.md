@@ -2,7 +2,7 @@
 
 Control: Backtest single code path and strategy lifecycle — Requirement: FR-08 — RTM row: FR-08 — Owner: Quant Research Lead — Reviewer (≠ owner): Model Risk Lead — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T08:20:39.681421+00:00 at `b82f932af2943201bdcce9426b7eb03866d6bb91`
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T08:44:59.790245+00:00 at `e437bd03c9484a51aeccbb27168703ca3ddabc59`
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
