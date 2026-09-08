@@ -2,7 +2,7 @@
 
 Control: Distribution: rt365 CLI, resource root, installer fail-closed rules — Requirement: NFR-SEC-02 — RTM row: NFR-SEC-02 — Owner: SRE Lead — Reviewer (≠ owner): Security Architect — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:39:50.238862+00:00 at `09b3ff679fccfc4a6f87090d8b4514fe1683f558` (tree dirty, tested tree `507653dd6d58`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:42:56.660963+00:00 at `3f155b0340953e9e2786ce25162cbd46461cbfea` (tree clean, tested tree `97be9c67b74e`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
