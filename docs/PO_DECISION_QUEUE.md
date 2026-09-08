@@ -15,7 +15,7 @@ How it works (docs/PRODUCT_OWNER.md §Decision protocol): the delegate convenes 
 
 Order recommended by Independent Validation (COUNCIL_2026-09-08_gate_A_iva §4): 0 → H-02 → O-11/H-03 → O-16 → O-01 → O-02 → O-19 deputy gate → re-convene Gate A (`gate-a` agent) against the commit CI evidenced.
 
-| Item | Gate | Question | Council to convene | Pack | Council status | Recommendation | Decision (human Product Owner) | Decided on |
+| Item | Gate | Question | Council to convene | Pack | Council status | Recommendation | Decision (Product Owner; the delegate decides under D-040) | Decided on |
 |---|---|---|---|---|---|---|---|---|
 | O-01 | A | Persona × mode policy per jurisdiction (autonomy default OFF) | Compliance & Legal Committee + Product Council | goals/decisions/O-01_decision_pack.md | convened 2026-09-08: COUNCIL_2026-09-08_gate_A_product_director.md (options), _compliance_legal.md (challenge), _iva.md (evidence) | Product Council: **Option B — global floor plus first-cell hypothesis matrix**: every persona and jurisdiction = Observe/Backtest/Paper; Supervised and Bounded OFF everywhere; enablement only per six-dimension cell by dual key after Gate D/E (what the code enforces today); Retail Supervised OFF for the first cell, Bounded OFF in every hypothesis; control personas have no trading mode; persona→CustomerType mapping [Open: Q-01-1]. Compliance & Legal: consistent; reject autonomy default ON (X-4) and self-declared customer type (X-5); PAPER-only interim policy if deferred (X-11). Confidence medium-high (floor), low (hypothesis cells). **Decision request:** Adopt the global floor plus the first-cell hypothesis matrix (autonomy default OFF everywhere)? | **Adopted (D-045)**: Option B, autonomy OFF by default | 2026-09-08 |
 | O-02 | A | Pricing and billing scope (E14) | Product Council (Finance) | goals/decisions/O-02_decision_pack.md | convened 2026-09-08: COUNCIL_2026-09-08_gate_A_product_director.md (options), _compliance_legal.md (challenge), _iva.md (evidence) | Product Council: **Option A — meter from Gate D, invoice from Gate F**: per-tenant subscription tiered by seats/accounts, prices from the cost model (O-13); usage metered from the audit chain for cost attribution only; invoicing and tax via an external provider once a third-party tenant exists; permanently excluded without a separate decision: performance fees, per-trade fees, commission sharing, broker rebates, client money, referral payments; new NFR-BIL-01 and quartet TC-BIL-001..004. Compliance & Legal: consistent; reject performance-linked or profit-share billing and billed 'recommendations' (X-8, X-9). Confidence medium-high (scope), none (prices, tax, provider). **Decision request:** Adopt 'meter from Gate D, invoice from Gate F, subscription hypothesis, no performance or per-trade fees', or formally defer to a named gate? | **Adopted (D-046)**: Option A | 2026-09-08 |
@@ -73,7 +73,39 @@ Order recommended by Independent Validation (COUNCIL_2026-09-08_gate_A_iva §4):
 |---|---|---|
 | Lifecycle system | Meridian IT-PMO as portfolio and rhythm system, ledgers stay the truth, one-way sync (D-049, ADR-017); operate-for-real acts H-28 | 2026-09-08 |
 
-## B3. Concerns raised to the human Product Owner (owner instruction 2026-09-08: keep communication open)
+## A2. What is decidable now, and what is not (D-065)
+
+The owner reaffirmed on 2026-09-08 that **all** authority is delegated to the Product Owner: the delegate decides every queue item and every gate, and only five acts remain human (D-039, D-040). Columns above that said "human Product Owner" were mis-framed and are corrected. The open items sort into three groups, and the delegate is accountable for the first two.
+
+**Group 1 — decidable now; the delegate convenes the council and decides.** No human fact is needed; what is missing is that nobody has been asked.
+
+| Item | Why it is decidable | Council to convene |
+|---|---|---|
+| O-07 numeric risk thresholds per asset class | A limit matrix is a policy choice, not a market measurement. The rule "never invent a threshold" forbids inventing one silently in code; it does not forbid the Trading Risk Committee proposing a matrix and the delegate approving it as policy, with each row carrying its basis | Trading Risk Committee |
+| O-08 liquidation policy content | Same: policy, reviewable, no external fact needed | Trading Risk Committee |
+| O-35 MCP tool registration | The review exists (REVIEW_C3); the registration decision was never taken | Security & Privacy Board |
+| O-18 RPO/RTO per cell | Blocked on measurements, not on a human: the Cloud Architect says so explicitly. Decidable as "target set after the measurements of O-156 and O-157", which is itself a decision | ARB |
+| O-14 launch locales, O-15 on-call model | Decidable as a policy shape now, with the per-market instances left open until a cell is enabled | Product Council, CAB |
+| O-155 roster ownership of the capacity model | Tooling and roster; the delegate decides on the MCP Security Agent's advice | Security & Privacy Board (advisory) |
+| O-159 ADR-007 cell topology | The ARB has been convened on it; the delegate decides on its recommendation | ARB |
+
+**Group 2 — decidable only after work the delegate can commission.** These wait on evidence, not on the owner.
+
+O-03 (SLO targets after baselines), O-06 (evaluation dataset ownership — the licensing half is human), O-148 (FX freshness budget, after the Trading Risk Committee advises), O-113 and O-137 (confirmations the Trading Risk Committee owes), the four Gate B document acceptances (reviewer signatures commissioned 2026-09-08), and Gate B itself.
+
+**Group 3 — genuinely human, and no delegate may substitute.** Exactly the five acts of D-040, plus what depends on them:
+
+| Human act | What is blocked behind it |
+|---|---|
+| Operating entity and country (A-1) | O-11 first launch cell, O-01 persona × mode per jurisdiction, O-10 DPIA, O-14 per-market instances |
+| External counsel opinions (H-25) | O-09 deletion versus retention, O-12 data licensing, every legal-basis row |
+| Signed contracts and payments (H-05, H-07, H-08, H-30) | O-05 model providers, O-12 data licences, broker certification, code signing, any provisioned cell |
+| Real credentials into the vault (H-20, O-53) | the key ceremony, the production trust set, O-127 |
+| The second distinct person in runtime two-person controls (H-26, O-19) | deputies for emergency authority, any real dual-key enablement |
+
+The delegate does not record an approval on the owner's behalf for any Group 3 item, and does not simulate one.
+
+## B3. Concerns raised to the Product Owner (owner instruction 2026-09-08: keep communication open; the delegate answers each and escalates only Group 3 items)
 The delegate consults the request list in detail before every change — the PRD's 17 functional groups (FR-01..FR-17), the NFRs, SCOPE, the blueprint sections tagged [Source] and the owner's instructions recorded as D-039..D-051 — and records here anything that needs the human's eye. Build agents append their own "Concerns for the Product Owner" from their session packets. A concern is closed when the owner answers in session or the delegate records a decision citing it.
 
 | # | Raised by | Concern | What the delegate did meanwhile | Owner's answer |
@@ -172,7 +204,7 @@ The delegate consults the request list in detail before every change — the PRD
 
 ## C. Gates
 
-| Gate | Environment it authorises | Entry | Council(s) | IVA recommendation | Decision (human Product Owner) |
+| Gate | Environment it authorises | Entry | Council(s) | IVA recommendation | Decision (Product Owner; the delegate decides under D-040) |
 |---|---|---|---|---|---|
 | A — Discovery | (none; charter and hypothesis) | charter drafted | Product Council, Compliance & Legal Committee | REJECT (2026-09-07); **VETO recommended 2026-09-08** (COUNCIL_2026-09-08_gate_A_iva §7) on evidence grounds V-A1 hypothesis absent, V-A2 charter unapproved, V-A3 targets unset — all closable by Product Owner decisions | **Passed with conditions — D-048 (2026-09-08, commit 2edc87d)**; conditions GA-C1..GA-C8 tracked as O-66..O-72, H-25..H-27; next: Gate B |
 | B — Architecture | development, simulation | Gate A passed (D-048) | ARB, Security & Privacy Board | ACCEPT WITH CONDITIONS (2026-09-07); conditions remediated in dev/sim, re-validation O-56 | **pending** |

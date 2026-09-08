@@ -2,7 +2,7 @@
 
 Control: Observability, redaction, probes, alerts — Requirement: NFR-OBS-01 — RTM row: NFR-OBS-01 — Owner: SRE Lead — Reviewer (≠ owner): Chief Risk Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:04:03.115134+00:00 at `df59859a0bf6458b6fce2f52de2612525d57cd89` (tree dirty, tested tree `bf8d22e17c2d`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:11:38.789740+00:00 at `40bcb514eac43d5a994dc5254cea3d1909e2d5b7` (tree dirty, tested tree `fc957174709b`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
