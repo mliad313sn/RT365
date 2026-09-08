@@ -1,0 +1,71 @@
+
+=== P1 · gate criteria found met by a named independent reviewer (REQ-04) ===
+
+=== P2 · a lesson on a six-gate ladder ===
+
+=== P3 · the v1 write API with a real integration key ===
+
+=== P4 · does a gate enforce business-case reconfirmation? ===
+
+=== P5 · does a tolerance breach raise an exception on its own? ===
+
+=== P6 · a sequenced rollout to one site ===
+
+=== P7 · what the close froze, and what the next occurrence carries ===
+
+=== P8 · SoD on the change request ===
+
+=== P9 · the executive tiles, and whether they rescope to a programme ===
+{
+ "at": "2026-09-08T16:06:51.579784+00:00",
+ "answers": {
+  "P1_gate_A_criteria_met": 0,
+  "P3_key_fields": [
+   "error"
+  ],
+  "P5_exceptions": [],
+  "P7_closed": {
+   "status": "closed",
+   "closedAt": "2026-09-08T16:04:41.840Z",
+   "closedBy": "U-ADMIN",
+   "frozen_agenda_items": 0,
+   "keys": [
+    "actionsRaisedHere",
+    "agenda",
+    "attendance",
+    "canWrite",
+    "decisions",
+    "occurrence",
+    "openActions",
+    "people",
+    "series"
+   ]
+  }
+ }
+}
+
+requests=28  non-2xx/3xx=8
+   400 POST /api/criteria
+        note: boundary: gate 7 on a six-gate ladder
+        {"error": "A criterion belongs to a gate 1..6 of this project's programme"}
+   400 POST /api/lessons
+        note: lesson at gate 5 of six
+        {"error": "A gate is 1, 2, 3 or 4"}
+   400 POST /api/lessons
+        note: lesson at gate 6 of six
+        {"error": "A gate is 1, 2, 3 or 4"}
+   400 POST /api/admin/integrations
+        note: 
+        {"error": "duplicate key value violates unique constraint \"integration_name_key\""}
+   400 POST /api/projects/PRJ-147/case/reconfirm
+        note: can a case be reconfirmed at a future gate?
+        {"error": "Reconfirmation happens at a gate — 1 to 4"}
+   428 PATCH /api/projects/PRJ-147/health
+        note: state the health by hand
+        {"error": "This status edit did not say which version it is based on. Reload and try again."}
+   409 POST /api/waves
+        note: second wave, same site — UNIQUE (project_id, site_id)
+        {"error": "That record already exists"}
+   409 POST /api/meetings/occurrences/MS-SUWK22-20260908/actions
+        note: ABUSE: write into a frozen record
+        {"error": "This meeting is closed"}

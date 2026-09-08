@@ -1,0 +1,342 @@
+
+=== Q2 · v1 write API ===
+
+=== Q3 · the frozen record ===
+
+=== Q4 · SoD and break-glass ===
+
+=== Q5 · health on a budget-less, unmeasured project ===
+
+=== Q6 · exceptions ===
+{
+ "at": "2026-09-08T16:07:56.347680+00:00",
+ "answers": {
+  "Q1_criteria_on_gov": {
+   "total": 54,
+   "by_gate": {
+    "1": 7,
+    "2": 9,
+    "3": 8,
+    "4": 9,
+    "5": 8,
+    "6": 13
+   },
+   "met": 7,
+   "met_rows": [
+    {
+     "id": "GC-1",
+     "gate": 1,
+     "text": "Approved charter",
+     "reviewedBy": "PE-42",
+     "reviewedOn": "2026-09-08"
+    },
+    {
+     "id": "GC-2",
+     "gate": 1,
+     "text": "Personas",
+     "reviewedBy": "PE-42",
+     "reviewedOn": "2026-09-08"
+    },
+    {
+     "id": "GC-3",
+     "gate": 1,
+     "text": "Jurisdiction hypothesis",
+     "reviewedBy": "PE-42",
+     "reviewedOn": "2026-09-08"
+    },
+    {
+     "id": "GC-4",
+     "gate": 1,
+     "text": "Measurable outcomes (passed with conditions D-048)",
+     "reviewedBy": "PE-42",
+     "reviewedOn": "2026-09-08"
+    },
+    {
+     "id": "GC-497",
+     "gate": 1,
+     "text": "Charter approved by the Product Owner with the conditions of D-048 rec",
+     "reviewedBy": "PE-42",
+     "reviewedOn": "2026-09-08"
+    },
+    {
+     "id": "GC-498",
+     "gate": 1,
+     "text": "Personas and measurable outcomes stated; profit is an objective, never",
+     "reviewedBy": "PE-42",
+     "reviewedOn": "2026-09-08"
+    },
+    {
+     "id": "GC-499",
+     "gate": 1,
+     "text": "Jurisdiction hypothesis written and challenged by the Compliance counc",
+     "reviewedBy": "PE-42",
+     "reviewedOn": "2026-09-08"
+    }
+   ]
+  },
+  "Q2_key_response_fields": [
+   "hint",
+   "id",
+   "key",
+   "notice",
+   "scopes"
+  ],
+  "Q2_v1_portfolio_keys": [
+   "asAt",
+   "contract",
+   "counts",
+   "generatedAt",
+   "portfolio"
+  ],
+  "Q2_v1_counts": {
+   "projects": 16,
+   "sites": 1,
+   "programmes": 1,
+   "risks": 165,
+   "benefits": 7,
+   "lessons": 4
+  },
+  "Q2_v1_write_routes": {
+   "reached": [
+    "projects:400",
+    "milestones:400",
+    "raid:201",
+    "activities:400",
+    "workitems:201",
+    "criteria:400",
+    "decisions:400",
+    "actions:400"
+   ],
+   "404": [
+    "business-case:404",
+    "benefits:404",
+    "sites:404",
+    "programmes:404",
+    "people:404",
+    "stakeholders:404",
+    "comms:404",
+    "lessons:404",
+    "tolerances:404",
+    "waves:404",
+    "changes:404",
+    "documents:404",
+    "exceptions:404"
+   ]
+  },
+  "Q2_audit_actors": [
+   {
+    "action": "Item updated",
+    "actor": null,
+    "entity": "raid_item"
+   },
+   {
+    "action": "Risk raised",
+    "actor": null,
+    "entity": "raid_item"
+   },
+   {
+    "action": "Work item added",
+    "actor": null,
+    "entity": "work_item"
+   },
+   {
+    "action": "Risk raised",
+    "actor": null,
+    "entity": "raid_item"
+   },
+   {
+    "action": "Integration created",
+    "actor": null,
+    "entity": "integration"
+   },
+   {
+    "action": "Gate criterion reopened",
+    "actor": null,
+    "entity": "gate_criterion"
+   }
+  ],
+  "Q3_closed_occurrence": {
+   "status": "closed",
+   "closedAt": "2026-09-08T16:04:41.840Z",
+   "closedBy": "U-ADMIN",
+   "notes": "Gate B was not convened: SECURITY_PLAN v1.0 and DATA_FLOWS v1.0 were not accepted by their boards and no capacity number was presented. Nothing was promoted. The portfolio health colour on this progra",
+   "frozen": true,
+   "agenda_keys": [
+    "asOf",
+    "frozen",
+    "scope",
+    "sections",
+    "timebox"
+   ],
+   "sections": [
+    {
+     "title": "Actions carried forward",
+     "items": 29
+    },
+    {
+     "title": "Decisions requested",
+     "items": 7
+    },
+    {
+     "title": "Milestones",
+     "items": 6
+    },
+    {
+     "title": "Risks & issues for escalation",
+     "items": 5
+    },
+    {
+     "title": "Register items due for review",
+     "items": 6
+    },
+    {
+     "title": "Resource pressure",
+     "items": 1
+    },
+    {
+     "title": "Next up",
+     "items": 4
+    }
+   ],
+   "decisions": 66,
+   "actionsRaisedHere": 29,
+   "attendance": []
+  },
+  "Q3_minutes_chars": 38806,
+  "Q3_minutes_head": "# RoboTrader weekly — Product Owner\n\n**Global AI-MCP RoboTrader** · week 37 · 8 Sep 2026\nStatus: closed — closed 2026-09-08 16:04 by System Administrator\n\n## Attendance\n\n**Present (0):** —\n\n## Agenda\n\n### 1. Actions carried forward  *(4 min)*\n\n- H-03: Choose first jurisdiction cell\n  Owner Product Owner · due 08 Sep 26 · Open\n- H-01: Appoint people to the 27 committee roles (Gate A); name deputies for two-person controls by Gate C (O-19, O-63)\n  Owner Product Owner · no date · Open\n- H-04: Engage external counsel; obtain legal opinion per cell — scope = the question lists of H-25\n  Owner Legal Agent · no date · Open\n- H-05: Approve budget and cloud spend\n  Owner Product Owner · no date · Open\n- H-06: Sign model-provider terms and DPA\n  Owner Product Owner · no date · Open\n- H-07: Sign broker agreements; obtain sandbox and production credentials into vault\n  Owner Product Owner · no date ",
+  "Q3_next_occurrence": {
+   "status": "scheduled",
+   "agenda_sections": [
+    {
+     "title": "Actions carried forward",
+     "items": 29
+    },
+    {
+     "title": "Decisions requested",
+     "items": 7
+    },
+    {
+     "title": "Milestones",
+     "items": 6
+    },
+    {
+     "title": "Risks & issues for escalation",
+     "items": 5
+    },
+    {
+     "title": "Register items due for review",
+     "items": 6
+    },
+    {
+     "title": "Resource pressure",
+     "items": 1
+    },
+    {
+     "title": "Next up",
+     "items": 4
+    }
+   ]
+  },
+  "Q4_crs": [
+   {
+    "id": "CR-224",
+    "status": "Pending",
+    "raisedBy": null,
+    "steps": [
+     {
+      "role": "Project manager",
+      "note": "Raised and impact-assessed",
+      "state": "done",
+      "when": "2026-09-08",
+      "comment": ""
+     },
+     {
+      "role": "Change authority",
+      "note": "PMO review",
+      "state": "done",
+      "when": "2026-09-08",
+      "comment": ""
+     },
+     {
+      "role": "Finance",
+      "note": "Funding release",
+      "state": "current",
+      "when": null,
+      "comment": ""
+     },
+     {
+      "role": "Steering committee",
+      "note": "Final approval",
+      "state": "waiting",
+    
+
+requests=44  non-2xx/3xx=23
+   400 PATCH /api/criteria/GC-5
+        note: ABUSE: found met with no named reviewer
+        {"error": "Finding a criterion met needs reviewedBy — the named person who checked it"}
+   400 PATCH /api/criteria/GC-5
+        note: ABUSE: reviewer who is not in the directory
+        {"error": "Finding a criterion met needs reviewedBy — the named person who checked it"}
+   400 PUT /api/v1/projects/RT365-PROBE-X
+        note: is projects writable through v1?
+        {"error": "name is required"}
+   400 PUT /api/v1/milestones/RT365-PROBE-X
+        note: is milestones writable through v1?
+        {"error": "name is required"}
+   400 PUT /api/v1/activities/RT365-PROBE-X
+        note: is activities writable through v1?
+        {"error": "Bind your id to an existing stage first: send activity (a Meridian activity id)"}
+   400 PUT /api/v1/criteria/RT365-PROBE-X
+        note: is criteria writable through v1?
+        {"error": "text is required"}
+   400 PUT /api/v1/decisions/RT365-PROBE-X
+        note: is decisions writable through v1?
+        {"error": "headline is required"}
+   400 PUT /api/v1/actions/RT365-PROBE-X
+        note: is actions writable through v1?
+        {"error": "An action is raised in a meeting: send occurrence (an open occurrence id) or series (a series id with an open occurrence)"}
+   404 PUT /api/v1/business-case/RT365-PROBE-X
+        note: is business-case writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/benefits/RT365-PROBE-X
+        note: is benefits writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/sites/RT365-PROBE-X
+        note: is sites writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/programmes/RT365-PROBE-X
+        note: is programmes writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/people/RT365-PROBE-X
+        note: is people writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/stakeholders/RT365-PROBE-X
+        note: is stakeholders writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/comms/RT365-PROBE-X
+        note: is comms writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/lessons/RT365-PROBE-X
+        note: is lessons writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/tolerances/RT365-PROBE-X
+        note: is tolerances writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/waves/RT365-PROBE-X
+        note: is waves writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/changes/RT365-PROBE-X
+        note: is changes writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/documents/RT365-PROBE-X
+        note: is documents writable through v1?
+        {"error": "No such endpoint"}
+   404 PUT /api/v1/exceptions/RT365-PROBE-X
+        note: is exceptions writable through v1?
+        {"error": "No such endpoint"}
+   409 POST /api/change/CR-224/approve
+        note: ABUSE: raiser approves own CR, step 2
+        {"error": "This request is already decided"}
+   409 PATCH /api/projects/PRJ-147/health
+        note: state the truth by hand
+        {"error": "Someone else changed this record — reload and try again"}

@@ -1,0 +1,939 @@
+{
+ "summary": {
+  "at": "2026-09-08T16:07:56.347680+00:00",
+  "answers": {
+   "Q1_criteria_on_gov": {
+    "total": 54,
+    "by_gate": {
+     "1": 7,
+     "2": 9,
+     "3": 8,
+     "4": 9,
+     "5": 8,
+     "6": 13
+    },
+    "met": 7,
+    "met_rows": [
+     {
+      "id": "GC-1",
+      "gate": 1,
+      "text": "Approved charter",
+      "reviewedBy": "PE-42",
+      "reviewedOn": "2026-09-08"
+     },
+     {
+      "id": "GC-2",
+      "gate": 1,
+      "text": "Personas",
+      "reviewedBy": "PE-42",
+      "reviewedOn": "2026-09-08"
+     },
+     {
+      "id": "GC-3",
+      "gate": 1,
+      "text": "Jurisdiction hypothesis",
+      "reviewedBy": "PE-42",
+      "reviewedOn": "2026-09-08"
+     },
+     {
+      "id": "GC-4",
+      "gate": 1,
+      "text": "Measurable outcomes (passed with conditions D-048)",
+      "reviewedBy": "PE-42",
+      "reviewedOn": "2026-09-08"
+     },
+     {
+      "id": "GC-497",
+      "gate": 1,
+      "text": "Charter approved by the Product Owner with the conditions of D-048 rec",
+      "reviewedBy": "PE-42",
+      "reviewedOn": "2026-09-08"
+     },
+     {
+      "id": "GC-498",
+      "gate": 1,
+      "text": "Personas and measurable outcomes stated; profit is an objective, never",
+      "reviewedBy": "PE-42",
+      "reviewedOn": "2026-09-08"
+     },
+     {
+      "id": "GC-499",
+      "gate": 1,
+      "text": "Jurisdiction hypothesis written and challenged by the Compliance counc",
+      "reviewedBy": "PE-42",
+      "reviewedOn": "2026-09-08"
+     }
+    ]
+   },
+   "Q2_key_response_fields": [
+    "hint",
+    "id",
+    "key",
+    "notice",
+    "scopes"
+   ],
+   "Q2_v1_portfolio_keys": [
+    "asAt",
+    "contract",
+    "counts",
+    "generatedAt",
+    "portfolio"
+   ],
+   "Q2_v1_counts": {
+    "projects": 16,
+    "sites": 1,
+    "programmes": 1,
+    "risks": 165,
+    "benefits": 7,
+    "lessons": 4
+   },
+   "Q2_v1_write_routes": {
+    "reached": [
+     "projects:400",
+     "milestones:400",
+     "raid:201",
+     "activities:400",
+     "workitems:201",
+     "criteria:400",
+     "decisions:400",
+     "actions:400"
+    ],
+    "404": [
+     "business-case:404",
+     "benefits:404",
+     "sites:404",
+     "programmes:404",
+     "people:404",
+     "stakeholders:404",
+     "comms:404",
+     "lessons:404",
+     "tolerances:404",
+     "waves:404",
+     "changes:404",
+     "documents:404",
+     "exceptions:404"
+    ]
+   },
+   "Q2_audit_actors": [
+    {
+     "action": "Item updated",
+     "actor": null,
+     "entity": "raid_item"
+    },
+    {
+     "action": "Risk raised",
+     "actor": null,
+     "entity": "raid_item"
+    },
+    {
+     "action": "Work item added",
+     "actor": null,
+     "entity": "work_item"
+    },
+    {
+     "action": "Risk raised",
+     "actor": null,
+     "entity": "raid_item"
+    },
+    {
+     "action": "Integration created",
+     "actor": null,
+     "entity": "integration"
+    },
+    {
+     "action": "Gate criterion reopened",
+     "actor": null,
+     "entity": "gate_criterion"
+    }
+   ],
+   "Q3_closed_occurrence": {
+    "status": "closed",
+    "closedAt": "2026-09-08T16:04:41.840Z",
+    "closedBy": "U-ADMIN",
+    "notes": "Gate B was not convened: SECURITY_PLAN v1.0 and DATA_FLOWS v1.0 were not accepted by their boards and no capacity number was presented. Nothing was promoted. The portfolio health colour on this progra",
+    "frozen": true,
+    "agenda_keys": [
+     "asOf",
+     "frozen",
+     "scope",
+     "sections",
+     "timebox"
+    ],
+    "sections": [
+     {
+      "title": "Actions carried forward",
+      "items": 29
+     },
+     {
+      "title": "Decisions requested",
+      "items": 7
+     },
+     {
+      "title": "Milestones",
+      "items": 6
+     },
+     {
+      "title": "Risks & issues for escalation",
+      "items": 5
+     },
+     {
+      "title": "Register items due for review",
+      "items": 6
+     },
+     {
+      "title": "Resource pressure",
+      "items": 1
+     },
+     {
+      "title": "Next up",
+      "items": 4
+     }
+    ],
+    "decisions": 66,
+    "actionsRaisedHere": 29,
+    "attendance": []
+   },
+   "Q3_minutes_chars": 38806,
+   "Q3_minutes_head": "# RoboTrader weekly — Product Owner\n\n**Global AI-MCP RoboTrader** · week 37 · 8 Sep 2026\nStatus: closed — closed 2026-09-08 16:04 by System Administrator\n\n## Attendance\n\n**Present (0):** —\n\n## Agenda\n\n### 1. Actions carried forward  *(4 min)*\n\n- H-03: Choose first jurisdiction cell\n  Owner Product Owner · due 08 Sep 26 · Open\n- H-01: Appoint people to the 27 committee roles (Gate A); name deputies for two-person controls by Gate C (O-19, O-63)\n  Owner Product Owner · no date · Open\n- H-04: Engage external counsel; obtain legal opinion per cell — scope = the question lists of H-25\n  Owner Legal Agent · no date · Open\n- H-05: Approve budget and cloud spend\n  Owner Product Owner · no date · Open\n- H-06: Sign model-provider terms and DPA\n  Owner Product Owner · no date · Open\n- H-07: Sign broker agreements; obtain sandbox and production credentials into vault\n  Owner Product Owner · no date ",
+   "Q3_next_occurrence": {
+    "status": "scheduled",
+    "agenda_sections": [
+     {
+      "title": "Actions carried forward",
+      "items": 29
+     },
+     {
+      "title": "Decisions requested",
+      "items": 7
+     },
+     {
+      "title": "Milestones",
+      "items": 6
+     },
+     {
+      "title": "Risks & issues for escalation",
+      "items": 5
+     },
+     {
+      "title": "Register items due for review",
+      "items": 6
+     },
+     {
+      "title": "Resource pressure",
+      "items": 1
+     },
+     {
+      "title": "Next up",
+      "items": 4
+     }
+    ]
+   },
+   "Q4_crs": [
+    {
+     "id": "CR-224",
+     "status": "Pending",
+     "raisedBy": null,
+     "steps": [
+      {
+       "role": "Project manager",
+       "note": "Raised and impact-assessed",
+       "state": "done",
+       "when": "2026-09-08",
+       "comment": ""
+      },
+      {
+       "role": "Change authority",
+       "note": "PMO review",
+       "state": "done",
+       "when": "2026-09-08",
+       "comment": ""
+      },
+      {
+       "role": "Finance",
+       "note": "Funding release",
+       "state": "current",
+       "when": null,
+       "comment": ""
+      },
+      {
+       "role": "Steering committee",
+       "note": "Final approval",
+       "state": "waiting",
+       "when": null,
+       "comment": ""
+      }
+     ]
+    }
+   ],
+   "Q4_cr_after": {
+    "id": "CR-224",
+    "project": "PRJ-147",
+    "title": "Move Gate B to 2026-11-27 — two exit documents refused",
+    "desc": "The Security & Privacy Board did not accept SECURITY_PLAN v1.0 and the Architecture Review Board did not accept DATA_FLOWS v1.0; no capacity number was presented. Gate B was not convened.",
+    "raisedBy": null,
+    "raisedByUser": "U-ADMIN",
+    "raised": "2026-09-08",
+    "cost": 0,
+    "weeks": 4,
+    "funding": "Contingency",
+    "riskDelta": "0",
+    "status": "Approved",
+    "applied": true,
+    "steps": [
+     {
+      "role": "Project manager",
+      "note": "Raised and impact-assessed",
+      "state": "done",
+      "when": "2026-09-08",
+      "comment": ""
+     },
+     {
+      "role": "Change authority",
+      "note": "PMO review",
+      "state": "done",
+      "when": "2026-09-08",
+      "comment": ""
+     },
+     {
+      "role": "Finance",
+      "note": "Funding release",
+      "state": "done",
+      "when": "2026-09-08",
+      "comment": ""
+     },
+     {
+      "role": "Steering committee",
+      "note": "Final approval",
+      "state": "done",
+      "when": "2026-09-08",
+      "comment": ""
+     }
+    ],
+    "version": 2
+   },
+   "Q4_posture": {
+    "production": false,
+    "demoAccountsLive": [],
+    "documentHostsSet": true,
+    "notifyHostsSet": false,
+    "smtpConfigured": false,
+    "secureCookies": false,
+    "breakGlass": "An administrator account is exempt from segregation of duties: it may sign every step of a change request, including one it raised. Every such signature is recorded as break-glass in the audit trail. Run the portfolio from named group and site accounts; keep administrator accounts for administration."
+   },
+   "Q5_gov_project_before": {
+    "health": null,
+    "healthNote": null,
+    "pct": null,
+    "spi": null,
+    "cpi": null,
+    "budget": 0,
+    "phase": "Initiation",
+    "status": null,
+    "version": 1
+   },
+   "Q5_other_projects": [
+    {
+     "name": "E01 Foundation & identity",
+     "health": null,
+     "pct": null,
+     "spi": null,
+     "cpi": null,
+     "budget": 0,
+     "healthNote": null
+    },
+    {
+     "name": "E02 Market data & instrument master",
+     "health": null,
+     "pct": null,
+     "spi": null,
+     "cpi": null,
+     "budget": 0,
+     "healthNote": null
+    },
+    {
+     "name": "E03 Broker adapter framework",
+     "health": null,
+     "pct": null,
+     "spi": null,
+     "cpi": null,
+     "budget": 0,
+     "healthNote": null
+    }
+   ],
+   "Q6_exceptions": [],
+   "Q6_tolerances": [
+    {
+     "id": "TOL-002",
+     "project": "PRJ-147",
+     "scheduleDays": 1,
+     "costPct": 1,
+     "benefitPct": 1,
+     "note": "Tightened to one day so a known slip breaches it.",
+     "setBy": "U-ADMIN",
+     "setOn": "2026-09-08",
+     "version": 1
+    }
+   ],
+   "Q6_final_counts": {
+    "sites": 1,
+    "windows": 0,
+    "absences": 0,
+    "waves": 1,
+    "programmes": 1,
+    "people": 14,
+    "projects": 16,
+    "benefits": 7,
+    "activities": 128,
+    "milestones": 102,
+    "ledger": 0,
+    "timesheets": 0,
+    "tolerances": 1,
+    "exceptions": 0,
+    "businessCases": 3,
+    "lessons": 4,
+    "commitments": 0,
+    "raid": 167,
+    "crs": 1,
+    "allocations": 16,
+    "docs": 96,
+    "criteria": 519,
+    "stakeholders": 7,
+    "comms": 3,
+    "columns": 5,
+    "items": 4,
+    "crossDeps": 0,
+    "extLinks": 0
+   }
+  }
+ },
+ "requests": [
+  {
+   "seq": 1,
+   "section": "start",
+   "at": "2026-09-08T16:07:56.347714+00:00",
+   "method": "POST",
+   "path": "/api/auth/login",
+   "request": "{\"email\": \"admin@meridian.example\", \"password\": \"RT365-round2-Pw-2026!x\"}",
+   "status": 200,
+   "ms": 72.9,
+   "response": "{\"user\": {\"id\": \"U-ADMIN\", \"email\": \"admin@meridian.example\", \"displayName\": \"System Administrator\", \"personId\": null, \"role\": \"admin\", \"active\": true, \"grants\": {\"programmes\": [], \"sites\": []}, \"lastLoginAt\": \"2026-09-08T16:06:51.640Z\", \"mustChangePassword\": false, \"locale\": \"\", \"notifyPref\": \"immediate\", \"version\": null}}",
+   "note": ""
+  },
+  {
+   "seq": 2,
+   "section": "start",
+   "at": "2026-09-08T16:07:56.420765+00:00",
+   "method": "GET",
+   "path": "/api/bootstrap",
+   "request": null,
+   "status": 200,
+   "ms": 116.0,
+   "response": "{\"db\": {\"orgName\": \"MERIDIAN\", \"statusDate\": \"2026-09-08\", \"currentUser\": null, \"viewer\": {\"id\": \"U-ADMIN\", \"role\": \"admin\", \"name\": \"System Administrator\"}, \"sites\": [{\"id\": \"RTX\", \"city\": \"RoboTrader (remote, dev/sim)\", \"region\": \"\", \"country\": \"\", \"legalEntity\": \"\", \"tz\": 0, \"tzName\": \"UTC\", \"headcount\": 0, \"fte\": 0, \"role\": \"\", \"linkMbps\": null, \"linkKind\": \"\", \"readiness\": \"Unknown\", \"readinessNote\": \"\", \"champion\": null, \"version\": 1}], \"windows\": [], \"absences\": [], \"waves\": [{\"id\": \"WAVE-001\", \"project\": \"PRJ-147\", \"site\": \"RTX\", \"seq\": 1, \"plannedOn\": \"2027-02-26\", \"actualOn\": null, \"status\": \"Planned\", \"note\": \"Supervised pilot — Gate D authorises this rung only\", \"version\": 1}], \"…<+415145 chars>",
+   "note": ""
+  },
+  {
+   "seq": 3,
+   "section": "start",
+   "at": "2026-09-08T16:07:56.552581+00:00",
+   "method": "PATCH",
+   "path": "/api/criteria/GC-5",
+   "request": "{\"met\": true, \"version\": 1}",
+   "status": 400,
+   "ms": 14.2,
+   "response": "{\"error\": \"Finding a criterion met needs reviewedBy — the named person who checked it\"}",
+   "note": "ABUSE: found met with no named reviewer"
+  },
+  {
+   "seq": 4,
+   "section": "start",
+   "at": "2026-09-08T16:07:56.566945+00:00",
+   "method": "PATCH",
+   "path": "/api/criteria/GC-5",
+   "request": "{\"met\": true, \"reviewedBy\": \"PER-NOBODY\", \"version\": 1}",
+   "status": 400,
+   "ms": 13.3,
+   "response": "{\"error\": \"Finding a criterion met needs reviewedBy — the named person who checked it\"}",
+   "note": "ABUSE: reviewer who is not in the directory"
+  },
+  {
+   "seq": 5,
+   "section": "start",
+   "at": "2026-09-08T16:07:56.580360+00:00",
+   "method": "PATCH",
+   "path": "/api/criteria/GC-5",
+   "request": "{\"met\": true, \"reviewedBy\": \"PE-42\", \"version\": 1, \"note\": \"Gate B criterion — not actually met; probe only, reopened below.\"}",
+   "status": 200,
+   "ms": 20.5,
+   "response": "{\"version\": 2}",
+   "note": "named reviewer, Gate B"
+  },
+  {
+   "seq": 6,
+   "section": "start",
+   "at": "2026-09-08T16:07:56.600982+00:00",
+   "method": "PATCH",
+   "path": "/api/criteria/GC-5",
+   "request": "{\"met\": false, \"version\": 2}",
+   "status": 200,
+   "ms": 19.1,
+   "response": "{\"version\": 3}",
+   "note": "reopened — a criterion found met can be un-found"
+  },
+  {
+   "seq": 7,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.620294+00:00",
+   "method": "POST",
+   "path": "/api/admin/integrations",
+   "request": "{\"name\": \"RT365 loader probe 160756\", \"purpose\": \"Measure what an integration can and cannot write\", \"scopes\": \"read:portfolio,write:portfolio,write:meetings,read:audit\"}",
+   "status": 201,
+   "ms": 16.8,
+   "response": "{\"id\": \"INT-SV5IVN\", \"key\": \"4_xsb8_lups00kq42I20C-A3aloAC8DdfsG9CtCVgdc\", \"hint\": \"Vgdc\", \"scopes\": \"read:audit,read:portfolio,write:meetings,write:portfolio\", \"notice\": \"This key is shown once and is not stored. Copy it now; if it is lost, rotate it.\"}",
+   "note": ""
+  },
+  {
+   "seq": 8,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.637230+00:00",
+   "method": "GET",
+   "path": "/api/v1/portfolio",
+   "request": null,
+   "status": 200,
+   "ms": 113.0,
+   "response": "{\"contract\": \"v1\", \"generatedAt\": \"2026-09-08T16:07:56.740Z\", \"asAt\": \"2026-09-08\", \"counts\": {\"projects\": 16, \"sites\": 1, \"programmes\": 1, \"risks\": 165, \"benefits\": 7, \"lessons\": 4}, \"portfolio\": {\"orgName\": \"MERIDIAN\", \"statusDate\": \"2026-09-08\", \"currentUser\": null, \"viewer\": {\"id\": \"INT-SV5IVN\", \"role\": \"service\", \"name\": \"RT365 loader probe 160756\"}, \"sites\": [{\"id\": \"RTX\", \"city\": \"RoboTrader (remote, dev/sim)\", \"region\": \"\", \"country\": \"\", \"legalEntity\": \"\", \"tz\": 0, \"tzName\": \"UTC\", \"headcount\": 0, \"fte\": 0, \"role\": \"\", \"linkMbps\": null, \"linkKind\": \"\", \"readiness\": \"Unknown\", \"readinessNote\": \"\", \"champion\": null, \"version\": 1}], \"windows\": [], \"absences\": [], \"waves\": [{\"id\": \"WAVE…<+415174 chars>",
+   "note": "the integration reads"
+  },
+  {
+   "seq": 9,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.765944+00:00",
+   "method": "PUT",
+   "path": "/api/v1/projects/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 400,
+   "ms": 19.1,
+   "response": "{\"error\": \"name is required\"}",
+   "note": "is projects writable through v1?"
+  },
+  {
+   "seq": 10,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.785178+00:00",
+   "method": "PUT",
+   "path": "/api/v1/milestones/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 400,
+   "ms": 18.7,
+   "response": "{\"error\": \"name is required\"}",
+   "note": "is milestones writable through v1?"
+  },
+  {
+   "seq": 11,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.803972+00:00",
+   "method": "PUT",
+   "path": "/api/v1/raid/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 201,
+   "ms": 25.7,
+   "response": "{\"contract\": \"v1\", \"generatedAt\": \"2026-09-08T16:07:56.828Z\", \"id\": \"RSK-85\", \"externalId\": \"RT365-PROBE-X\", \"created\": true, \"version\": 1}",
+   "note": "is raid writable through v1?"
+  },
+  {
+   "seq": 12,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.829692+00:00",
+   "method": "PUT",
+   "path": "/api/v1/activities/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 400,
+   "ms": 13.8,
+   "response": "{\"error\": \"Bind your id to an existing stage first: send activity (a Meridian activity id)\"}",
+   "note": "is activities writable through v1?"
+  },
+  {
+   "seq": 13,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.843610+00:00",
+   "method": "PUT",
+   "path": "/api/v1/workitems/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 201,
+   "ms": 25.9,
+   "response": "{\"contract\": \"v1\", \"generatedAt\": \"2026-09-08T16:07:56.868Z\", \"id\": \"WI-342\", \"externalId\": \"RT365-PROBE-X\", \"created\": true, \"version\": 1}",
+   "note": "is workitems writable through v1?"
+  },
+  {
+   "seq": 14,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.869630+00:00",
+   "method": "PUT",
+   "path": "/api/v1/criteria/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 400,
+   "ms": 17.5,
+   "response": "{\"error\": \"text is required\"}",
+   "note": "is criteria writable through v1?"
+  },
+  {
+   "seq": 15,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.887215+00:00",
+   "method": "PUT",
+   "path": "/api/v1/decisions/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 400,
+   "ms": 15.8,
+   "response": "{\"error\": \"headline is required\"}",
+   "note": "is decisions writable through v1?"
+  },
+  {
+   "seq": 16,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.903131+00:00",
+   "method": "PUT",
+   "path": "/api/v1/actions/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 400,
+   "ms": 17.6,
+   "response": "{\"error\": \"An action is raised in a meeting: send occurrence (an open occurrence id) or series (a series id with an open occurrence)\"}",
+   "note": "is actions writable through v1?"
+  },
+  {
+   "seq": 17,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.920814+00:00",
+   "method": "PUT",
+   "path": "/api/v1/business-case/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 7.9,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is business-case writable through v1?"
+  },
+  {
+   "seq": 18,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.928800+00:00",
+   "method": "PUT",
+   "path": "/api/v1/benefits/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 7.1,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is benefits writable through v1?"
+  },
+  {
+   "seq": 19,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.935971+00:00",
+   "method": "PUT",
+   "path": "/api/v1/sites/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 6.6,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is sites writable through v1?"
+  },
+  {
+   "seq": 20,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.942617+00:00",
+   "method": "PUT",
+   "path": "/api/v1/programmes/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 6.9,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is programmes writable through v1?"
+  },
+  {
+   "seq": 21,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.949622+00:00",
+   "method": "PUT",
+   "path": "/api/v1/people/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 10.7,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is people writable through v1?"
+  },
+  {
+   "seq": 22,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.960375+00:00",
+   "method": "PUT",
+   "path": "/api/v1/stakeholders/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 12.1,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is stakeholders writable through v1?"
+  },
+  {
+   "seq": 23,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.972502+00:00",
+   "method": "PUT",
+   "path": "/api/v1/comms/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 8.8,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is comms writable through v1?"
+  },
+  {
+   "seq": 24,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.981367+00:00",
+   "method": "PUT",
+   "path": "/api/v1/lessons/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 10.7,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is lessons writable through v1?"
+  },
+  {
+   "seq": 25,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:56.992088+00:00",
+   "method": "PUT",
+   "path": "/api/v1/tolerances/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 8.8,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is tolerances writable through v1?"
+  },
+  {
+   "seq": 26,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:57.000979+00:00",
+   "method": "PUT",
+   "path": "/api/v1/waves/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 7.4,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is waves writable through v1?"
+  },
+  {
+   "seq": 27,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:57.008454+00:00",
+   "method": "PUT",
+   "path": "/api/v1/changes/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 8.0,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is changes writable through v1?"
+  },
+  {
+   "seq": 28,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:57.016541+00:00",
+   "method": "PUT",
+   "path": "/api/v1/documents/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 8.1,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is documents writable through v1?"
+  },
+  {
+   "seq": 29,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:57.024705+00:00",
+   "method": "PUT",
+   "path": "/api/v1/exceptions/RT365-PROBE-X",
+   "request": "{\"title\": \"probe\", \"project\": \"PRJ-147\"}",
+   "status": 404,
+   "ms": 7.0,
+   "response": "{\"error\": \"No such endpoint\"}",
+   "note": "is exceptions writable through v1?"
+  },
+  {
+   "seq": 30,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:57.031809+00:00",
+   "method": "PUT",
+   "path": "/api/v1/raid/RT365-PROBE-1",
+   "request": "{\"project\": \"PRJ-147\", \"type\": \"Risk\", \"title\": \"[RT365 probe] written by an integration key\", \"detail\": \"Whose name lands in the audit trail for this row?\", \"p\": 2, \"i\": 2, \"response\": \"Monitor\"}",
+   "status": 201,
+   "ms": 27.8,
+   "response": "{\"contract\": \"v1\", \"generatedAt\": \"2026-09-08T16:07:57.058Z\", \"id\": \"RSK-86\", \"externalId\": \"RT365-PROBE-1\", \"created\": true, \"version\": 1}",
+   "note": "1st write"
+  },
+  {
+   "seq": 31,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:57.059678+00:00",
+   "method": "PUT",
+   "path": "/api/v1/raid/RT365-PROBE-1",
+   "request": "{\"project\": \"PRJ-147\", \"type\": \"Risk\", \"title\": \"[RT365 probe] written by an integration key\", \"detail\": \"Whose name lands in the audit trail for this row?\", \"p\": 2, \"i\": 2, \"response\": \"Monitor\"}",
+   "status": 201,
+   "ms": 16.7,
+   "response": "{\"id\": \"RSK-86\", \"created\": true, \"version\": 1, \"contract\": \"v1\", \"externalId\": \"RT365-PROBE-1\", \"generatedAt\": \"2026-09-08T16:07:57.058Z\"}",
+   "note": "2nd, same key, same body"
+  },
+  {
+   "seq": 32,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:57.076422+00:00",
+   "method": "PUT",
+   "path": "/api/v1/raid/RT365-PROBE-1",
+   "request": "{\"project\": \"PRJ-147\", \"type\": \"Risk\", \"title\": \"[RT365 probe] written by an integration key\", \"detail\": \"Whose name lands in the audit trail for this row?\", \"p\": 5, \"i\": 5, \"response\": \"Monitor\"}",
+   "status": 200,
+   "ms": 22.4,
+   "response": "{\"contract\": \"v1\", \"generatedAt\": \"2026-09-08T16:07:57.097Z\", \"id\": \"RSK-86\", \"externalId\": \"RT365-PROBE-1\", \"created\": false, \"version\": 2}",
+   "note": "3rd, same external id, changed body, no key"
+  },
+  {
+   "seq": 33,
+   "section": "Q2 · v1 write API",
+   "at": "2026-09-08T16:07:57.098933+00:00",
+   "method": "GET",
+   "path": "/api/v1/audit?limit=6",
+   "request": null,
+   "status": 200,
+   "ms": 14.5,
+   "response": "{\"contract\": \"v1\", \"generatedAt\": \"2026-09-08T16:07:57.111Z\", \"events\": [{\"id\": 603, \"at\": \"2026-09-08T16:07:57.092Z\", \"user_id\": \"INT-SV5IVN\", \"user_label\": \"RT365 loader probe 160756 (service)\", \"action\": \"Item updated\", \"entity\": \"raid_item\", \"entity_id\": \"RSK-86\", \"detail\": \"[RT365 probe] written by an integration key — from RT365 loader probe 160756 (RT365-PROBE-1)\", \"before_json\": null, \"after_json\": null}, {\"id\": 602, \"at\": \"2026-09-08T16:07:57.051Z\", \"user_id\": \"INT-SV5IVN\", \"user_label\": \"RT365 loader probe 160756 (service)\", \"action\": \"Risk raised\", \"entity\": \"raid_item\", \"entity_id\": \"RSK-86\", \"detail\": \"[RT365 probe] written by an integration key — from RT365 loader probe 160756 …<+1290 chars>",
+   "note": "whose name is on the write?"
+  },
+  {
+   "seq": 34,
+   "section": "Q3 · the frozen record",
+   "at": "2026-09-08T16:07:57.113669+00:00",
+   "method": "GET",
+   "path": "/api/meetings/occurrences/MS-SUWK22-20260908",
+   "request": null,
+   "status": 200,
+   "ms": 37.1,
+   "response": "{\"series\": {\"id\": \"MS-SUWK22\", \"name\": \"RoboTrader weekly — Product Owner\", \"cadence\": \"weekly\", \"scopeKind\": \"programme\", \"programmeId\": \"RBT\", \"siteId\": null, \"chairId\": \"PE-29\", \"weekday\": 1, \"startTime\": \"09:00\", \"timeboxMin\": 25, \"active\": true, \"version\": 1}, \"occurrence\": {\"id\": \"MS-SUWK22-20260908\", \"seriesId\": \"MS-SUWK22\", \"meetsOn\": \"2026-09-08\", \"periodLabel\": \"Week 37 2026\", \"status\": \"closed\", \"openedAt\": \"2026-09-08T16:00:58.424Z\", \"openedBy\": \"U-ADMIN\", \"closedAt\": \"2026-09-08T16:04:41.840Z\", \"closedBy\": \"U-ADMIN\", \"notes\": \"Gate B was not convened: SECURITY_PLAN v1.0 and DATA_FLOWS v1.0 were not accepted by their boards and no capacity number was presented. Nothing was promot…<+87892 chars>",
+   "note": ""
+  },
+  {
+   "seq": 35,
+   "section": "Q3 · the frozen record",
+   "at": "2026-09-08T16:07:57.153137+00:00",
+   "method": "GET",
+   "path": "/api/meetings/occurrences/MS-SUWK22-20260908/minutes",
+   "request": null,
+   "status": 200,
+   "ms": 122.8,
+   "response": "{\"markdown\": \"# RoboTrader weekly — Product Owner\\n\\n**Global AI-MCP RoboTrader** · week 37 · 8 Sep 2026\\nStatus: closed — closed 2026-09-08 16:04 by System Administrator\\n\\n## Attendance\\n\\n**Present (0):** —\\n\\n## Agenda\\n\\n### 1. Actions carried forward  *(4 min)*\\n\\n- H-03: Choose first jurisdiction cell\\n  Owner Product Owner · due 08 Sep 26 · Open\\n- H-01: Appoint people to the 27 committee roles (Gate A); name deputies for two-person controls by Gate C (O-19, O-63)\\n  Owner Product Owner · no date · Open\\n- H-04: Engage external counsel; obtain legal opinion per cell — scope = the question lists of H-25\\n  Owner Legal Agent · no date · Open\\n- H-05: Approve budget and cloud spend\\n  O…<+38576 chars>",
+   "note": ""
+  },
+  {
+   "seq": 36,
+   "section": "Q3 · the frozen record",
+   "at": "2026-09-08T16:07:57.276466+00:00",
+   "method": "GET",
+   "path": "/api/meetings/occurrences/MS-SUWK22-20260914",
+   "request": null,
+   "status": 200,
+   "ms": 166.8,
+   "response": "{\"series\": {\"id\": \"MS-SUWK22\", \"name\": \"RoboTrader weekly — Product Owner\", \"cadence\": \"weekly\", \"scopeKind\": \"programme\", \"programmeId\": \"RBT\", \"siteId\": null, \"chairId\": \"PE-29\", \"weekday\": 1, \"startTime\": \"09:00\", \"timeboxMin\": 25, \"active\": true, \"version\": 1}, \"occurrence\": {\"id\": \"MS-SUWK22-20260914\", \"seriesId\": \"MS-SUWK22\", \"meetsOn\": \"2026-09-14\", \"periodLabel\": \"Week 38 2026\", \"status\": \"scheduled\", \"openedAt\": null, \"openedBy\": null, \"closedAt\": null, \"closedBy\": null, \"notes\": \"\", \"version\": 1}, \"canWrite\": true, \"agenda\": {\"sections\": [{\"key\": \"actions\", \"title\": \"Actions carried forward\", \"weight\": 3, \"items\": [{\"headline\": \"H-03: Choose first jurisdiction cell\", \"detail\": \"Own…<+30629 chars>",
+   "note": ""
+  },
+  {
+   "seq": 37,
+   "section": "Q4 · SoD and break-glass",
+   "at": "2026-09-08T16:07:57.444875+00:00",
+   "method": "POST",
+   "path": "/api/change/CR-224/approve",
+   "request": "{\"note\": \"Break-glass probe, step 0: the raiser signs.\"}",
+   "status": 200,
+   "ms": 31.6,
+   "response": "{\"ok\": true, \"applied\": false}",
+   "note": "ABUSE: raiser approves own CR, step 0"
+  },
+  {
+   "seq": 38,
+   "section": "Q4 · SoD and break-glass",
+   "at": "2026-09-08T16:07:57.476604+00:00",
+   "method": "POST",
+   "path": "/api/change/CR-224/approve",
+   "request": "{\"note\": \"Break-glass probe, step 1: the raiser signs.\"}",
+   "status": 200,
+   "ms": 25.2,
+   "response": "{\"ok\": true, \"applied\": true}",
+   "note": "ABUSE: raiser approves own CR, step 1"
+  },
+  {
+   "seq": 39,
+   "section": "Q4 · SoD and break-glass",
+   "at": "2026-09-08T16:07:57.501914+00:00",
+   "method": "POST",
+   "path": "/api/change/CR-224/approve",
+   "request": "{\"note\": \"Break-glass probe, step 2: the raiser signs.\"}",
+   "status": 409,
+   "ms": 11.5,
+   "response": "{\"error\": \"This request is already decided\"}",
+   "note": "ABUSE: raiser approves own CR, step 2"
+  },
+  {
+   "seq": 40,
+   "section": "Q4 · SoD and break-glass",
+   "at": "2026-09-08T16:07:57.513527+00:00",
+   "method": "GET",
+   "path": "/api/bootstrap",
+   "request": null,
+   "status": 200,
+   "ms": 107.9,
+   "response": "{\"db\": {\"orgName\": \"MERIDIAN\", \"statusDate\": \"2026-09-08\", \"currentUser\": null, \"viewer\": {\"id\": \"U-ADMIN\", \"role\": \"admin\", \"name\": \"System Administrator\"}, \"sites\": [{\"id\": \"RTX\", \"city\": \"RoboTrader (remote, dev/sim)\", \"region\": \"\", \"country\": \"\", \"legalEntity\": \"\", \"tz\": 0, \"tzName\": \"UTC\", \"headcount\": 0, \"fte\": 0, \"role\": \"\", \"linkMbps\": null, \"linkKind\": \"\", \"readiness\": \"Unknown\", \"readinessNote\": \"\", \"champion\": null, \"version\": 1}], \"windows\": [], \"absences\": [], \"waves\": [{\"id\": \"WAVE-001\", \"project\": \"PRJ-147\", \"site\": \"RTX\", \"seq\": 1, \"plannedOn\": \"2027-02-26\", \"actualOn\": null, \"status\": \"Planned\", \"note\": \"Supervised pilot — Gate D authorises this rung only\", \"version\": 1}], \"…<+416230 chars>",
+   "note": ""
+  },
+  {
+   "seq": 41,
+   "section": "Q4 · SoD and break-glass",
+   "at": "2026-09-08T16:07:57.644132+00:00",
+   "method": "GET",
+   "path": "/api/admin/posture",
+   "request": null,
+   "status": 200,
+   "ms": 65.6,
+   "response": "{\"production\": false, \"demoAccountsLive\": [], \"documentHostsSet\": true, \"notifyHostsSet\": false, \"smtpConfigured\": false, \"secureCookies\": false, \"breakGlass\": \"An administrator account is exempt from segregation of duties: it may sign every step of a change request, including one it raised. Every such signature is recorded as break-glass in the audit trail. Run the portfolio from named group and site accounts; keep administrator accounts for administration.\"}",
+   "note": ""
+  },
+  {
+   "seq": 42,
+   "section": "Q5 · health on a budget-less, unmeasured project",
+   "at": "2026-09-08T16:07:57.709944+00:00",
+   "method": "PATCH",
+   "path": "/api/projects/PRJ-147/health",
+   "request": "{\"health\": \"R\", \"note\": \"Gate B was not convened: two exit documents were refused.\", \"version\": 1}",
+   "status": 409,
+   "ms": 12.6,
+   "response": "{\"error\": \"Someone else changed this record — reload and try again\"}",
+   "note": "state the truth by hand"
+  },
+  {
+   "seq": 43,
+   "section": "Q5 · health on a budget-less, unmeasured project",
+   "at": "2026-09-08T16:07:57.722588+00:00",
+   "method": "PATCH",
+   "path": "/api/projects/PRJ-147/health",
+   "request": "{\"health\": \"U\", \"note\": \"probe: is there an unmeasured state?\", \"version\": 2}",
+   "status": 200,
+   "ms": 13.2,
+   "response": "{\"version\": 3}",
+   "note": "probe: health = U (unmeasured)"
+  },
+  {
+   "seq": 44,
+   "section": "Q6 · exceptions",
+   "at": "2026-09-08T16:07:57.735880+00:00",
+   "method": "GET",
+   "path": "/api/bootstrap",
+   "request": null,
+   "status": 200,
+   "ms": 104.8,
+   "response": "{\"db\": {\"orgName\": \"MERIDIAN\", \"statusDate\": \"2026-09-08\", \"currentUser\": null, \"viewer\": {\"id\": \"U-ADMIN\", \"role\": \"admin\", \"name\": \"System Administrator\"}, \"sites\": [{\"id\": \"RTX\", \"city\": \"RoboTrader (remote, dev/sim)\", \"region\": \"\", \"country\": \"\", \"legalEntity\": \"\", \"tz\": 0, \"tzName\": \"UTC\", \"headcount\": 0, \"fte\": 0, \"role\": \"\", \"linkMbps\": null, \"linkKind\": \"\", \"readiness\": \"Unknown\", \"readinessNote\": \"\", \"champion\": null, \"version\": 1}], \"windows\": [], \"absences\": [], \"waves\": [{\"id\": \"WAVE-001\", \"project\": \"PRJ-147\", \"site\": \"RTX\", \"seq\": 1, \"plannedOn\": \"2027-02-26\", \"actualOn\": null, \"status\": \"Planned\", \"note\": \"Supervised pilot — Gate D authorises this rung only\", \"version\": 1}], \"…<+416230 chars>",
+   "note": ""
+  }
+ ]
+}

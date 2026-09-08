@@ -1,0 +1,196 @@
+
+=== login ===
+
+=== 1. gate criteria on gates A-F, with an independent reviewer ===
+
+=== 2. RAID re-rated off the constant 3x3, by published rule R2-PI-1 ===
+
+=== 3. D-039..D-066 as decision records (migration 034/039), with alternatives and dissent ===
+
+=== 4. open human acts as actions with the ledger's own owner and due date ===
+
+=== 5. business case and benefits — the value half (V-1/REQ-20 is open upstream) ===
+
+=== 5b. V-1/REQ-20 probe: value objects through the v1 write API ===
+
+=== 6. stakeholders, communication plan, lessons, tolerances ===
+
+=== 7. change request with segregation of duties, work items, rollout waves ===
+
+=== 8. the weekly: agenda, minutes, and the close that freezes the record ===
+
+=== 9. what Meridian did on its own ===
+
+{
+ "url": "http://localhost:4183",
+ "at": "2026-09-08T16:04:37.147990+00:00",
+ "steps": {
+  "criteria_scaffolded_by_meridian": {
+   "total_book": 517,
+   "on_gov": 52,
+   "sample": [
+    "Approved charter",
+    "Personas",
+    "Jurisdiction hypothesis",
+    "Measurable outcomes (passed with conditions D-048)",
+    "Charter approved by the Product Owner with the conditions of D-048 recorded",
+    "Personas and measurable outcomes stated; profit is an objective, never a promise",
+    "Jurisdiction hypothesis written and challenged by the Compliance council",
+    "Threat model"
+   ]
+  },
+  "criteria_created": 21,
+  "criteria_met_gate_A": 0,
+  "raid_rated": 165,
+  "raid_pi_distribution": {
+   "3x3": 5,
+   "3x4": 12,
+   "3x5": 19,
+   "4x2": 1,
+   "4x3": 35,
+   "4x4": 73,
+   "4x5": 19,
+   "5x4": 1
+  },
+  "decision_records": 19,
+  "series": "MS-SUWK22",
+  "occurrence": "MS-SUWK22-20260908",
+  "actions_owned": 15,
+  "actions_dated": 1,
+  "action_owners_not_in_directory": [
+   "H-05=Executive Steering",
+   "H-06=Finance + Privacy",
+   "H-07=Finance + Broker-Connector",
+   "H-08=Finance + Legal",
+   "H-09=Trading Risk Committee",
+   "H-11=Support & Training Lead",
+   "H-12=C&L Committee",
+   "H-13=Trading Risk Committee + Exec Steering",
+   "H-14=Executive Steering",
+   "H-15=Trading Risk Committee",
+   "H-17=named second approver",
+   "H-18=Executive Steering",
+   "H-22=Committee chair",
+   "H-29=Data Architect (human of record)"
+  ],
+  "business_cases": 3,
+  "benefits": 7,
+  "integration_key_created": false,
+  "stakeholders": 7,
+  "comms": 3,
+  "lessons": 2,
+  "tolerance": 201,
+  "change_request": "CR-224",
+  "work_items": 3,
+  "waves": 1,
+  "agenda_sections": [
+   {
+    "title": "Actions carried forward",
+    "items": 29,
+    "timebox": 4
+   },
+   {
+    "title": "Decisions requested",
+    "items": 7,
+    "timebox": 7
+   },
+   {
+    "title": "Milestones",
+    "items": 6,
+    "timebox": 4
+   },
+   {
+    "title": "Risks & issues for escalation",
+    "items": 5,
+    "timebox": 4
+   },
+   {
+    "title": "Register items due for review",
+    "items": 6,
+    "timebox": 3
+   },
+   {
+    "title": "Resource pressure",
+    "items": 1,
+    "timebox": 3
+   },
+   {
+    "title": "Next up",
+    "items": 4,
+    "timebox": 2
+   }
+  ],
+  "close": {
+   "status": 200,
+   "next": {
+    "ok": true,
+    "next": {
+     "id": "MS-SUWK22-20260914",
+     "meetsOn": "2026-09-14"
+    }
+   }
+  }
+ },
+ "directory": {
+  "people": 14,
+  "projects": 16,
+  "gov": "PRJ-147",
+  "gov_milestones": [
+   "Gate A",
+   "Gate A — Discovery",
+   "Gate B",
+   "Gate B — Architecture",
+   "Gate C",
+   "Gate C — Paper readiness",
+   "Gate D",
+   "Gate D — Supervised pilot",
+   "Gate E",
+   "Gate E — Capped autonomy",
+   "Gate F",
+   "Gate F — Market release"
+  ]
+ },
+ "final": {
+  "sites": 1,
+  "windows": 0,
+  "absences": 0,
+  "waves": 1,
+  "programmes": 1,
+  "people": 14,
+  "projects": 16,
+  "benefits": 7,
+  "activities": 128,
+  "milestones": 102,
+  "ledger": 0,
+  "timesheets": 0,
+  "tolerances": 1,
+  "exceptions": 0,
+  "businessCases": 3,
+  "lessons": 2,
+  "commitments": 0,
+  "raid": 165,
+  "crs": 1,
+  "allocations": 16,
+  "docs": 96,
+  "criteria": 517,
+  "stakeholders": 7,
+  "comms": 3,
+  "columns": 5,
+  "items": 3,
+  "crossDeps": 0,
+  "extLinks": 0
+ }
+}
+
+requests=262  non-2xx/3xx=11
+   409 PATCH /api/criteria/GC-497  :: {"error": "Someone else changed this record — reload and try again"}
+   409 PATCH /api/criteria/GC-498  :: {"error": "Someone else changed this record — reload and try again"}
+   409 PATCH /api/criteria/GC-499  :: {"error": "Someone else changed this record — reload and try again"}
+   400 PATCH /api/criteria/GC-500  :: {"error": "Nothing recognisable to change — check the field names"}
+   400 POST /api/decisions  :: {"error": "The evidence link is an http(s) address"}
+   428 POST /api/projects/PRJ-147/case/reconfirm  :: {"error": "This business case edit did not say which version it is based on. Reload and try again."}
+   400 POST /api/admin/integrations  :: {"error": "Unknown scope(s): read:portfolio write:portfolio write:meetings read:audit. Known: read:portfolio, read:audit, write:portfolio, write:meeti
+   400 POST /api/lessons  :: {"error": "A gate is 1, 2, 3 or 4"}
+   409 POST /api/waves  :: {"error": "That record already exists"}
+   409 POST /api/waves  :: {"error": "That record already exists"}
+   409 POST /api/meetings/occurrences/MS-SUWK22-20260908/decisions  :: {"error": "This meeting is closed — its decisions are final"}
