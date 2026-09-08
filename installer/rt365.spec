@@ -9,6 +9,8 @@ dashboard assets). Build with: pyinstaller installer/rt365.spec  (or `make exe`)
 import sys
 from pathlib import Path
 
+from PyInstaller.utils.hooks import collect_data_files
+
 ROOT = Path(SPECPATH).resolve().parent
 BUNDLE = [
     "mcp/policies",
@@ -22,6 +24,9 @@ for rel in BUNDLE:
     src = ROOT / rel
     dest = rel if src.is_dir() else str(Path(rel).parent)
     datas.append((str(src), dest))
+# IANA time-zone database for zoneinfo: Windows has no system tzdata, so venue calendars need the package bundled
+# (release run 34213524352: ZoneInfoNotFoundError "UTC" in rt365.exe).
+datas += collect_data_files("tzdata")
 
 PKG_DIRS = [
     "libs/core", "services/market-data", "services/strategy", "services/backtest", "services/portfolio",
@@ -36,7 +41,7 @@ hiddenimports = [
     "audit_service", "killswitch_service", "identity_service", "mcp_servers", "mcp_servers.stdio", "broker_adapters",
     "data_providers", "rtobs", "web_bff", "web_bff.app", "web_bff.platform", "rt365_cli", "rt365_cli.main",
     "uvicorn.logging", "uvicorn.loops.auto", "uvicorn.protocols.http.auto", "uvicorn.protocols.websockets.auto",
-    "uvicorn.lifespan.on", "anyio._backends._asyncio", "pydantic.deprecated.decorator",
+    "uvicorn.lifespan.on", "anyio._backends._asyncio", "pydantic.deprecated.decorator", "tzdata",
 ]
 
 a = Analysis(

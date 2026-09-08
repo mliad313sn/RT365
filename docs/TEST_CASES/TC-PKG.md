@@ -2,7 +2,7 @@
 
 Control: Distribution: rt365 CLI, resource root, installer fail-closed rules — Requirement: NFR-SEC-02 — RTM row: NFR-SEC-02 — Owner: SRE Lead — Reviewer (≠ owner): Security Architect — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:04:40.375076+00:00 at `880b2bccda46b5f90c7f0001c6cec466288e2a49` (tree dirty, tested tree `d66ebc1a7ab3`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:10:03.090164+00:00 at `d8cef0e57c1aa1f866393bc3b3e871ce367ae788` (tree dirty, tested tree `8e6a6579dd3b`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
@@ -10,5 +10,6 @@ Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | 
 | negative | TC-PKG-002 | Without an explicit --env or RT_ENV the CLI refuses to serve or check (IVA-06: unlabelled environment fails closed); a production label refuses the fixture registry. | pass | passed | `test/quartets/test_tc_pkg_cli.py::test_cli_refuses_unlabelled_or_non_sim_environments` |
 | abuse | TC-PKG-003 | A resource root pointed at a directory without the signed registry (or with a tampered one) fails closed: no silent fallback to the source tree, no service, no MCP server. | pass | passed | `test/quartets/test_tc_pkg_cli.py::test_resource_root_never_falls_back_silently` |
 | recovery | TC-PKG-004 | An installed or frozen build without a source tree recovers by pointing RT365_HOME at a complete resource bundle: the same signed policies, same checks, same probe result. | pass | passed | `test/quartets/test_tc_pkg_cli.py::test_resource_root_override_restores_service_for_installed_builds` |
+| recovery | TC-PKG-005 | With no system time-zone database (Windows, frozen builds) IANA zones still resolve from the bundled tzdata package, so `rt365 check` builds the venue calendars; the spec bundles that package (release run 34213524352 regression). | pass | passed | `test/quartets/test_tc_pkg_cli.py::test_venue_calendars_resolve_zones_without_a_system_tz_database` |
 
-Quartet complete: yes. Records: 4.
+Quartet complete: yes. Records: 5.

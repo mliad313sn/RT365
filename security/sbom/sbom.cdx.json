@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-09-08T09:33:47.916125+00:00",
+    "timestamp": "2026-09-08T10:07:55.919347+00:00",
     "component": {
       "type": "application",
       "name": "rt365-robotrader",
@@ -153,6 +153,12 @@
       "name": "typing_extensions",
       "version": "4.16.0",
       "purl": "pkg:pypi/typing_extensions@4.16.0"
+    },
+    {
+      "type": "library",
+      "name": "tzdata",
+      "version": "2026.3",
+      "purl": "pkg:pypi/tzdata@2026.3"
     },
     {
       "type": "library",

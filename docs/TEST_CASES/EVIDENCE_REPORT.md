@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-08T10:04:40.375076+00:00 at base commit `880b2bccda46b5f90c7f0001c6cec466288e2a49`, working tree DIRTY, tested tree `d66ebc1a7ab38fb5a39be3907158dd98d6f97838` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-08T10:10:03.090164+00:00 at base commit `d8cef0e57c1aa1f866393bc3b3e871ce367ae788`, working tree DIRTY, tested tree `8e6a6579dd3bb933069f6e3cc7c226646f6cf062` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
@@ -25,7 +25,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-MD | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-NET | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-OB | 1 | 1 | 2 | 1 | yes | 5 | 0 |
-| TC-PKG | 1 | 1 | 1 | 1 | yes | 4 | 0 |
+| TC-PKG | 1 | 1 | 1 | 2 | yes | 5 | 0 |
 | TC-RC | 1 | 2 | 1 | 1 | yes | 5 | 0 |
 | TC-RK | 5 | 31 | 4 | 2 | yes | 42 | 0 |
 
@@ -166,6 +166,7 @@ Areas with a full quartet: 20/20.
 | TC-PKG-002 | NFR-SEC-02 | negative | dev | Without an explicit --env or RT_ENV the CLI refuses to serve or check (IVA-06: unlabelled environment fails closed); a production label refuses the fixture registry. | passed | `test/quartets/test_tc_pkg_cli.py::test_cli_refuses_unlabelled_or_non_sim_environments` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-PKG-003 | NFR-SEC-02 | abuse | dev | A resource root pointed at a directory without the signed registry (or with a tampered one) fails closed: no silent fallback to the source tree, no service, no MCP server. | passed | `test/quartets/test_tc_pkg_cli.py::test_resource_root_never_falls_back_silently` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-PKG-004 | NFR-SEC-02 | recovery | dev | An installed or frozen build without a source tree recovers by pointing RT365_HOME at a complete resource bundle: the same signed policies, same checks, same probe result. | passed | `test/quartets/test_tc_pkg_cli.py::test_resource_root_override_restores_service_for_installed_builds` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-PKG-005 | NFR-GLO-01 | recovery | dev | With no system time-zone database (Windows, frozen builds) IANA zones still resolve from the bundled tzdata package, so `rt365 check` builds the venue calendars; the spec bundles that package (release run 34213524352 regression). | passed | `test/quartets/test_tc_pkg_cli.py::test_venue_calendars_resolve_zones_without_a_system_tz_database` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-RC-001 | FR-14 | positive | dev | After fills, internal positions/orders/cash reconcile cleanly against the broker statement; completion audited. | passed | `test/quartets/test_tc_rc_reconciliation.py::test_positions_and_orders_match_statement` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-RC-002 | FR-14 | negative | dev | A quantity/missing-fill break (S2) opens a ticket, raises an alert and drops the account from autonomy to Supervised. | passed | `test/quartets/test_tc_rc_reconciliation.py::test_break_moves_account_to_supervised` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-RC-003 | FR-14 | abuse | dev | A broker-side order with no internal counterpart is classified DUPLICATE (S1) and triggers the account Kill Switch. | passed | `test/quartets/test_tc_rc_reconciliation.py::test_phantom_broker_order_is_s1_duplicate_and_kills_account` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |

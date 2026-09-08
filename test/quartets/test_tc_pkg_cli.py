@@ -1,4 +1,4 @@
-"""TC-PKG-001..004 — Distribution: the ``rt365`` command, resource-root resolution for installed and frozen builds,
+"""TC-PKG-001..005 — Distribution: the ``rt365`` command, resource-root resolution for installed and frozen builds,
 and the fail-closed rules that survive packaging [Source: 06, 16; NFR-SEC-02; ADR-016]."""
 
 from __future__ import annotations
@@ -102,3 +102,28 @@ def test_resource_root_override_restores_service_for_installed_builds(monkeypatc
     assert code == 0 and str(tmp_path) in out
     code, out, _ = _cli("probe", "--env", "sim")
     assert code == 0 and "missing_spans: []" in out
+
+
+@pytest.mark.tc("TC-PKG-005")
+@pytest.mark.req("NFR-GLO-01")
+@pytest.mark.quartet("recovery")
+def test_venue_calendars_resolve_zones_without_a_system_tz_database(monkeypatch):  # type: ignore[no-untyped-def]
+    """With no system time-zone database (Windows, frozen builds) IANA zones still resolve from the bundled tzdata package, so `rt365 check` builds the venue calendars; the spec bundles that package (release run 34213524352 regression)."""
+    import zoneinfo
+
+    import tzdata  # noqa: F401  — declared runtime dependency; the executable ships it
+
+    monkeypatch.setattr(zoneinfo, "TZPATH", ())
+    zoneinfo.reset_tzpath(to=[])
+    zoneinfo.ZoneInfo.clear_cache()
+    try:
+        assert zoneinfo.ZoneInfo("UTC").key == "UTC"
+        assert zoneinfo.ZoneInfo("America/New_York").key == "America/New_York"
+        code, out, _ = _cli("check", "--env", "sim")
+        assert code == 0 and "check: OK" in out
+    finally:
+        zoneinfo.reset_tzpath()
+        zoneinfo.ZoneInfo.clear_cache()
+    spec = (ROOT / "installer" / "rt365.spec").read_text(encoding="utf-8")
+    assert 'collect_data_files("tzdata")' in spec
+    assert "tzdata" in (ROOT / "requirements.lock.txt").read_text(encoding="utf-8")

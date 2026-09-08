@@ -2,7 +2,7 @@
 
 Control: Agent roster and write-scope guard (three lines of defense for agents) — Requirement: NFR-SEC-02 — RTM row: NFR-SEC-02 — Owner: Product Owner / Delivery Orchestrator — Reviewer (≠ owner): MCP Security Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:04:40.375076+00:00 at `880b2bccda46b5f90c7f0001c6cec466288e2a49` (tree dirty, tested tree `d66ebc1a7ab3`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:10:03.090164+00:00 at `d8cef0e57c1aa1f866393bc3b3e871ce367ae788` (tree dirty, tested tree `8e6a6579dd3b`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
