@@ -2,7 +2,7 @@
 
 Control: Asymmetric signing: command authorisation and tool-registry trust set with rotation — Requirement: NFR-SEC-01 — RTM row: NFR-SEC-01 — Owner: Security Architect — Reviewer (≠ owner): MCP Security Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:02:56.208976+00:00 at `0e43d82cde7f5637a570bc313cf07c267c296cd3` (tree dirty, tested tree `8b31aa663d14`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:04:03.115134+00:00 at `df59859a0bf6458b6fce2f52de2612525d57cd89` (tree dirty, tested tree `bf8d22e17c2d`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
