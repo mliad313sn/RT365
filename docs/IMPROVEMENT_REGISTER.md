@@ -66,18 +66,18 @@ Effort key: S = days · M = weeks · L = a release. "Who" names the accountable 
 ## D. Meridian IT-PMO improvements (proposed upstream; detail and rationale in docs/PMO_MERIDIAN_ASSESSMENT.md §5)
 | # | Improvement | Effort |
 |---|---|---|
-| I-1 | Fix the first hour: load `.env` / default `PGLITE_DIR`, recursive data-dir creation, `dev` builds or proxies the client, refuse silent in-memory books — filed as https://github.com/mliad313sn/Meridian/issues/1 | S |
-| I-2 | Write API v1 with external ids, idempotency keys, scoped integration keys and generated OpenAPI — filed as https://github.com/mliad313sn/Meridian/issues/2 | M |
-| I-3 | Configurable gate ladder and phases per programme (Meridian's four gates as default template) — filed as https://github.com/mliad313sn/Meridian/issues/3 | M |
-| I-4 | Evidence and traceability objects per gate criterion (type, link, hash, owner, reviewer); gate cannot pass unreviewed — filed as https://github.com/mliad313sn/Meridian/issues/4 | M |
-| I-5 | Progress and cost from source systems (inbound events with provenance; EVM on measured progress) — filed as https://github.com/mliad313sn/Meridian/issues/5 | L |
-| I-6 | Operate-for-real kit: pg_dump backup with restore drill, second instance, PostgreSQL required outside training, instance identity, fleet runbook — filed as https://github.com/mliad313sn/Meridian/issues/6 | M |
-| I-7 | Decision register outside meetings (alternatives, dissent, links to change/gate/RAID) — filed as https://github.com/mliad313sn/Meridian/issues/7 | S |
-| I-8 | RAID linked to gates and change requests; review dates drive agenda items — filed as https://github.com/mliad313sn/Meridian/issues/8 | S |
-| I-9 | Release discipline: tags, changelog check, OpenAPI version = package version, signed installer — filed as https://github.com/mliad313sn/Meridian/issues/9 | S |
-| I-10 | Stakeholders, skills in capacity, supplier performance, communication plan — filed as https://github.com/mliad313sn/Meridian/issues/10 | M–L |
-| I-11 | English translation of the committee record — filed as https://github.com/mliad313sn/Meridian/issues/11 | S |
-| I-12 | Day-one security posture: no demo accounts in production, security-policy template, break-glass shown in UI — filed as https://github.com/mliad313sn/Meridian/issues/12 | S |
+| I-1 | Fix the first hour: load `.env` / default `PGLITE_DIR`, recursive data-dir creation, `dev` builds or proxies the client, refuse silent in-memory books — filed as https://github.com/mliad313sn/Meridian/issues/1 | S | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-2 | Write API v1 with external ids, idempotency keys, scoped integration keys and generated OpenAPI — filed as https://github.com/mliad313sn/Meridian/issues/2 | M | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-3 | Configurable gate ladder and phases per programme (Meridian's four gates as default template) — filed as https://github.com/mliad313sn/Meridian/issues/3 | M | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-4 | Evidence and traceability objects per gate criterion (type, link, hash, owner, reviewer); gate cannot pass unreviewed — filed as https://github.com/mliad313sn/Meridian/issues/4 | M | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-5 | Progress and cost from source systems (inbound events with provenance; EVM on measured progress) — filed as https://github.com/mliad313sn/Meridian/issues/5 | L | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-6 | Operate-for-real kit: pg_dump backup with restore drill, second instance, PostgreSQL required outside training, instance identity, fleet runbook — filed as https://github.com/mliad313sn/Meridian/issues/6 | M | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-7 | Decision register outside meetings (alternatives, dissent, links to change/gate/RAID) — filed as https://github.com/mliad313sn/Meridian/issues/7 | S | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-8 | RAID linked to gates and change requests; review dates drive agenda items — filed as https://github.com/mliad313sn/Meridian/issues/8 | S | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-9 | Release discipline: tags, changelog check, OpenAPI version = package version, signed installer — filed as https://github.com/mliad313sn/Meridian/issues/9 | S | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-10 | Stakeholders, skills in capacity, supplier performance, communication plan — filed as https://github.com/mliad313sn/Meridian/issues/10 | M–L | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-11 | English translation of the committee record — filed as https://github.com/mliad313sn/Meridian/issues/11 | S | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
+| I-12 | Day-one security posture: no demo accounts in production, security-policy template, break-glass shown in UI — filed as https://github.com/mliad313sn/Meridian/issues/12 | S | **delivered upstream in Meridian 5.10.0** (2026-09-08, commits b58f806/e352bc8; tracked as REQ-01..REQ-12 in its own request register) |
 
 ## F. Global compatibility (owner requirement 2026-09-08; docs/GLOBAL_COMPATIBILITY.md; D-050)
 | # | Improvement | Gate | Who | Effort | Status |
@@ -96,6 +96,26 @@ Effort key: S = days · M = weeks · L = a release. "Who" names the accountable 
 
 ## Execution (D-051)
 Sections B, C, D, E and F are delegated to the Product Owner agent and its counsellors. Execution order: Gate B items first (B-2, B-3, B-15, B-18, C-1, C-2, C-5, F-1), then Gate C (B-1, B-4, B-5, B-6, B-7, B-8, B-9, F-3, F-4, F-5), then D and F. Each build item runs through its build agent with the control quartet first, a session packet `docs/SESSIONS/BUILD_<epic>_<date>.md`, `make all` green, and the 2nd-line reviewer named; section D items were filed upstream on 2026-09-08 as mliad313sn/Meridian issues #1–#12. Progress is reported in the weekly report and mirrored in Meridian by `make pmo-sync`.
+
+## D2. Meridian value requirements (V-1..V-12, 2026-09-08 re-test)
+All twelve of §D were delivered upstream in 5.10.0 within a day of being filed, so §D is closed and this section replaces it. These requirements aim at the owner's stated goal — a tool that proves a project was worth doing, not only that it was run well. Full text, evidence and acceptance criteria in docs/PMO_MERIDIAN_ASSESSMENT.md §8; each is measured against what 5.10.0 already has (`business_case`, `benefit`, `lesson`, `stakeholder`, `rollout_wave`, tolerances and exceptions all exist).
+
+| # | Requirement | Priority | Effort | To be filed upstream |
+|---|---|---|---|---|
+| V-1 | Value objects in the write API v1 (business case and benefits by external id, idempotent, audited) | highest | S | yes — REQ-14 |
+| V-2 | The benefit review is a scheduled act: overdue reviews reach the agenda and the exception list | highest | M | yes |
+| V-3 | The business case is re-confirmed at every gate and the gate cannot pass without it | highest | S | yes |
+| V-4 | Forecast versus realised as one report, in each benefit's own unit | high | M | yes |
+| V-5 | Portfolio prioritisation by value, confidence, risk exposure and capacity | high | M | yes |
+| V-6 | Adoption telemetry per rollout wave, linked to the benefits it should move | medium | M | yes |
+| V-7 | Lessons offered as a checklist at the same gate on later projects | medium | S | yes |
+| V-8 | One ladder per project (measured defect: our sixteen projects carry both Gate A–F and Gate 1–4) | high | S | yes — defect |
+| V-9 | Governance quality signals: decision latency, action ageing, gate cycle time, RAID review compliance, exception age | medium | S | yes |
+| V-10 | Evidence provenance for gate criteria: a typed external reference (commit, artefact, checksum), not a document link | medium | M | yes |
+| V-11 | A value dashboard for the executive, snapshotted per reporting period | medium | M | yes |
+| V-12 | Publish the field-repository loop (request register plus review command) as a reusable pattern | high | S | yes |
+
+Filing them upstream through Meridian's own request register is a human act on the owner's account [Open: H-31].
 
 ## E. Delivery-kit and agent tooling
 | # | Improvement | Why | Who | Effort | Source |
