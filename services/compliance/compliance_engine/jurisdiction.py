@@ -33,8 +33,10 @@ class JurisdictionRegistry:
         return cell
 
     def record_legal(self, cell: JurisdictionCell, *, legal_record_ref: str, actor: Actor) -> JurisdictionCell:
-        if actor.role not in (Role.LEGAL_AGENT, Role.COMPLIANCE_AGENT) or not actor.is_human:
-            raise ControlDenied("legal record requires a human Legal or Compliance Agent")
+        # Dual key spans two functions: Legal signs the record, Compliance activates the flag (goals/07, goals/08;
+        # council finding F-1 2026-09-08). Two Compliance hands, an agent or the Product Owner never satisfy it.
+        if actor.role != Role.LEGAL_AGENT or not actor.is_human:
+            raise ControlDenied("legal record requires a human Legal Agent")
         updated = cell.model_copy(update={"legal_record_ref": legal_record_ref, "legal_signed_by": actor.actor_id})
         self._cells[cell.key] = updated
         self._audit("jurisdiction.legal.recorded", updated.model_dump(mode="json"))
@@ -44,8 +46,8 @@ class JurisdictionRegistry:
         current = self._cells[cell.key]
         if not actor.is_human:
             raise ControlDenied("technical flag activation requires a human actor")
-        if actor.role not in (Role.COMPLIANCE_AGENT, Role.LEGAL_AGENT, Role.COMPLIANCE_ANALYST):
-            raise ControlDenied("technical flag activation requires a Compliance or Legal role")
+        if actor.role not in (Role.COMPLIANCE_AGENT, Role.COMPLIANCE_ANALYST):
+            raise ControlDenied("technical flag activation requires a human Compliance role (the legal record is Legal's hand)")
         if not current.legal_record_ref or not current.legal_signed_by:
             raise ControlDenied("technical flag cannot be activated without a signed legal record")
         if actor.actor_id == current.legal_signed_by:

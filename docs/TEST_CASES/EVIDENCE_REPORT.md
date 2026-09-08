@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-07T22:34:47.209402+00:00 at base commit `2b44f761aea4d5c000128e52121cdf8eb4e1408d` (the working tree at generation time; CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-08T08:20:39.681421+00:00 at base commit `b82f932af2943201bdcce9426b7eb03866d6bb91` (the working tree at generation time; CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
@@ -14,7 +14,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-AUD | 1 | 1 | 2 | 1 | yes | 5 | 0 |
 | TC-BR | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-BT | 1 | 1 | 1 | 1 | yes | 4 | 0 |
-| TC-CP | 1 | 2 | 1 | 2 | yes | 6 | 0 |
+| TC-CP | 1 | 2 | 2 | 2 | yes | 7 | 0 |
 | TC-E2E | 2 | 1 | 2 | 1 | yes | 6 | 0 |
 | TC-EX | 3 | 5 | 4 | 4 | yes | 16 | 0 |
 | TC-ID | 1 | 1 | 2 | 1 | yes | 5 | 0 |
@@ -74,6 +74,7 @@ Areas with a full quartet: 17/17.
 | TC-CP-004 | FR-15 | recovery | dev | Flag without legal record is impossible/blocked; after dual key the cell is live; one person can disable (rollback). | passed | `test/quartets/test_tc_cp_eligibility.py::test_flag_without_record_blocked_then_dual_key_enables_and_disable_is_single_person` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-CP-005 | FR-15 | negative | dev | Synthetic wash/spoof/close patterns are detected; manipulation-capable or out-of-scope strategies are rejected at registration. | passed | `test/quartets/test_tc_cp_eligibility.py::test_surveillance_patterns_and_registration_screen` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-CP-006 | FR-15 | recovery | dev | Deletion requests are suppressed (not destroyed) under legal hold or retention; decision logged [O-09]. | passed | `test/quartets/test_tc_cp_eligibility.py::test_retention_deletion_suppressed_under_legal_hold` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-CP-007 | FR-15 | abuse | dev | The legal record must be signed by a human Legal Agent: two Compliance people, an agent, or the same person twice never satisfy the dual key (council finding F-1, 2026-09-08). | passed | `test/quartets/test_tc_cp_eligibility.py::test_dual_key_requires_legal_and_compliance_hands` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-E2E-API | FR-16 | positive | dev | Every BFF route is in contracts/api/API_OPENAPI.yaml and vice versa (path parameter names normalised). | passed | `test/contract/test_openapi_alignment.py::test_bff_routes_match_openapi_paths` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-E2E-AUTH | FR-01 | abuse | dev | Agent/system roles cannot be asserted through the human path; the BFF refuses to start outside RT_ENV=sim (R-06). | passed | `test/e2e/test_journeys_and_bff.py::test_dev_header_auth_refuses_non_human_roles_and_non_sim_env` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-E2E-J03 | FR-12 | positive | dev | J-03: agent submits intent via signed identity -> eligibility -> risk -> approval queue -> human approves -> fill -> reconcile -> audit search. | passed | `test/e2e/test_journeys_and_bff.py::test_j03_supervised_order_end_to_end` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |

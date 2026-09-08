@@ -29,6 +29,13 @@ def test_agents_are_generated_from_goals_and_owners_may_edit_their_artefacts(): 
     expected_roles = 1 + len(FIRST_LINE) + len(SECOND_LINE) + len(THIRD_LINE)  # product owner + 28 committee roles
     assert sum(s.kind == "role" for s in specs) == expected_roles
     assert sum(s.kind == "build" for s in specs) == 15 and sum(s.kind == "gate" for s in specs) == 6 and "delivery-orchestrator" in names
+    assert sum(s.kind == "approver" for s in specs) == 7 and sum(s.kind == "counsel" for s in specs) == 9
+    assert all(s.profile for s in specs if s.kind == "role"), (
+        "every committee role carries an expertise profile (skilled, informed, experienced)"
+    )
+    for s in specs:
+        if s.kind in ("approver", "counsel"):
+            assert "EXPERTISE" in s.prompt and "MUST READ" in s.prompt, s.name
     assert {"product-owner", "chief-risk-agent", "mcp-security-agent", "independent-validation-agent", "build-e05", "gate-c"} <= names
     roster = load_roster(ROOT)
     for agent, path in (
@@ -67,11 +74,23 @@ def test_lines_are_segregated():  # type: ignore[no-untyped-def]
         ("product-owner", "services/risk/risk_engine/engine.py"),
         ("backend-lead", "mcp/policies/allowlist.tenant-sim.yaml"),
         ("gate-c", "services/execution/execution_gateway/gateway.py"),
+        ("approve-trading-risk-committee-chair", "services/risk/risk_engine/engine.py"),
+        ("approve-trading-risk-committee-chair", "docs/RISK_POLICY.md"),
+        ("approve-security-privacy-board-chair", "mcp/policies/tool_registry.json"),
+        ("counsel-ai-safety", "mcp/servers/mcp_servers/tools.py"),
+        ("counsel-regulatory-landscape", "docs/JURISDICTION_MATRIX.md"),
+        ("approve-cab-chair", "docs/DECISION_LOG.md"),
     ):
         ok, reason = decide(agent, path, roster, ROOT)
         assert not ok, f"{agent} must not edit {path}"
         assert _hook(agent, path) == 2
     for spec in collect(ROOT):
+        if spec.kind in ("approver", "counsel"):  # approvers and counsellors never author code, policy or decisions
+            assert not any(
+                p.startswith(("services/", "mcp/", "libs/", "apps/", "connectors/", "infra/", "security/", "goals/"))
+                for p in spec.allowed_paths
+            ), spec.name
+            assert "docs/DECISION_LOG.md" not in spec.allowed_paths, spec.name
         if spec.line == "3rd":
             assert not any(
                 p.startswith(("services/", "mcp/", "libs/", "apps/", "connectors/", "infra/", "security/")) for p in spec.allowed_paths

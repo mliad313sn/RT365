@@ -5,6 +5,7 @@
       "kind": "orchestrator",
       "line": "1st",
       "source": "GOAL.md",
+      "profile": "",
       "allowed_paths": [
         "docs/",
         "goals/",
@@ -16,6 +17,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/00_product_owner.md",
+      "profile": "goals/profiles/00_product_owner.md",
       "allowed_paths": [
         "docs/PRODUCT_OWNER.md",
         "docs/AGENT_ROSTER.md",
@@ -37,6 +39,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/01_product_director.md",
+      "profile": "goals/profiles/01_product_director.md",
       "allowed_paths": [
         "docs/PRODUCT_CHARTER.md",
         "docs/PRD.md",
@@ -57,6 +60,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/02_program_orchestrator.md",
+      "profile": "goals/profiles/02_program_orchestrator.md",
       "allowed_paths": [
         "docs/BACKLOG.md",
         "docs/RAID_LOG.md",
@@ -74,6 +78,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/03_trading_domain_lead.md",
+      "profile": "goals/profiles/03_trading_domain_lead.md",
       "allowed_paths": [
         "docs/SEQUENCE_DIAGRAMS.md",
         "docs/MARKET_LAUNCH_CHECKLIST.md",
@@ -91,6 +96,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/04_quant_research_lead.md",
+      "profile": "goals/profiles/04_quant_research_lead.md",
       "allowed_paths": [
         "docs/STRATEGY_CARDS/",
         "docs/DATA_DICTIONARY.md",
@@ -107,6 +113,7 @@
       "kind": "role",
       "line": "2nd",
       "source": "goals/05_model_risk_lead.md",
+      "profile": "goals/profiles/05_model_risk_lead.md",
       "allowed_paths": [
         "docs/MODEL_CARDS/",
         "docs/PROMPT_REGISTRY.md",
@@ -123,6 +130,7 @@
       "kind": "role",
       "line": "2nd",
       "source": "goals/06_chief_risk_agent.md",
+      "profile": "goals/profiles/06_chief_risk_agent.md",
       "allowed_paths": [
         "docs/RISK_POLICY.md",
         "docs/LIMIT_MATRIX.md",
@@ -139,6 +147,7 @@
       "kind": "role",
       "line": "2nd",
       "source": "goals/07_compliance_agent.md",
+      "profile": "goals/profiles/07_compliance_agent.md",
       "allowed_paths": [
         "docs/COMPLIANCE_MATRIX.md",
         "docs/JURISDICTION_MATRIX.md",
@@ -155,6 +164,7 @@
       "kind": "role",
       "line": "2nd",
       "source": "goals/08_legal_agent.md",
+      "profile": "goals/profiles/08_legal_agent.md",
       "allowed_paths": [
         "docs/JURISDICTION_MATRIX.md",
         "docs/COMPLIANCE_MATRIX.md",
@@ -172,6 +182,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/09_enterprise_architect.md",
+      "profile": "goals/profiles/09_enterprise_architect.md",
       "allowed_paths": [
         "docs/CONTEXT_DIAGRAM.md",
         "docs/CONTAINER_DIAGRAM.md",
@@ -192,6 +203,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/10_data_architect.md",
+      "profile": "goals/profiles/10_data_architect.md",
       "allowed_paths": [
         "docs/DATA_MODEL.md",
         "docs/DATA_DICTIONARY.md",
@@ -209,6 +221,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/11_cloud_architect.md",
+      "profile": "goals/profiles/11_cloud_architect.md",
       "allowed_paths": [
         "infra/",
         "docs/DR_PLAN.md",
@@ -226,6 +239,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/12_integration_architect.md",
+      "profile": "goals/profiles/12_integration_architect.md",
       "allowed_paths": [
         "contracts/api/API_OPENAPI.yaml",
         "contracts/events/",
@@ -243,6 +257,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/13_security_architect.md",
+      "profile": "goals/profiles/13_security_architect.md",
       "allowed_paths": [
         "docs/THREAT_MODEL.md",
         "docs/SECURITY_PLAN.md",
@@ -261,6 +276,7 @@
       "kind": "role",
       "line": "2nd",
       "source": "goals/14_mcp_security_agent.md",
+      "profile": "goals/profiles/14_mcp_security_agent.md",
       "allowed_paths": [
         "docs/MCP_TOOL_CATALOG.md",
         "mcp/policies/",
@@ -277,6 +293,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/15_backend_lead.md",
+      "profile": "goals/profiles/15_backend_lead.md",
       "allowed_paths": [
         "services/",
         "libs/",
@@ -295,6 +312,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/16_broker_connector_lead.md",
+      "profile": "goals/profiles/16_broker_connector_lead.md",
       "allowed_paths": [
         "connectors/brokers/",
         "docs/BROKER_CERTIFICATIONS/",
@@ -311,6 +329,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/17_frontend_mobile_lead.md",
+      "profile": "goals/profiles/17_frontend_mobile_lead.md",
       "allowed_paths": [
         "apps/web/",
         "apps/admin/",
@@ -328,6 +347,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/18_data_engineering_lead.md",
+      "profile": "goals/profiles/18_data_engineering_lead.md",
       "allowed_paths": [
         "connectors/data-providers/",
         "services/market-data/",
@@ -344,6 +364,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/19_sre_lead.md",
+      "profile": "goals/profiles/19_sre_lead.md",
       "allowed_paths": [
         "docs/SLO_SLA.md",
         "docs/DASHBOARDS.md",
@@ -365,6 +386,7 @@
       "kind": "role",
       "line": "3rd",
       "source": "goals/20_qa_lead.md",
+      "profile": "goals/profiles/20_qa_lead.md",
       "allowed_paths": [
         "docs/TEST_STRATEGY.md",
         "docs/TEST_CASES/",
@@ -379,6 +401,7 @@
       "kind": "role",
       "line": "3rd",
       "source": "goals/21_performance_chaos_lead.md",
+      "profile": "goals/profiles/21_performance_chaos_lead.md",
       "allowed_paths": [
         "docs/PERFORMANCE_PLAN.md",
         "docs/CHAOS_PLAN.md",
@@ -392,6 +415,7 @@
       "kind": "role",
       "line": "3rd",
       "source": "goals/22_accessibility_lead.md",
+      "profile": "goals/profiles/22_accessibility_lead.md",
       "allowed_paths": [
         "docs/ACCESSIBILITY/",
         "docs/SESSIONS/REVIEW_",
@@ -403,6 +427,7 @@
       "kind": "role",
       "line": "3rd",
       "source": "goals/23_red_team_pentest_lead.md",
+      "profile": "goals/profiles/23_red_team_pentest_lead.md",
       "allowed_paths": [
         "docs/RED_TEAM_PLAN.md",
         "docs/PENTEST/",
@@ -415,6 +440,7 @@
       "kind": "role",
       "line": "2nd",
       "source": "goals/24_privacy_lead.md",
+      "profile": "goals/profiles/24_privacy_lead.md",
       "allowed_paths": [
         "docs/PRIVACY_IMPACT.md",
         "docs/SESSIONS/",
@@ -430,6 +456,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/25_finance_vendor_lead.md",
+      "profile": "goals/profiles/25_finance_vendor_lead.md",
       "allowed_paths": [
         "docs/VENDOR_ASSESSMENTS/",
         "docs/CAPACITY_MODEL.md",
@@ -446,6 +473,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/26_support_training_lead.md",
+      "profile": "goals/profiles/26_support_training_lead.md",
       "allowed_paths": [
         "docs/SUPPORT_MODEL.md",
         "docs/TRAINING_PLAN.md",
@@ -462,6 +490,7 @@
       "kind": "role",
       "line": "1st",
       "source": "goals/27_gtm_lead.md",
+      "profile": "goals/profiles/27_gtm_lead.md",
       "allowed_paths": [
         "docs/MARKET_LAUNCH_CHECKLIST.md",
         "docs/GTM/",
@@ -478,9 +507,184 @@
       "kind": "role",
       "line": "3rd",
       "source": "goals/28_independent_validation_agent.md",
+      "profile": "goals/profiles/28_independent_validation_agent.md",
       "allowed_paths": [
         "docs/GATE_REPORTS/",
         "docs/SESSIONS/REVIEW_",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "approve-product-council-chair": {
+      "kind": "approver",
+      "line": "approver",
+      "source": "goals/approvers/A1_product_council_chair.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/PO_DECISION_QUEUE.md"
+      ]
+    },
+    "approve-arb-chair": {
+      "kind": "approver",
+      "line": "approver",
+      "source": "goals/approvers/A2_arb_chair.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/PO_DECISION_QUEUE.md"
+      ]
+    },
+    "approve-model-risk-committee-chair": {
+      "kind": "approver",
+      "line": "approver",
+      "source": "goals/approvers/A3_model_risk_committee_chair.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/PO_DECISION_QUEUE.md"
+      ]
+    },
+    "approve-trading-risk-committee-chair": {
+      "kind": "approver",
+      "line": "approver",
+      "source": "goals/approvers/A4_trading_risk_committee_chair.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/PO_DECISION_QUEUE.md"
+      ]
+    },
+    "approve-security-privacy-board-chair": {
+      "kind": "approver",
+      "line": "approver",
+      "source": "goals/approvers/A5_security_privacy_board_chair.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/PO_DECISION_QUEUE.md"
+      ]
+    },
+    "approve-compliance-legal-committee-chair": {
+      "kind": "approver",
+      "line": "approver",
+      "source": "goals/approvers/A6_compliance_legal_committee_chair.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/PO_DECISION_QUEUE.md"
+      ]
+    },
+    "approve-cab-chair": {
+      "kind": "approver",
+      "line": "approver",
+      "source": "goals/approvers/A7_cab_chair.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md",
+        "docs/AUDIT_EVIDENCE_INDEX.md",
+        "docs/PO_DECISION_QUEUE.md"
+      ]
+    },
+    "counsel-regulatory-landscape": {
+      "kind": "counsel",
+      "line": "advisory",
+      "source": "goals/counsel/K1_regulatory_landscape.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "counsel-market-structure": {
+      "kind": "counsel",
+      "line": "advisory",
+      "source": "goals/counsel/K2_market_structure.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "counsel-quant-validation": {
+      "kind": "counsel",
+      "line": "advisory",
+      "source": "goals/counsel/K3_quant_validation.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "counsel-ai-safety": {
+      "kind": "counsel",
+      "line": "advisory",
+      "source": "goals/counsel/K4_ai_safety.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "counsel-market-data-licensing": {
+      "kind": "counsel",
+      "line": "advisory",
+      "source": "goals/counsel/K5_market_data_licensing.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "counsel-broker-integration": {
+      "kind": "counsel",
+      "line": "advisory",
+      "source": "goals/counsel/K6_broker_integration.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "counsel-platform-reliability": {
+      "kind": "counsel",
+      "line": "advisory",
+      "source": "goals/counsel/K7_platform_reliability.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "counsel-incident-command": {
+      "kind": "counsel",
+      "line": "advisory",
+      "source": "goals/counsel/K8_incident_command.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
+        "docs/RAID_LOG.md"
+      ]
+    },
+    "counsel-product-economics": {
+      "kind": "counsel",
+      "line": "advisory",
+      "source": "goals/counsel/K9_product_economics.md",
+      "profile": "",
+      "allowed_paths": [
+        "docs/SESSIONS/",
         "docs/RAID_LOG.md"
       ]
     },
@@ -488,6 +692,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E01_foundation_identity.md",
+      "profile": "",
       "allowed_paths": [
         "services/identity/identity_service/",
         "libs/core/rtcore/lines.py",
@@ -508,6 +713,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E02_market_data_instrument_master.md",
+      "profile": "",
       "allowed_paths": [
         "services/market-data/market_data/",
         "connectors/data-providers/data_providers/",
@@ -529,6 +735,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E03_broker_adapter_framework.md",
+      "profile": "",
       "allowed_paths": [
         "connectors/brokers/broker_adapters/",
         "scripts/certify_broker.py",
@@ -550,6 +757,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E04_portfolio_accounting.md",
+      "profile": "",
       "allowed_paths": [
         "services/portfolio/portfolio_service/ledger.py",
         "libs/core/rtcore/schemas/account.py",
@@ -571,6 +779,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E05_deterministic_risk_engine.md",
+      "profile": "",
       "allowed_paths": [
         "services/risk/risk_engine/",
         "services/risk/policies/",
@@ -593,6 +802,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E06_compliance_eligibility.md",
+      "profile": "",
       "allowed_paths": [
         "services/compliance/compliance_engine/",
         "libs/core/rtcore/schemas/compliance.py",
@@ -613,6 +823,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E07_oms_execution_gateway.md",
+      "profile": "",
       "allowed_paths": [
         "services/oms/oms/",
         "services/execution/execution_gateway/",
@@ -637,6 +848,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E08_strategy_backtesting.md",
+      "profile": "",
       "allowed_paths": [
         "services/strategy/strategy_service/",
         "services/backtest/backtest_engine/",
@@ -659,6 +871,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E09_mcp_ai_governance.md",
+      "profile": "",
       "allowed_paths": [
         "mcp/servers/mcp_servers/",
         "scripts/sign_tool_registry.py",
@@ -681,6 +894,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E10_dashboard_mobile.md",
+      "profile": "",
       "allowed_paths": [
         "apps/web/web_bff/",
         "apps/web/static/",
@@ -705,6 +919,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E11_audit_surveillance_reporting.md",
+      "profile": "",
       "allowed_paths": [
         "services/audit/audit_service/",
         "services/compliance/compliance_engine/surveillance.py",
@@ -727,6 +942,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E12_observability_sre.md",
+      "profile": "",
       "allowed_paths": [
         "observability/",
         "docs/ALERT_CATALOG.md",
@@ -753,6 +969,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E13_security_privacy.md",
+      "profile": "",
       "allowed_paths": [
         "libs/core/rtcore/planes.py",
         "libs/core/rtcore/resources.py",
@@ -781,6 +998,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E14_billing_support_admin.md",
+      "profile": "",
       "allowed_paths": [
         "services/tenant/",
         "services/notification/",
@@ -807,6 +1025,7 @@
       "kind": "build",
       "line": "1st",
       "source": "goals/build/E15_regulatory_market_launch.md",
+      "profile": "",
       "allowed_paths": [
         "docs/MARKET_LAUNCH_CHECKLIST.md",
         "docs/JURISDICTION_MATRIX.md",
@@ -830,6 +1049,7 @@
       "kind": "gate",
       "line": "governance",
       "source": "goals/gate_A_discovery.md",
+      "profile": "",
       "allowed_paths": [
         "docs/DECISION_LOG.md",
         "docs/RAID_LOG.md",
@@ -843,6 +1063,7 @@
       "kind": "gate",
       "line": "governance",
       "source": "goals/gate_B_architecture.md",
+      "profile": "",
       "allowed_paths": [
         "docs/DECISION_LOG.md",
         "docs/RAID_LOG.md",
@@ -856,6 +1077,7 @@
       "kind": "gate",
       "line": "governance",
       "source": "goals/gate_C_paper_readiness.md",
+      "profile": "",
       "allowed_paths": [
         "docs/DECISION_LOG.md",
         "docs/RAID_LOG.md",
@@ -869,6 +1091,7 @@
       "kind": "gate",
       "line": "governance",
       "source": "goals/gate_D_supervised_pilot.md",
+      "profile": "",
       "allowed_paths": [
         "docs/DECISION_LOG.md",
         "docs/RAID_LOG.md",
@@ -882,6 +1105,7 @@
       "kind": "gate",
       "line": "governance",
       "source": "goals/gate_E_capped_autonomy.md",
+      "profile": "",
       "allowed_paths": [
         "docs/DECISION_LOG.md",
         "docs/RAID_LOG.md",
@@ -895,6 +1119,7 @@
       "kind": "gate",
       "line": "governance",
       "source": "goals/gate_F_market_release.md",
+      "profile": "",
       "allowed_paths": [
         "docs/DECISION_LOG.md",
         "docs/RAID_LOG.md",

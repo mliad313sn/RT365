@@ -4,11 +4,11 @@
 |---|---|---|
 | Program Orchestrator | Independent Validation Agent | living register, reviewed weekly |
 
-Rule: an action stays here until its evidence file exists. The orchestrator prepares everything around it; only a named human closes it.
+Rule: an action stays here until its evidence file exists. The orchestrator prepares everything around it; only a named human closes it. Since 2026-09-08 (D-039) the Product Owner is the deciding human for every row; the Owner column names who prepares or executes the act, and the decision is taken through docs/PO_DECISION_QUEUE.md. Acts that need an external party (counsel, regulator, broker, data vendor, a second person for two-person controls) still need that party.
 
 | ID | Action | Category | Owner | Blocks gate | Prepared by prompt | Evidence when done | Due | Status |
 |---|---|---|---|---|---|---|---|---|
-| H-01 | Appoint people to the 27 committee roles and name deputies | Governance | Executive sponsor | A | goals/decisions/O-19 | RACI.md complete | | Open |
+| H-01 | Appoint people to the 27 committee roles (Gate A); name deputies for two-person controls by Gate C (O-19, O-63) | Governance | Product Owner | A (roles) / C (deputies) | goals/decisions/O-19 | RACI.md complete | | Open |
 | H-02 | Ratify committee structure and decisions D-001..D-004 | Governance | Executive Steering | A | GOAL.md | DECISION_LOG entry | | Open |
 | H-03 | Choose first jurisdiction cell | Strategy | Product Director + Compliance | A | O-11 pack | JURISDICTION_MATRIX row | | Open |
 | H-04 | Engage external counsel; obtain legal opinion per cell | Legal | Legal Agent | D | external/legal_regulatory_engagement | signed legal record | | Open |
@@ -30,5 +30,5 @@ Rule: an action stays here until its evidence file exists. The orchestrator prep
 | H-20 | Provision KMS/HSM-held asymmetric key for order-command authorisation and registry signing, with rotation (replaces dev/sim shared HMAC and dev registry key) | Security | Security Architect + Cloud Architect | C | O-22, O-53 packs; ADR-015 | key ceremony record; `verify_tool_registry.py --production` passes | | Open |
 | H-21 | Provision a WORM/replica anchor store for the audit `ChainHead`, written by a principal separate from the audit service | Operations | SRE Lead + Internal Audit | C | O-54; ADR-004 | anchor store attestation; TC-AUD anchor test against the external store | | Open |
 | H-22 | Convene the Committee to receive GATE_A/B/C_2026-09-07 and the re-validation report; record the human approver of record for each verdict | Governance | Committee chair | B | docs/GATE_REPORTS/ | DECISION_LOG entries with approver ≠ author | | Open |
-| H-23 | Ratify the Product Owner appointment (acting from 2026-09-07), name the person and deputy of record | Governance | Executive Steering | A | goals/00_product_owner.md; docs/PRODUCT_OWNER.md; D-035 | DECISION_LOG entry with approver ≠ author; RACI row updated | | Open |
+| H-23 | Ratify the Product Owner appointment (acting from 2026-09-07), name the person and deputy of record | Governance | Product Owner | A | goals/00_product_owner.md; docs/PRODUCT_OWNER.md; D-035 | D-039 (owner declaration 2026-09-08); deputy remains under O-19 | 2026-09-08 | Closed (appointment and authority); deputy open |
 | H-24 | Confirm the `release` workflow evidence (run 34167194283 built and smoke-tested `rt365.exe`, SHA-256 recorded in AUDIT_EVIDENCE_INDEX #28), download `rt365-windows-x64`, verify the checksum on a Windows machine, sign the row; decide artefact signing (O-23) | Operations | SRE Lead + Security Architect | B | .github/workflows/release.yml; docs/INSTALLATION.md | AUDIT_EVIDENCE_INDEX row with run URL and checksum | | Open |

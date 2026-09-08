@@ -6,6 +6,8 @@
 
 Rule [Source: 13]: builder is never the sole approver; risk, compliance and security controls have independent accountable owners; emergency authority and deputies documented.
 
+**Authority since 2026-09-08 (D-039, docs/PRODUCT_OWNER.md):** the "A" column below names the council that recommends; the human Product Owner decides every row and may convene any council. Kill Switch activation authority and the runtime two-person rules are unchanged (a second distinct human is still required).
+
 | Control / decision | R | A | C | I |
 |---|---|---|---|---|
 | Risk limits and policy | Backend Lead (impl) | Chief Risk Agent / Trading Risk Committee | Trading Domain Lead, Compliance | IVA |

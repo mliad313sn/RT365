@@ -1,32 +1,40 @@
-# PRODUCT_OWNER — appointment record
+# PRODUCT_OWNER — appointment and authority record
 
 | Owner | Reviewer (different line) | Approving body | First gate | Status |
 |---|---|---|---|---|
-| Product Owner | Compliance Agent | Executive Steering | A | Appointed (acting) 2026-09-07 — ratification pending (MISSING_ACTIONS H-23) |
+| Product Owner | Compliance Agent (record review) | Product Owner (self-declared authority, D-039); ratification of the appointment H-23 closed by the owner's declaration | A | v2.0 — authority model declared by the repository owner 2026-09-08 |
 
-## Appointment [Committee]
+## Appointment [Committee → Owner declaration]
 | Field | Value |
 |---|---|
-| Role | Product Owner (1st line) — accountable for product completeness and executability; role prompt `goals/00_product_owner.md`; agent `.claude/agents/product-owner.md` |
-| Appointed person | The repository owner (GitHub `mliad313sn`), acting Product Owner from 2026-09-07 by the `/goal` instruction "appoint a product owner and all agent and MCP required to ensure this project is complete and executable" |
-| Appointing authority | Delivery Orchestrator (AI) on the owner's instruction; **ratification by Executive Steering pending** (H-23, blocks Gate A). Until ratified the appointment is acting: it can prioritise and accept increments; it cannot pass a gate. |
-| Delegate | `product-owner` agent (Claude Code sub-agent generated from `goals/00_product_owner.md`) — prepares backlog order, acceptance packets, roster and executability checks; every acceptance it drafts names a human reviewer and approver |
-| Deputy | [Open: O-19] — to be named with the other deputies |
-| Line | 1st (build and run). Never 2nd or 3rd line for any control it prioritises [Source: 13] |
-| Decision right | Backlog priority and definition of done for the product; epic acceptance recommendation to the Product Council |
-| Segregation | May not approve risk limits, compliance enablement, security acceptance, models/strategies, gates or its own acceptance records; protected paths still require the 2nd-line CODEOWNER |
+| Role | Product Owner — the single human decision authority for the product; role prompt `goals/00_product_owner.md`; delegate agent `.claude/agents/product-owner.md` |
+| Person | The repository owner (GitHub `mliad313sn`), appointed 2026-09-07 (D-035) and declared decision authority 2026-09-08 (D-039) |
+| Authority (owner declaration, 2026-09-08) | The Product Owner is in charge of approving **any human decision** (every row of docs/MISSING_ACTIONS.md and docs/PO_DECISION_QUEUE.md, every gate A–F, every risk acceptance and every override) and **fully drives the development until the final product is ready for a controlled market release**. The Product Owner **may convene any council** to help choose the most appropriate option in the benefit of the final goal; councils are advisory. |
+| Delegate | `product-owner` agent: prepares, convenes councils, drafts recommendations and decision records; never records an approval on the human's behalf |
+| Deputy | [Open: O-19] — required as the second human for runtime two-person controls |
+| Line | 1st (decides and drives); the councils supply the 2nd- and 3rd-line views it must hear before deciding |
 
-## Relationship to the Product Director [Committee]
-The blueprint names a Product Director (scope, personas, value, pricing, roadmap; `goals/01_product_director.md`). The Product Owner is the accountable person for delivery completeness and executability of that scope, one level closer to the build: the Director says *what the product is*, the Owner says *what is done next and whether it is done*. The two seats may be held by one person until the organisation staffs both (H-01); when they are, the Product Director chairs the Product Council and the Product Owner presents to it.
+## Decision protocol [Committee; D-039]
+1. Every open human decision is a row in docs/PO_DECISION_QUEUE.md with the gate it blocks, the council to convene, the prepared pack, the recommendation and a decision field.
+2. The delegate convenes the council: member agents write option analyses to `docs/SESSIONS/COUNCIL_<date>_<topic>_*.md`, a different-line member challenges, the Independent Validation Agent checks the evidence.
+3. The human Product Owner decides (approve / reject / defer / override). The delegate records it in docs/DECISION_LOG.md with the alternatives, the council recommendation and any dissent, updates the ledgers and executes the consequences (build prompts, MISSING_ACTIONS, RTM).
+4. An Independent Validation VETO closes a gate unless the Product Owner overrides it **in writing** with the finding, the accepted risk and the compensating control (risk-acceptance record in DECISION_LOG and RAID).
+5. Nothing an agent writes is a decision. Nothing decided promotes an environment beyond what the gate evidence supports without the override record above.
+
+## Deviation from the blueprint and compensating controls [Committee; risk accepted by the owner, R-48]
+Blueprint 13 required independent 2nd-line approvers and an Executive Steering that cannot override an Independent Validation veto on evidence grounds. The owner's declaration concentrates all human approval in the Product Owner. Compensating controls: (a) every decision carries the council recommendation and dissent; (b) overrides are explicit written risk acceptances; (c) the runtime two-person controls (Kill Switch deactivation, dual-key jurisdiction flag, maker-checker limit changes) are technical and still require a second distinct human — the Product Owner cannot be both persons, hence the deputy (O-19); (d) the agents remain segregated by line (TC-AGT) and never approve; (e) external obligations (regulator, broker, counsel, data licences) are not changed by any internal decision and stay [Open] until evidenced.
+
+## Relationship to the Product Director
+The Product Director (`goals/01`) keeps scope, personas, value, pricing and roadmap and chairs the Product Council as an advisory body. The Product Owner decides. Both seats are held by the repository owner until staffed (H-01).
 
 ## Accountabilities (RACI extract; full table in RACI.md)
 | Control / decision | R | A | C | I |
 |---|---|---|---|---|
-| Backlog priority and story readiness | Program Orchestrator | **Product Owner** | Product Director, epic leads | IVA |
-| Epic acceptance against PRD and DoD | Epic accountable lead | **Product Owner** (recommends) → Product Council (approves) | 2nd-line reviewer of the epic | IVA |
-| Agent and MCP roster (`.claude/agents/`, `.mcp.json`, docs/AGENT_ROSTER.md) | Delivery Orchestrator (AI) | **Product Owner** | MCP Security Agent (any MCP server), Security Architect | all |
-| Executability (install, check, serve, package, release) | Backend Lead, SRE Lead | **Product Owner** | Cloud Architect | CAB |
+| Every human decision, gate and risk acceptance | delegate agent prepares; councils recommend | **Product Owner** | council members per topic | IVA, all |
+| Backlog priority, DoD, epic acceptance | Program Orchestrator, epic leads | **Product Owner** | Product Director | IVA |
+| Agent and MCP roster | Delivery Orchestrator (AI) | **Product Owner** | MCP Security Agent, Security Architect | all |
+| Executability (install, check, serve, package, release) | Backend Lead, SRE Lead | **Product Owner** | Cloud Architect | CAB (advisory) |
+| Runtime two-person actions | Product Owner + deputy (different persons) | **Product Owner** | Chief Risk Agent | all |
 
 ## Evidence
-- Decision D-035 (DECISION_LOG.md); MISSING_ACTIONS H-23; RAID O-57.
-- Executability evidence: `make all`, `rt365 check --env sim`, `rt365 probe --env sim`, `scripts/generate_agents.py --check`, `make package`, `.github/workflows/release.yml` — TC-PKG-001..004, TC-AI-012..015, TC-AGT-001..004.
+D-035, D-039 (DECISION_LOG.md); H-23 closed by owner declaration; R-48 (RAID_LOG.md); docs/PO_DECISION_QUEUE.md; council packets docs/SESSIONS/COUNCIL_*.md.

@@ -264,3 +264,28 @@ def test_retention_deletion_suppressed_under_legal_hold(platform):  # type: igno
         == DeletionOutcome.DELETED
     )
     assert len(platform.audit.by_action("retention.deletion.decided")) == 3
+
+
+@pytest.mark.tc("TC-CP-007")
+@pytest.mark.req("FR-15")
+@pytest.mark.quartet("abuse")
+def test_dual_key_requires_legal_and_compliance_hands():  # type: ignore[no-untyped-def]
+    """The legal record must be signed by a human Legal Agent: two Compliance people, an agent, or the same person twice never satisfy the dual key (council finding F-1, 2026-09-08)."""
+    p = build_sim_platform(enable_cell=False)
+    cell = p.jurisdictions.cells()[0]
+    for signer in (COMPLIANCE, human("analyst", Role.COMPLIANCE_ANALYST), agent(), human("po", Role.PRODUCT_OWNER)):
+        with pytest.raises(ControlDenied):
+            p.jurisdictions.record_legal(cell, legal_record_ref="LEGAL-X", actor=signer)
+    with pytest.raises(ControlDenied):
+        p.jurisdictions.activate_flag(cell, actor=COMPLIANCE, now=p.now)  # nothing signed
+    signed = p.jurisdictions.record_legal(cell, legal_record_ref="LEGAL-1", actor=LEGAL)
+    with pytest.raises(ControlDenied):
+        p.jurisdictions.activate_flag(signed, actor=LEGAL, now=p.now)  # same person
+    with pytest.raises(ControlDenied):
+        p.jurisdictions.activate_flag(signed, actor=human("legal.2", Role.LEGAL_AGENT), now=p.now)  # two Legal hands, no Compliance
+    with pytest.raises(ControlDenied):
+        p.jurisdictions.activate_flag(
+            signed, actor=human("po", Role.PRODUCT_OWNER), now=p.now
+        )  # the Product Owner is never a dual-key hand
+    live = p.jurisdictions.activate_flag(signed, actor=COMPLIANCE, now=p.now)
+    assert p.jurisdictions.is_live(live) and live.legal_signed_by == LEGAL.actor_id and live.flag_activated_by == COMPLIANCE.actor_id
