@@ -15,6 +15,7 @@
 | Reconciliation break | any | S2 | account → Supervised | reconciliation break |
 | Drift threshold | per model card | S2 | suspend signals | model drift |
 | Broker health fail | health check | S2 | cancel-only | broker disconnected |
+| audit.anchor_missing | the external audit anchor is absent, stale beyond the configured lag, its own chain is broken, or its tail was removed [Committee: ADR-020, BUILD_E11] | S1 | none (page; no automatic halt because the audit chain itself may be intact — restore the witness, verify, then seal) | Kill Switch activation |
 | Audit chain verification fail | hash mismatch | S1 | halt trading; forensic | Kill Switch activation |
 | Limit changed | any | info | — | — |
 | execution.unauthorised_command | command without valid control-plane authorisation (forged/altered) [Committee: GATE_C V-C2] | S1 | none (page; the account id in a forged command is attacker-chosen, so no automatic halt — IVA-23) | credential compromise |

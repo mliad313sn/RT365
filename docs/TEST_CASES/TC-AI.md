@@ -2,7 +2,7 @@
 
 Control: MCP governance and injection defence — Requirement: FR-09 — RTM row: FR-09 — Owner: Backend Lead — Reviewer (≠ owner): MCP Security Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:14:10.043066+00:00 at `9e78104537c718553b7d1275a5f6fc34696997e6` (tree dirty, tested tree `4e3e1c96a0b2`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:18:25.218619+00:00 at `a90b1ae9fd2990e08de4e37656b2f3c7eb2c70be` (tree dirty, tested tree `3017f92e8e2b`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
@@ -12,7 +12,7 @@ Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | 
 | negative | TC-AI-010 | No key outside dev/sim -> refused; fixture registry outside sim -> refused; strategy_version pinned; handler errors audited. | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_registry_key_and_environment_fail_closed` |
 | negative | TC-AI-013 | Malformed JSON, unknown methods, missing tool names and schema-invalid arguments are answered with errors, never with a handler call. | pass | passed | `test/quartets/test_tc_ai_stdio.py::test_stdio_server_rejects_malformed_and_unsupported_requests` |
 | abuse | TC-AI-003 | Forbidden capability, tool not granted to the strategy, quota, oversize payload, canary and bad signature are all denied with alerts/audit. | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_non_allowlisted_tool_denied_and_alerted` |
-| abuse | TC-AI-005 | mcp_servers never imports execution, broker, vault, kill switch or policy-mutation modules; egress denies vault/broker; unsigned registry refused. | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_forbidden_capabilities_are_structurally_impossible` |
+| abuse | TC-AI-005 | mcp_servers never imports execution, broker, vault, kill switch, policy-mutation or signing modules; egress denies vault/broker; unsigned registry refused. | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_forbidden_capabilities_are_structurally_impossible` |
 | abuse | TC-AI-006 | After an allowed run_simulation call, a plane crossing on the live platform still raises the S1 plane.deny alert (MCP review OBJ-1). | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_run_simulation_cannot_touch_live_monitoring` |
 | abuse | TC-AI-009 | The same signed call (nonce) is accepted once; a replay is refused and a duplicate intent never enters the queue (T-08). | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_signed_call_replay_rejected` |
 | abuse | TC-AI-011 | The published dev key is refused outside dev/sim however it is supplied (IVA-07); replay is refused across issuer restarts (IVA-08). | pass | passed | `test/quartets/test_tc_ai_mcp.py::test_dev_key_blacklisted_outside_sim_and_nonce_journal_survives_restart` |

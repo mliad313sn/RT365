@@ -25,9 +25,10 @@ try:
 except RegistryUnsigned as exc:
     print(f"FAIL: {'dev signing key / fixture registry refused for production: ' if production else ''}{exc}")
     sys.exit(1)
-if production and (reg.dev_key_in_use or reg.fixture):
+if production and (reg.dev_key_in_use or reg.fixture or reg.algorithm != "Ed25519"):
     problems.append(
-        "dev signing key or fixture registry in use; production requires the KMS-managed key and approved records (MISSING_ACTIONS)"
+        "dev signing key, HMAC algorithm or fixture registry in use; production requires an Ed25519 signature under a "
+        "ceremony key in the trust set and approved records (D-053, H-20, MISSING_ACTIONS)"
     )
 if reg.fixture:
     print("NOTE: registry is a sim FIXTURE (approvals pending); it embodies no approval and is refused outside dev/sim")
@@ -68,5 +69,6 @@ if problems:
     print("FAIL:\n - " + "\n - ".join(problems))
     sys.exit(1)
 print(
-    f"OK: registry {reg.registry_version} ({'dev key' if reg.dev_key_in_use else 'configured key'}), {len(reg.tools)} tools, policies consistent"
+    f"OK: registry {reg.registry_version} ({reg.algorithm}, key_id={reg.key_id}, {'dev key' if reg.dev_key_in_use else 'trusted key'}), "
+    f"{len(reg.tools)} tools, policies consistent"
 )
