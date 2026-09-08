@@ -154,6 +154,21 @@ REASON_CODES: dict[str, tuple[str, str, str]] = {
     ),
     "CP-PERM": ("Permissions", "The customer is not permitted to trade this asset class.", "Product permissions are set at onboarding."),
     "CP-APPR": ("Suitability", "Complex product requires an appropriateness assessment.", "Complete the assessment."),
+    "CP-DISCL": (
+        "Disclosures",
+        "The current disclosure pack for this market has not been acknowledged (none, an older version, or a future-dated record).",
+        "Review and acknowledge the current disclosures through onboarding; nothing to change on the order.",
+    ),
+    "CP-MODE-CONSENT": (
+        "Consent",
+        "No recorded consent exists for operating this account in the requested mode.",
+        "Consent for the mode is recorded through onboarding; orders in that mode are unavailable until then.",
+    ),
+    "CP-CLASS": (
+        "Classification",
+        "The customer classification has no assessor evidence, was self-declared, or is dated in the future.",
+        "Classification is established and recorded by an assessor; it cannot be self-declared.",
+    ),
     "CP-SHORT": ("Permissions", "Short selling not permitted for this customer.", "Not available."),
     "CP-SHORT-BAN": ("Lists", "Short-sale ban applies to this instrument.", "Not available while the ban applies."),
     "CP-LIST-INSTR": ("Lists", "Instrument is on the restricted list.", "Not available."),

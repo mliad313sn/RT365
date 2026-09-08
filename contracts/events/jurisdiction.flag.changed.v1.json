@@ -9,6 +9,38 @@
       ],
       "title": "CustomerType",
       "type": "string"
+    },
+    "LegalRecordRef": {
+      "additionalProperties": false,
+      "description": "Typed reference to a stored legal record: id, signing counsel/entity, signature date and document hash (council P-2, O-71).\n\nShape only: the engine can tell a fabricated string from a reference to a document that exists and can be hashed; it does\nnot read the document and asserts nothing about its content. A record id prefixed SIM- is a fixture for a simulated cell.",
+      "properties": {
+        "document_sha256": {
+          "title": "Document Sha256",
+          "type": "string"
+        },
+        "record_id": {
+          "title": "Record Id",
+          "type": "string"
+        },
+        "signed_on": {
+          "format": "date",
+          "title": "Signed On",
+          "type": "string"
+        },
+        "signing_entity": {
+          "minLength": 2,
+          "title": "Signing Entity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_id",
+        "signing_entity",
+        "signed_on",
+        "document_sha256"
+      ],
+      "title": "LegalRecordRef",
+      "type": "object"
     }
   },
   "$id": "https://rt365.example/contracts/events/jurisdiction.flag.changed.v1.json",
@@ -62,14 +94,13 @@
     "legal_record_ref": {
       "anyOf": [
         {
-          "type": "string"
+          "$ref": "#/$defs/LegalRecordRef"
         },
         {
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "Legal Record Ref"
+      "default": null
     },
     "legal_signed_by": {
       "anyOf": [
@@ -82,6 +113,18 @@
       ],
       "default": null,
       "title": "Legal Signed By"
+    },
+    "required_disclosure_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Required Disclosure Version"
     },
     "simulated": {
       "default": false,

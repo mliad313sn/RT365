@@ -2,7 +2,7 @@
 
 Control: Identity, privileged access, maker-checker, mode ladder — Requirement: FR-01 — RTM row: FR-01 — Owner: Backend Lead — Reviewer (≠ owner): Security Architect — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T09:27:24.479655+00:00 at `4d465ba8a0efbe7051f81bdd2642992470a0cb5b` (tree dirty, tested tree `525115aad7a4`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T09:48:59.107273+00:00 at `d1ccb21596456977a7d1b69d4694eb4724546445` (tree dirty, tested tree `202110f30bb2`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
@@ -10,6 +10,7 @@ Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | 
 | negative | TC-ID-002 | RBAC denies missing permissions; MFA is required; privileged permissions need an active elevation window. | pass | passed | `test/quartets/test_tc_id_identity.py::test_rbac_mfa_and_pim` |
 | abuse | TC-ID-003 | Agents cannot promote modes; promotion is one step with gate evidence; out-of-scope capabilities have no permission flag. | pass | passed | `test/quartets/test_tc_id_identity.py::test_agent_cannot_change_mode_or_skip_steps_and_out_of_scope_flags_absent` |
 | abuse | TC-ID-005 | Agents cannot reject (or otherwise touch) controlled changes; a decided change cannot be re-decided (IVA-05). | pass | passed | `test/quartets/test_tc_id_identity.py::test_reject_requires_human_and_pending_change` |
+| abuse | TC-ID-006 | A role whose persona has no trading mode (control, read, governance, assurance; the tenant admin in particular, D-045) can never promote, demote, halt-restore or submit an intent, in the registry, in RBAC and through the BFF; a persona is never an entitlement. | pass | passed | `test/quartets/test_tc_id_identity.py::test_roles_without_a_trading_persona_cannot_change_mode_or_submit_intents` |
 | recovery | TC-ID-004 | Halted is reachable by an authorised role; leaving it needs two persons from different lines and never straight to autonomy. | pass | passed | `test/quartets/test_tc_id_identity.py::test_return_from_halted_requires_two_persons_different_lines` |
 
-Quartet complete: yes. Records: 5.
+Quartet complete: yes. Records: 6.

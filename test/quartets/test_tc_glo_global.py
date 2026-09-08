@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, time
 
 import pytest
-from conftest import COMPLIANCE, LEGAL, VENUE
+from conftest import COMPLIANCE, LEGAL, VENUE, sim_legal_record
 from market_data.calendar import SessionCalendar
 from rtcore.errors import ControlDenied, SchemaViolation
 from rtcore.schemas.compliance import CustomerType
@@ -90,9 +90,9 @@ def test_world_coverage_never_means_legal_availability():  # type: ignore[no-unt
     with pytest.raises(ControlDenied):
         p.jurisdictions.activate_flag(cells[0], actor=COMPLIANCE, now=p.now)  # no legal record
     zz = next(c for c in p.jurisdictions.cells() if c.country == "ZZ")
-    zz = p.jurisdictions.record_legal(zz, legal_record_ref="SIM-ONLY", actor=LEGAL)
+    zz = p.jurisdictions.record_legal(zz, legal_record_ref=sim_legal_record("SIM-ONLY-001"), actor=LEGAL)
     ev = p.audit.by_action("jurisdiction.legal.recorded")[-1]
-    assert ev.payload.get("simulated") is True
+    assert ev.payload.get("simulated") is True and ev.payload["legal_record_ref"]["record_id"] == "SIM-ONLY-001"
 
 
 @pytest.mark.tc("TC-GLO-004")

@@ -9,6 +9,8 @@ Every risk, eligibility and runtime reason code has an explanation and a 'what y
 | Code | Family | Explanation | What you can do |
 |---|---|---|---|
 | CP-APPR | Suitability | Complex product requires an appropriateness assessment. | Complete the assessment. |
+| CP-CLASS | Classification | The customer classification has no assessor evidence, was self-declared, or is dated in the future. | Classification is established and recorded by an assessor; it cannot be self-declared. |
+| CP-DISCL | Disclosures | The current disclosure pack for this market has not been acknowledged (none, an older version, or a future-dated record). | Review and acknowledge the current disclosures through onboarding; nothing to change on the order. |
 | CP-HALT-INPUT | Eligibility | An eligibility input was unavailable; the engine fails closed. | Operations restore the input. |
 | CP-INTEG | Eligibility | Intent hash mismatch. | Resubmit as a new intent. |
 | CP-JURIS-DUALKEY | Jurisdiction | Legal signer and flag activator must be different persons. | Compliance corrects the activation. |
@@ -19,6 +21,7 @@ Every risk, eligibility and runtime reason code has an explanation and a 'what y
 | CP-LIST-ISSUER | Lists | Issuer is on the restricted list. | Not available. |
 | CP-LIST-VENUE | Lists | Venue is on the restricted list. | Not available. |
 | CP-LIST-WHITELIST | Lists | Instrument is not on the whitelist in force. | Not available. |
+| CP-MODE-CONSENT | Consent | No recorded consent exists for operating this account in the requested mode. | Consent for the mode is recorded through onboarding; orders in that mode are unavailable until then. |
 | CP-PERM | Permissions | The customer is not permitted to trade this asset class. | Product permissions are set at onboarding. |
 | CP-SCOPE-ADVICE | Scope | Strategy provides personalised advice (out of scope). | Not registrable. |
 | CP-SCOPE-COPY-TRADING | Scope | Strategy replicates other accounts (copy trading is out of scope). | Not registrable. |
