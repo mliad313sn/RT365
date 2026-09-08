@@ -27,4 +27,4 @@ Requirement groups from blueprint 02 with IDs, epic and gate. Each FR must have 
 | FR-17 | Kill Switch at platform/tenant/account/strategy/asset/venue | E05 | C | Activation blocks new risk within measured latency; deactivation needs two persons |
 
 ## Non-functional requirements
-See NFR.md.
+See NFR.md. Global compatibility (every country on every continent, enabled per cell only) is NFR-GLO-01 (D-050; docs/GLOBAL_COMPATIBILITY.md).

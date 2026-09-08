@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-08T09:03:31.915211+00:00 at base commit `dde19790b4b080ddbb5305a3370df0128d546fbf` (the working tree at generation time; CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-08T09:27:24.479655+00:00 at base commit `4d465ba8a0efbe7051f81bdd2642992470a0cb5b`, working tree DIRTY, tested tree `525115aad7a4e15a4255bb6480d4d09584a9603f` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
@@ -17,6 +17,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-CP | 1 | 2 | 2 | 2 | yes | 7 | 0 |
 | TC-E2E | 2 | 1 | 2 | 1 | yes | 6 | 0 |
 | TC-EX | 3 | 5 | 4 | 4 | yes | 16 | 0 |
+| TC-GLO | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-ID | 1 | 1 | 2 | 1 | yes | 5 | 0 |
 | TC-KS | 8 | 2 | 1 | 2 | yes | 13 | 0 |
 | TC-MD | 1 | 1 | 1 | 1 | yes | 4 | 0 |
@@ -26,7 +27,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-RC | 1 | 2 | 1 | 1 | yes | 5 | 0 |
 | TC-RK | 5 | 31 | 4 | 2 | yes | 42 | 0 |
 
-Areas with a full quartet: 17/17.
+Areas with a full quartet: 18/18.
 
 ## Evidence records
 
@@ -97,6 +98,10 @@ Areas with a full quartet: 17/17.
 | TC-EX-010 | FR-17 | recovery | dev | An order that reached the broker during an outage is adopted on retry and, because the account was halted meanwhile, cancelled at the broker immediately (IVA-19). | passed | `test/quartets/test_tc_ex_execution.py::test_order_adopted_on_retry_under_halt_is_cancelled_at_broker` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-EX-010 | FR-13 | abuse | dev | A command authorised more than five minutes ago, or one whose authorisation was already consumed under a new key, is refused (IVA-21); a cancelled intent cannot be re-executed. | passed | `test/quartets/test_tc_ex_execution.py::test_stale_and_consumed_authorisations_are_refused` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-EX-010 | FR-13 | negative | dev | An altered command reusing a known idempotency key is refused as unauthorised before the inbox answers (IVA-25); an unknown account halts the intent instead of crashing (IVA-24). | passed | `test/quartets/test_tc_ex_execution.py::test_unauthenticated_command_learns_nothing_from_the_inbox` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-GLO-001 | NFR-GLO-01 | positive | dev | The world registry covers every ISO 3166-1 country/territory on all seven continents with an ISO 4217 currency; each can be proposed as a jurisdiction cell (proposed, never enabled). | passed | `test/quartets/test_tc_glo_global.py::test_every_country_on_every_continent_is_a_valid_cell_with_a_currency` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-GLO-002 | NFR-GLO-01 | negative | dev | A cell for a code that is neither ISO 3166-1 nor user-assigned is refused; user-assigned codes (ZZ) are accepted only as simulated and say so. | passed | `test/quartets/test_tc_glo_global.py::test_unknown_country_codes_are_refused_and_simulated_codes_are_labelled` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-GLO-003 | NFR-GLO-01 | abuse | dev | Proposing every country enables nothing: no legal record, no flag, eligibility stays INELIGIBLE; a simulated cell can be exercised in sim but its legal record is labelled simulated in the audit. | passed | `test/quartets/test_tc_glo_global.py::test_world_coverage_never_means_legal_availability` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-GLO-004 | NFR-GLO-01 | recovery | dev | Venue sessions declared in local time (Tokyo, São Paulo, Sydney) evaluate correctly across the UTC day boundary and honour local-date holidays; UTC-declared venues keep working. | passed | `test/quartets/test_tc_glo_global.py::test_venue_calendars_work_in_any_timezone_including_day_boundaries` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-ID-001 | FR-01 | positive | dev | A limit change proposed by one person stays pending until a different person from another line checks it; cooling period applies. | passed | `test/quartets/test_tc_id_identity.py::test_privileged_change_needs_second_approver_from_different_line` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-ID-002 | FR-01 | negative | dev | RBAC denies missing permissions; MFA is required; privileged permissions need an active elevation window. | passed | `test/quartets/test_tc_id_identity.py::test_rbac_mfa_and_pim` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-ID-003 | FR-01 | abuse | dev | Agents cannot promote modes; promotion is one step with gate evidence; out-of-scope capabilities have no permission flag. | passed | `test/quartets/test_tc_id_identity.py::test_agent_cannot_change_mode_or_skip_steps_and_out_of_scope_flags_absent` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |

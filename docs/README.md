@@ -50,3 +50,4 @@ Every artefact of blueprint §15 [Source: 15], its owner and the gate at which i
 | TEST_CASES/TC-PKG.md, TC-AGT.md (generated) | QA Lead | B |
 | PMO.md (Meridian as lifecycle system), PMO_MERIDIAN_ASSESSMENT.md (real-case efficiency and improvement points), PMO/ (load evidence), ADRs/ADR-017.md | Product Owner / Program Orchestrator | A |
 | IMPROVEMENT_REGISTER.md (everything still needed to reach controlled GA: human acts, build gaps per epic, governance, Meridian, tooling) | Product Owner | A–F |
+| GLOBAL_COMPATIBILITY.md (capable everywhere, enabled per cell; dimensions matrix) | Product Owner / Compliance Agent | B |

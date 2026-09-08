@@ -1,5 +1,5 @@
 # TEST_CASES — index and control-quartet template
-ID scheme: TC-<area>-<nnn>: ID identity · BR broker · MD market data · AI MCP/AI · RK risk · AP approval · EX execution · RC reconciliation · CP compliance · KS kill switch · NET network policy · OB observability · SEC secrets · SC supply chain · TEN tenancy · AUD audit · PERF performance · A11Y accessibility · DR disaster recovery · PKG distribution (CLI, installer, executable) · AGT agent roster and write-scope guard.
+ID scheme: TC-<area>-<nnn>: ID identity · BR broker · MD market data · AI MCP/AI · RK risk · AP approval · EX execution · RC reconciliation · CP compliance · KS kill switch · NET network policy · OB observability · SEC secrets · SC supply chain · TEN tenancy · AUD audit · PERF performance · A11Y accessibility · DR disaster recovery · PKG distribution (CLI, installer, executable) · AGT agent roster and write-scope guard · GLO global compatibility.
 
 ## Quartet template (one file per critical control)
 ```

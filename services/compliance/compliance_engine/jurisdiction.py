@@ -12,6 +12,7 @@ from datetime import datetime
 from rtcore.errors import ControlDenied
 from rtcore.lines import Actor, Role
 from rtcore.schemas.compliance import CustomerType, JurisdictionCell
+from rtcore.world import is_user_assigned, is_valid_country
 
 
 class JurisdictionRegistry:
@@ -25,8 +26,22 @@ class JurisdictionRegistry:
     def propose(
         self, *, country: str, customer_type: CustomerType, broker: str, venue: str, asset_class: str, feature: str
     ) -> JurisdictionCell:
+        # Global compatibility (D-050): any ISO 3166-1 country on any continent is proposable; a user-assigned code is
+        # a simulated cell; anything else is refused. Proposing never enables (dual key below).
+        if is_valid_country(country):
+            simulated = False
+        elif is_user_assigned(country):
+            simulated = True
+        else:
+            raise ControlDenied(f"{country!r} is not an ISO 3166-1 alpha-2 country code nor a user-assigned (simulated) code")
         cell = JurisdictionCell(
-            country=country, customer_type=customer_type, broker=broker, venue=venue, asset_class=asset_class, feature=feature
+            country=country,
+            customer_type=customer_type,
+            broker=broker,
+            venue=venue,
+            asset_class=asset_class,
+            feature=feature,
+            simulated=simulated,
         )
         self._cells[cell.key] = cell
         self._audit("jurisdiction.cell.proposed", cell.model_dump(mode="json"))

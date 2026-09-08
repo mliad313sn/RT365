@@ -79,6 +79,24 @@ Effort key: S = days · M = weeks · L = a release. "Who" names the accountable 
 | I-11 | English translation of the committee record | S |
 | I-12 | Day-one security posture: no demo accounts in production, security-policy template, break-glass shown in UI | S |
 
+## F. Global compatibility (owner requirement 2026-09-08; docs/GLOBAL_COMPATIBILITY.md; D-050)
+| # | Improvement | Gate | Who | Effort | Status |
+|---|---|---|---|---|---|
+| F-1 | World registry verified against ISO 3166/4217 registers and signed (H-29) | B | Data Architect (human) | S | open |
+| F-2 | Subdivision codes (ISO 3166-2) for federal regimes where rules differ by state/province | D | Data Engineering Lead | S | open |
+| F-3 | FX rates as a deterministic decision input (fail closed when missing/stale); cross-currency NAV, limits and cash ledger | C | Backend Lead | M | open |
+| F-4 | Licensed holiday calendars per venue; DST-aware freshness budgets | C | Data Engineering Lead | M | open |
+| F-5 | Venue registry (MIC), tick tables and settlement conventions per market | C | Trading Domain Lead, Data Engineering Lead | M | open |
+| F-6 | Locale packs (dashboard, reason dictionary, disclosures), CLDR formatting, RTL layout, accessibility per script (launch locales O-14) | F | Frontend Lead, Support & Training Lead | M | open |
+| F-7 | Regional cells with residency enforcement at storage; retention schedules per jurisdiction (O-09, O-10) | D | Cloud Architect, Privacy Lead | L | open |
+| F-8 | Sanctions and restricted-list feeds screened per cell | D | Compliance Agent, Data Engineering Lead | M | open |
+| F-9 | Regulatory and tax reporting adapters per regime (E11) | D/F | Backend Lead | L | open |
+| F-10 | Follow-the-sun on-call and support hours per market (O-15) | F | SRE Lead, Support & Training Lead | M | open |
+| — | Built 2026-09-08: world registry (250 rows, 7 continents), country validation with simulated cells, timezone-aware venue calendars, TC-GLO-001..004 | B | Backend Lead | — | done in dev/sim |
+
+## Execution (D-051)
+Sections B, C, D, E and F are delegated to the Product Owner agent and its counsellors. Execution order: Gate B items first (B-2, B-3, B-15, B-18, C-1, C-2, C-5, F-1), then Gate C (B-1, B-4, B-5, B-6, B-7, B-8, B-9, F-3, F-4, F-5), then D and F. Each build item runs through its build agent with the control quartet first, a session packet `docs/SESSIONS/BUILD_<epic>_<date>.md`, `make all` green, and the 2nd-line reviewer named; section D items are filed upstream as issues once the Meridian repository is attached with write access. Progress is reported in the weekly report and mirrored in Meridian by `make pmo-sync`.
+
 ## E. Delivery-kit and agent tooling
 | # | Improvement | Why | Who | Effort | Source |
 |---|---|---|---|---|---|

@@ -8,6 +8,7 @@ a human reviewer != owner signs in docs/AUDIT_EVIDENCE_INDEX.md; the plugin neve
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -54,16 +55,42 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[None]):  
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     out = Path(session.config.rootpath) / "test" / "evidence" / "evidence_index.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        sha = (
-            subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=session.config.rootpath).stdout.strip()
-            or "uncommitted"
-        )
-    except Exception:  # noqa: BLE001
-        sha = "unknown"
+    root = session.config.rootpath
+
+    def git(*args: str) -> str:
+        try:
+            return subprocess.run(["git", *args], capture_output=True, text=True, cwd=root).stdout.strip()
+        except Exception:  # noqa: BLE001
+            return ""
+
+    # Provenance (O-65): the base commit, whether the working tree differed from it, and a hash of the tree that was
+    # actually tested (index + working tree), so a gate can tell "evidence at commit X" from "evidence on a dirty tree".
+    sha = git("rev-parse", "HEAD") or "uncommitted"
+    dirty = bool(git("status", "--porcelain", "--untracked-files=no"))
+    tested_tree = "unknown"
+    if sha != "uncommitted":
+        try:
+            env = {**os.environ, "GIT_INDEX_FILE": str(out.parent / ".evidence_index_tmp")}
+            subprocess.run(["git", "read-tree", "HEAD"], capture_output=True, text=True, cwd=root, env=env, check=True)
+            subprocess.run(["git", "add", "-A", "--", ":!test/evidence"], capture_output=True, text=True, cwd=root, env=env, check=True)
+            tested_tree = subprocess.run(
+                ["git", "write-tree"], capture_output=True, text=True, cwd=root, env=env, check=True
+            ).stdout.strip()
+        except Exception:  # noqa: BLE001
+            tested_tree = "unknown"
+        finally:
+            (out.parent / ".evidence_index_tmp").unlink(missing_ok=True)
     out.write_text(
         json.dumps(
-            {"generated_at": datetime.now(tz=UTC).isoformat(), "git_sha": sha, "exit_status": exitstatus, "records": RECORDS}, indent=2
+            {
+                "generated_at": datetime.now(tz=UTC).isoformat(),
+                "git_sha": sha,
+                "working_tree_dirty": dirty,
+                "tested_tree": tested_tree,
+                "exit_status": exitstatus,
+                "records": RECORDS,
+            },
+            indent=2,
         )
         + "\n"
     )

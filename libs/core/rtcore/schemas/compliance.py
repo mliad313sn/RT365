@@ -38,12 +38,13 @@ class CustomerProfile(StrictModel):
 class JurisdictionCell(StrictModel):
     """One row of COMPLIANCE_MATRIX. Live only with legal record AND technical flag by different persons."""
 
-    country: str
+    country: str  # ISO 3166-1 alpha-2 (rtcore.world) or a user-assigned code, which marks the cell simulated (D-050)
     customer_type: CustomerType
     broker: str
     venue: str
     asset_class: str
     feature: str  # operating mode: PAPER | SUPERVISED | BOUNDED_AUTONOMOUS
+    simulated: bool = False  # user-assigned country code: exercisable in sim, never a legal basis
     legal_record_ref: str | None = None
     legal_signed_by: str | None = None
     technical_flag: bool = False

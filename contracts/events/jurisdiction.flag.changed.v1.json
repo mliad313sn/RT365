@@ -83,6 +83,11 @@
       "default": null,
       "title": "Legal Signed By"
     },
+    "simulated": {
+      "default": false,
+      "title": "Simulated",
+      "type": "boolean"
+    },
     "technical_flag": {
       "default": false,
       "title": "Technical Flag",

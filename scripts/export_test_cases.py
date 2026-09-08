@@ -30,6 +30,12 @@ AREAS = {
         "Product Owner / Delivery Orchestrator",
         "MCP Security Agent",
     ),
+    "GLO": (
+        "Global compatibility: any country, currency and venue timezone; enablement per cell only",
+        "NFR-GLO-01",
+        "Backend Lead / Data Engineering Lead",
+        "Compliance Agent",
+    ),
     "PKG": ("Distribution: rt365 CLI, resource root, installer fail-closed rules", "NFR-SEC-02", "SRE Lead", "Security Architect"),
 }
 src = ROOT / "test" / "evidence" / "evidence_index.json"
@@ -45,7 +51,7 @@ for area, records in sorted(by_area.items()):
         "",
         f"Control: {title} — Requirement: {req} — RTM row: {req} — Owner: {owner} — Reviewer (≠ owner): {reviewer} — **signature pending** (generated evidence is never self-certified [Source: 00, 11])",
         "",
-        f"Environment tag: dev/sim — Data version: `{records[0]['data_version']}` — Generated {data['generated_at']} at `{data['git_sha']}`",
+        f"Environment tag: dev/sim — Data version: `{records[0]['data_version']}` — Generated {data['generated_at']} at `{data['git_sha']}` (tree {'dirty' if data.get('working_tree_dirty') else 'clean'}, tested tree `{data.get('tested_tree', 'unknown')[:12]}`)",
         "",
         "| Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |",
         "|---|---|---|---|---|---|",
