@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-08T09:53:17.848659+00:00 at base commit `0802d50584771f6450f22570bc52b6651dd24b83`, working tree clean, tested tree `f3bd3f0218ce77323da36da06aa3603fc15f506e` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-08T10:00:50.126223+00:00 at base commit `f22834d042465b494e748499f7041a92cf91e8c1`, working tree DIRTY, tested tree `9eff65811c3f787c76c46ac513b957ff1c414738` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
@@ -11,6 +11,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-AGT | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-AI | 2 | 3 | 6 | 3 | yes | 14 | 0 |
 | TC-AP | 1 | 1 | 2 | 1 | yes | 5 | 0 |
+| TC-ARC | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-AUD | 1 | 1 | 2 | 1 | yes | 5 | 0 |
 | TC-BR | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-BT | 1 | 1 | 1 | 1 | yes | 4 | 0 |
@@ -27,7 +28,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-RC | 1 | 2 | 1 | 1 | yes | 5 | 0 |
 | TC-RK | 5 | 31 | 4 | 2 | yes | 42 | 0 |
 
-Areas with a full quartet: 18/18.
+Areas with a full quartet: 19/19.
 
 ## Evidence records
 
@@ -56,6 +57,10 @@ Areas with a full quartet: 18/18.
 | TC-AP-003 | FR-12 | abuse | dev | An AI agent cannot act as approver; a decision that is not REQUIRES_HUMAN_APPROVAL cannot be queued (self-approval path absent). | passed | `test/quartets/test_tc_ap_approval.py::test_agent_cannot_approve_and_cannot_enqueue_approved_decisions` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-AP-004 | FR-12 | recovery | dev | Expiry before approval -> EXPIRED, never executed; Kill Switch after approval blocks execution; decline path recorded. | passed | `test/quartets/test_tc_ap_approval.py::test_expired_or_killed_intent_not_executed_after_approval` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-AP-005 | FR-12 | abuse | dev | The registered owner of the strategy (quant.fixture) is refused as approver even with an approving role; another PM may approve (IVA-04). | passed | `test/quartets/test_tc_ap_approval.py::test_strategy_owner_cannot_approve_own_strategy` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-ARC-001 | NFR-SEC-01 | negative | dev | Every module under the engine roots is free of fastapi/starlette/uvicorn/httpx/requests imports (ADR-009: framework at the edges only). | passed | `test/contract/test_engine_import_ban.py::test_engines_do_not_import_the_web_framework` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-ARC-002 | NFR-SEC-01 | positive | dev | The BFF under apps/ imports FastAPI (the edge is where the framework lives) and the scanner reports it there only, never under the engine roots. | passed | `test/contract/test_engine_import_ban.py::test_edges_may_import_the_framework_and_engines_use_only_the_kernel` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-ARC-003 | NFR-SEC-01 | abuse | dev | Aliased, nested, dotted, try-guarded and importlib/__import__ literal imports of a banned package are all reported. | passed | `test/contract/test_engine_import_ban.py::test_disguised_imports_are_caught` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-ARC-004 | NFR-SEC-01 | recovery | dev | A planted offender under a copy of an engine root is reported with its path; deleting the import restores an empty report. | passed | `test/contract/test_engine_import_ban.py::test_offender_is_located_and_removal_restores_green` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-AUD-001 | NFR-AUD-01 | positive | dev | One correlation ID links intent, eligibility, risk decision, order command, ack and fill in the audit chain. | passed | `test/quartets/test_tc_aud_audit.py::test_every_decision_and_transition_is_audited_with_correlation_id` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-AUD-002 | NFR-AUD-01 | negative | dev | The audit store exposes no mutation path other than append. | passed | `test/quartets/test_tc_aud_audit.py::test_no_update_or_delete_api_exists` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-AUD-003 | NFR-AUD-01 | abuse | dev | Modifying, replacing or removing a stored event breaks the chain and verification reports the first bad sequence. | passed | `test/quartets/test_tc_aud_audit.py::test_tampering_detected_by_hash_chain` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |

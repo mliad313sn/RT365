@@ -9,8 +9,8 @@
 | O-01 | Assumption | Persona × mode policy per jurisdiction | Compliance & Legal Committee (advisory) | Gate A | Decided 2026-09-08 (D-045): global floor, autonomy OFF by default; persona→CustomerType mapping [Open: Q-01-1] |
 | O-02 | Gap | Pricing and billing scope (E14) | Product Director, Finance | Gate A | Decided 2026-09-08 (D-046): meter from D, invoice from F, subscription hypothesis; prices/tax/provider [Open] |
 | O-03 | Dependency | Numeric freshness/latency thresholds after baselines | SRE Lead | Gate E | Open |
-| O-04 | Decision | Service framework choice | ARB | Gate B | Open |
-| O-05 | Gap | Model providers, hosting, data-processing terms | Model Risk Lead, Privacy Lead | Gate B | Open |
+| O-04 | Decision | Service framework choice | ARB | Gate B | Decided 2026-09-08 (D-055): ADR-009 Accepted; host re-evaluation O-86 |
+| O-05 | Gap | Model providers, hosting, data-processing terms | Model Risk Lead, Privacy Lead | Gate B | Decided as posture 2026-09-08 (D-052): provider-agnostic gateway; vendors, terms and prices [Open: Q-05, H-06]; gateway build O-79 |
 | O-06 | Gap | Evaluation dataset ownership/licensing | Model Risk Lead | Gate D | Open |
 | O-07 | Gap | Numeric risk thresholds per asset class/jurisdiction | Trading Risk Committee | Gate C | Open |
 | O-08 | Gap | Liquidation policy content | Trading Risk Committee | Gate E | Open |
@@ -18,11 +18,11 @@
 | O-10 | Dependency | DPIA per launch jurisdiction | Privacy Lead | Gate D | Open |
 | O-11 | Gap | First launch jurisdiction hypothesis | Product Director, Compliance Agent | Gate A | Decided as hypothesis 2026-09-08 (D-043): first-party pilot cell; country fact [Open: Q-11-1, owner]; legal basis [Open: H-04] |
 | O-12 | Dependency | Data licensing for derived/redistributed data | Legal Agent, Data Architect | Gate C | Open |
-| O-13 | Decision | Time-series/snapshot storage cost model | Data Architect, Finance | Gate B | Open |
+| O-13 | Decision | Time-series/snapshot storage cost model | Data Architect, Finance | Gate B | Architecture decided 2026-09-08 (D-056); numbers [Open: O-87] |
 | O-14 | Decision | Launch locales | Product Director | Gate F | Open |
 | O-15 | Gap | On-call model and support hours per market | SRE Lead, Support Lead | Gate F | Open |
 | O-16 | Gap | Measurable outcome targets for Gate A | Product Council | Gate A | Decided 2026-09-08 (D-044): four definitional targets; time-to-halt ceiling [Open: Q-16-1, first drill] |
-| O-17 | Gap | Roadmap dates after capacity model | Executive Steering | Gate B | Open |
+| O-17 | Gap | Roadmap dates after capacity model | Executive Steering | Gate B | Form decided 2026-09-08 (D-057): gate-driven, no C–F dates; ROADMAP v1.1 edit pending (Product Director) |
 | O-18 | Gap | RPO/RTO per cell | Cloud Architect | Gate E | Open |
 | O-19 | Gap | Named deputies for emergency authority | Program Orchestrator | Gate C | Open |
 | R-01 | Risk | Non-deterministic path in risk/eligibility | Chief Risk Agent | continuous | Open |
@@ -31,9 +31,9 @@
 | R-04 | Risk | Marketing/UI language implying guaranteed returns | GTM Lead, Compliance Agent | Gate F | Open |
 | O-20 | Gap | CODEOWNERS team handles map to real reviewers; branch protection enabled | Program Orchestrator | Gate B | Open |
 | O-21 | Gap | Surveillance detector parameters (wash/spoof/close windows) approved by Compliance & Legal | Compliance Agent | Gate D | Open |
-| O-22 | Decision | Asymmetric (Ed25519/KMS) signing of the tool registry and artefacts; dev HMAC key retired | Security Architect, MCP Security Agent | Gate B | Open |
+| O-22 | Decision | Asymmetric (Ed25519/KMS) signing of the tool registry and artefacts; dev HMAC key retired | Security Architect, MCP Security Agent | Gate B | Decided 2026-09-08 (D-053): Ed25519/P-256 KMS key with public trust set; the dev HMAC key remains accepted in dev/sim only until the ceremony (H-20); build O-81/O-82 |
 | O-23 (note 2026-09-08) | Update | SCA is now runnable: requirements.lock.txt is generated from the declared dependency closure (`scripts/lock_requirements.py`, 23 pins) instead of the whole interpreter; pip-audit found idna 3.11 (PYSEC-2026-215) → upgraded to 3.19; SBOM regenerated (24 components); bandit reports six Low findings only. Gating thresholds and artefact signing await the Security & Privacy Board packet | Security Architect | Gate B | Partial |
-| O-23 | Gap | SAST/DAST/SCA scanners and artefact signing wired into CI (currently lint, typecheck, secret scan, SBOM only) | Cloud Architect | Gate B | Open |
+| O-23 | Gap | SAST/DAST/SCA scanners and artefact signing wired into CI (currently lint, typecheck, secret scan, SBOM only) | Cloud Architect | Gate B | Decided 2026-09-08 (D-054): bandit and pip-audit gating on, exceptions file, CI installs from the lock (R-52); hash pins, SHA-pinned actions, cosign signing and installer verification pending (O-83); OS signing H-30 |
 | O-24 | Gap | Accessibility (WCAG 2.2 AA) pass on the operator console; PWA build (E10) | Frontend Lead, Accessibility Lead | Gate F | Open |
 | O-25 | Decision | Trailing-stop and conditional order semantics per broker (schema accepts; sim broker rejects) | Trading Domain Lead | Gate C | Open |
 | R-05 | Risk | Dev/sim stores are in-memory: durability, exactly-once under real redelivery and lease consistency are unproven on the deployed topology | Enterprise Architect | Gate C | Open |
@@ -110,6 +110,15 @@
 | O-97 | Gap | classification bases that count per cell, disclosure versions per cell/language, consent expiry and renewal are undecided (Q-P03, Q-J06, Q-P04); engine treats any non-self-declared basis and any recorded consent as sufficient (BUILD_E06 2026-09-08) | Compliance Agent, Legal Agent | Gate D | Open — delegated |
 | O-98 | Gap | `identity_service.accounts.MODE_CHANGERS` (RISK_OFFICER, CHIEF_RISK_AGENT, PORTFOLIO_MANAGER, COMPLIANCE_AGENT, SRE_LEAD, TRADING_DOMAIN_LEAD) and RBAC `Permission.CHANGE_MODE` (PORTFOLIO_MANAGER, RISK_OFFICER, CHIEF_RISK_AGENT) disagree; control personas Risk officer / Compliance analyst are "no trading mode" in §4.4 yet RISK_OFFICER and COMPLIANCE_AGENT can promote in the registry (R-05 re-raised) (BUILD_E06 2026-09-08) | Backend Lead | Gate D | Open — delegated |
 | O-99 | Gap | consent, acknowledgement and classification are set on the profile by whoever edits `p.customers`; no onboarding write path, maker-checker or audit event exists for recording them (BUILD_E06 2026-09-08) | Backend Lead (E01/E14) | Gate D | Open — delegated |
+| O-101 | Issue | D-052 ledger hygiene (IVA): Model Risk Committee — named decision owner of O-05 — not heard on the joint item; its view is recorded when the model gateway design (O-79) is presented | Model Risk Committee chair | Gate B | Open |
+| O-102 | Issue | Threat-model ID collisions in the council packets: ARB 'T-25' and S&P 'T-52' allocated as T-58 (durable store bypass) and T-59 (provider boundary B9) (IVA) | Security Architect | Gate B | Closed 2026-09-08 — rows added |
+| O-103 | Issue | ARB draft decision lines cite O-77..O-82, renumbered O-86..O-91 in RAID; D-055..D-057 cite the mapped IDs (IVA) | delegate | before D-055 | Closed 2026-09-08 |
+| O-104 | Issue | O-58 closure cited probe files that lived only in cleaned worktrees; probe transcript filed as SESSIONS/PROBE_O58_2026-09-08.md (IVA) | MCP Security Agent | Gate B | Closed 2026-09-08 |
+| O-105 | Gap | IVA roster scope excludes docs/SESSIONS/COUNCIL_; IVA council packets are written under SESSIONS/REVIEW_ (Gate B) — Gate A IVA packet was written to a COUNCIL_ path before the guard was enforced | Product Owner | Gate B | Closed 2026-09-08 — convention: IVA writes REVIEW_ files; convener prompts corrected |
+| O-106 | Gap | Gate B exit-evidence documents (THREAT_MODEL, SECURITY_PLAN, DATA_FLOWS, CAPACITY_MODEL) not yet approved by their boards; AEI rows 2/2b/10/11/12 reviewer columns blank; DF-05 not updated (IVA) | Security & Privacy Board chair, ARB chair, Program Orchestrator | Gate B | Open — board approvals to be convened on the committed tree |
+| O-107 | Dependency | CI evidence for a decision commit is not observable from the agent environment (no `gh`); the delegate records the run URL from the GitHub tools for each gate commit (IVA) | delegate | Gate B | Open — practice adopted |
+| O-108 | Decision | Define 'named 2nd-line owner' for the Gate B veto ground: role (met today) or person (H-01/O-20 open) (IVA) | Product Owner | Gate B | Decided 2026-09-08 by the delegate: role-level ownership satisfies the Gate B minimum in dev/sim; person-level ownership is a Gate C entry condition (A-5) |
+| O-109 | Deviation | IVA validation ran on the same machine and harness session as the authoring agents; 'separate infrastructure' is met only by GitHub CI (IVA O-100) | Product Owner | Gate B | Accepted for dev/sim: CI is the separate runner; a separate IVA session/environment before Gate C |
 | R-09 | Risk | SUBMITTED-but-unacked order was un-cancellable, un-expirable and invisible to reconciliation; Kill Switch "cancel open orders" not guaranteed (REVIEW_C2 OBJ-2, F-11; local "R-05") | Backend Lead, Trading Domain Lead | Gate C | Remediated in dev/sim — IVA verification pending; scheduled re-driver on real infra Open |
 | R-10 | Risk | Reconciliation compared quantities only: internal CANCELLED vs broker OPEN reconciled clean; no fee model; recurring breaks minted new tickets; same-line resolvers accepted (REVIEW_C2 OBJ-3, F-16, F-17, F-19, F-20; local "R-06") | Backend Lead, Chief Risk Agent | Gate C | Remediated in dev/sim — IVA verification pending; tolerances/fee model O-29 Open |
 | R-11 | Risk | STRATEGY-level Kill Switch cancelled every open order platform-wide and every level preempted every account's lease (cross-tenant fencing side-effect) (REVIEW_C2 F-01; local "R-07") | Backend Lead, SRE Lead | Gate C | Remediated in dev/sim — IVA verification pending |
@@ -153,6 +162,10 @@
 | R-49 | Risk | Dual key satisfiable by two Compliance hands: `record_legal` accepted a Compliance Agent as the legal signer (COUNCIL_2026-09-08_gate_A_compliance_legal F-1/P-1; T-51) | Backend Lead, Compliance Agent | Gate D | Remediated in dev/sim 2026-09-08 — legal record requires a human Legal Agent; flag activation requires a human Compliance role; TC-CP-007 (abuse); Compliance Agent review due Gate B (AEI #31) |
 | R-50 | Risk | The registry verifier accepts any `algorithm` string in the envelope as long as the HMAC matches (no allowlist): harmless with one symmetric key, an algorithm-confusion path once public keys exist | Security Architect | Gate B | Open — closed by O-81 (allowlist before any public key) |
 | R-51 | Risk | Project-level agent guard fails open when the harness does not identify the sub-agent; verified 2026-09-08 that this harness does identify it (`agent_type`), so the fail-open branch applies only to the main session; Bash writes stay uninspected (R-46) | MCP Security Agent | Gate B | Documented; residual accepted with R-46 pending owner answer (PC-7) |
+| R-52 | Risk | The SCA gate scanned a lock CI did not install from (IVA) | Cloud Architect | Gate B | Remediated 2026-09-08 — CI installs `requirements.lock.txt` before the editable install |
+| R-53 | Risk | Exception checker bound an exception to any existing D-nnn and nothing forbade `# nosec` (IVA) | Security Architect | Gate B | Partially remediated 2026-09-08 — inline `# nosec` / `--ignore-vuln` fail the check; decision-text binding open |
+| R-54 | Risk | The harness auto-mode instruction routes file edits through Bash, making the R-46 bypass the default path for the main session; segregation of record rests on authorship review and O-85 (IVA) | MCP Security Agent | Gate B | Documented; O-85 delegated |
+| R-55 | Risk | CI step 'registry must NOT be deployable to production' inverts its meaning once a ceremony key exists; TC-AI-020..023 must carry the positive case (IVA) | Backend Lead | Gate C | Open — under O-81 |
 
 ## Remediation and evidence for committee review items (2026-09-07)
 

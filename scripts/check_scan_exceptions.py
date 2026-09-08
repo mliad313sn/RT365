@@ -32,6 +32,16 @@ for i, e in enumerate(entries):
         problems.append(f"entry {i}: expiry {expires} is more than 90 days after decision {dec} ({decided})")
     if expires < today:
         problems.append(f"entry {i}: expired on {expires}")
+# Inline suppressions are forbidden (D-054): every exception lives in the YAML file with a decision reference.
+SELF = Path(__file__).resolve()
+NEEDLES = ("# " + "nosec", "--ignore" + "-vuln")
+for root in ("libs", "services", "mcp", "connectors", "observability", "apps", "scripts"):
+    for f in (ROOT / root).rglob("*.py"):
+        if f.resolve() == SELF:
+            continue
+        for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            if any(needle in line for needle in NEEDLES):
+                problems.append(f"{f.relative_to(ROOT)}:{n}: inline suppression forbidden (use security/scan_exceptions.yaml)")
 if problems:
     print("FAIL scan exceptions:\n - " + "\n - ".join(problems))
     sys.exit(1)

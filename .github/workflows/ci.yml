@@ -10,8 +10,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
-      - name: Install
-        run: pip install -e ".[dev]" bandit pip-audit
+      - name: Install (runtime closure pinned by the lock the SCA gate scans, R-52)
+        run: pip install -r requirements.lock.txt && pip install -e ".[dev]" bandit pip-audit
       - name: Environment tag (dev registry key accepted only here)
         run: echo "RT_ENV=sim" >> "$GITHUB_ENV"
       - name: Lint and format

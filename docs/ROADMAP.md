@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | Product Director | Program Orchestrator | Product Council, Executive Steering | A | Draft v1.0 |
 
-Roadmap is gate-driven, not date-driven [Committee]. Dates are set by Executive Steering once Gate B capacity model exists [Open: O-17].
+Roadmap is gate-driven, not date-driven [Committee]. D-057 (2026-09-08) supersedes the earlier sentence that dates would be set once the Gate B capacity model exists: the calendar is decoupled from capacity numbers; each phase carries predecessor, condition and the measurement that produces any date; calendar dates appear only for the owner's own committed acts (register §A) until Gate C/E baselines exist [Open: O-17 → ROADMAP v1.1 columns, Product Council endorsement].
 
 | Phase | Gate | Epics in focus [Source: 14] | Environment authorised [Source: 00] |
 |---|---|---|---|
