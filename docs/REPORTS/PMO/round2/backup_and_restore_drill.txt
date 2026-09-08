@@ -1,0 +1,14 @@
+
+> meridian-itpmo@5.10.0 backup
+> node scripts/backup.mjs
+
+  cleared 2 stale lock file(s) from a previous run
+  pglite  →  /tmp/claude-0/-home-user-RT365/092f710a-373c-5804-9b11-3e25949681f8/scratchpad/meridian-round2-b/server/.data/backups/meridian-2026-09-08T16-27-52.tar.gz  (4609 KB)
+  PGlite: this backup was taken with the server stopped — keep it that way for the next one.
+
+> meridian-itpmo@5.10.0 restore-drill
+> node scripts/restore-drill.mjs server/.data/backups/meridian-2026-09-08T16-27-52.tar.gz
+
+  cleared 2 stale lock file(s) from a previous run
+  restored meridian-2026-09-08T16-27-52.tar.gz elsewhere in 1.2s
+  every counted table matches the live book — recorded as the last proven restore (2026-09-08T16:28:00.594Z)

@@ -131,9 +131,12 @@ All under `docs/REPORTS/PMO/round2/`:
 `drive.py`, `probes.py`, `probes2.py`, `shots.py` · `screens_text.txt` ·
 `01_portfolio.png` … `10_pipeline.png`.
 
-Not produced, and named so: no archive export or restore drill this round (round 1's B-5/B-6 are
-**[Open]** on this version); no second programme, so the tile-rescoping question is unanswered; no
-exception observed.
+`backup_and_restore_drill.txt` — the archive export (51 tables, 2,115 rows, 145 ms) and a **proven
+restore** (backup 4.6 MB with the server stopped, restored elsewhere in 1.2 s, every counted table
+matching, reported by `/api/health`). Round 1's B-5/B-6 are settled on this version.
+
+Not produced, and named so: no second programme, so the tile-rescoping question is unanswered; no
+exception observed; no PostgreSQL instance, so H-28 is not discharged.
 
 ## 8. RAID entries this session opens
 

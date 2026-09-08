@@ -244,6 +244,13 @@ decisions it had not yet published, re-opened the day's occurrence — which now
 one — and posted into it. Meridian refused, exactly as it should. `meridian_sync.py::_write` aborts
 on the first status ≥ 300, so the whole run stopped.
 
+**And it wrote nine rows before it stopped.** The register ledger also grew during the session; run 3
+posted **9 of the 10 new RAID rows**, then hit the decision 409 and aborted. Meridian's tagged rows
+went 165 → 174 while the ledger's open rows went 165 → 175. `meridian_sync.py` writes its `--json`
+evidence file **only on success**, so a partial load leaves the book changed and produces **no
+evidence file at all** — round 1's own gap G-9 recurring in a new form, and ours. [Measured:
+`GET /api/bootstrap` before and after]
+
 **The consequence a real integrator must plan for:** *the day the record is frozen is the day the
 one-way loader stops being able to land new facts.* Our loader has no notion of a closed occurrence
 and no route to the next one. This is our defect, and it is the exact shape of Meridian's own
@@ -509,6 +516,48 @@ And the number that matters most for integration:
 The four are the only writes that went through `PUT /api/v1/*` with an integration key — and they
 are labelled **"(service)"**, exactly as `035_write_api.sql` promised. **The capability is real; it
 covered 0.6 % of our load, because structure and value are not in v1.** [Measured]
+
+### 6.5b It got the book out, and it proved a restore
+
+Two things round 1 recorded as `[Source]` from the 5.9.0 run and left `[Open]` on 5.10.0. Both are
+now measured on this book.
+
+**Export.** `GET /api/admin/archive` → **200, 803,561 bytes, 145 ms**, `format`/`classification`/
+`generatedAt`/`issuedTo`/`engine`/`order` in the envelope: **51 tables, 34 non-empty, 2,115 rows**
+(largest: `audit_event` 640, `gate_criterion` 519, `raid_item` 176, `activity` 128, `milestone` 102,
+`document` 96, `meeting_decision` 85). The book leaves without the vendor. [Measured]
+
+**Backup, with the server running:**
+```
+$ npm run backup
+  process 3195 holds …/server/.data/pgdata and this book is PGlite — stop it first
+  (bash scripts/restart.sh stops gracefully), then run again          exit=2
+```
+It **refuses** rather than copying a live PGlite directory, and it names the pid and the remedy.
+A real operating constraint, honestly enforced: **on PGlite, a backup requires downtime.**
+
+**Backup and restore drill, server stopped by `SIGTERM` on its pid:**
+```
+$ npm run backup
+  pglite → …/server/.data/backups/meridian-2026-09-08T16-27-52.tar.gz  (4609 KB)     exit=0, 1 s
+  PGlite: this backup was taken with the server stopped — keep it that way for the next one.
+$ npm run restore-drill -- server/.data/backups/meridian-2026-09-08T16-27-52.tar.gz
+  restored … ELSEWHERE in 1.2s
+  every counted table matches the live book — recorded as the last proven restore   exit=0, 2 s
+```
+And the instance then reports it to anyone who asks:
+```
+GET /api/health → "backup":{"lastDrillAt":"2026-09-08T16:28:00.594Z","lastAttemptAt":"…",
+                            "ok":true,"restoreSeconds":1.2}
+```
+The book survived the stop and start intact (16 projects, 176 register items, 519 criteria, 102
+milestones, 96 documents, 85 decisions, 7 benefits, 3 business cases). [Measured:
+`backup_and_restore_drill.txt`]
+
+**This is REQ-06 working, measured rather than read.** It is also the first time this programme has
+evidence for the operational blocker in H-28: a restore proven by re-counting, on a real book,
+timed. It does **not** discharge H-28 — that needs PostgreSQL, a second instance, changed
+credentials on a real host and a written security policy, and it is a human act.
 
 ### 6.6 What it did *not* do on its own
 
