@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-08T10:10:03.090164+00:00 at base commit `d8cef0e57c1aa1f866393bc3b3e871ce367ae788`, working tree DIRTY, tested tree `8e6a6579dd3bb933069f6e3cc7c226646f6cf062` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-08T10:12:12.958900+00:00 at base commit `2102212dee4b0f709244c38613e1d00e0abc60c3`, working tree DIRTY, tested tree `28e04c6fa8a8f6652951a7b363f04b130ef5410e` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
@@ -28,8 +28,9 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-PKG | 1 | 1 | 1 | 2 | yes | 5 | 0 |
 | TC-RC | 1 | 2 | 1 | 1 | yes | 5 | 0 |
 | TC-RK | 5 | 31 | 4 | 2 | yes | 42 | 0 |
+| TC-TEN | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 
-Areas with a full quartet: 20/20.
+Areas with a full quartet: 21/21.
 
 ## Evidence records
 
@@ -214,3 +215,7 @@ Areas with a full quartet: 20/20.
 | TC-RK-019 | FR-12 | recovery | dev | An approved intent is re-decided at execution time; a limit breached meanwhile blocks execution (Risk review OBJ-2). | passed | `test/quartets/test_tc_rk_determinism.py::test_approval_re_decides_on_current_snapshots` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-RK-020 | FR-11 | positive | dev | A checked, cooled-down limit change becomes a new policy version; nothing else writes limits (Risk review F-04). | passed | `test/quartets/test_tc_rk_determinism.py::test_limit_change_only_via_maker_checker` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-RK-021 | FR-11 | abuse | dev | A resting same-side order counts as if filled for max_position_per_instrument: a flat book cannot reach 2x the cap by splitting (IVA-03). | passed | `test/quartets/test_tc_rk_determinism.py::test_position_cap_counts_resting_orders` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-TEN-001 | NFR-TEN-01 | positive | dev | Agents and humans of two tenants read, submit and approve their own data; every audit row is tenant-tagged and correlated. | passed | `test/quartets/test_tc_ten_tenancy.py::test_two_tenants_act_only_on_their_own_data` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-TEN-002 | NFR-TEN-01 | negative | dev | A's agent on B's account -> SCOPE (audited); cross-tenant identity mint refused; human A on B -> refused; pipeline CP-TENANT then RK-AUTH-TENANT. | passed | `test/quartets/test_tc_ten_tenancy.py::test_cross_tenant_access_is_denied_at_every_layer` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-TEN-003 | NFR-TEN-01 | abuse | dev | Every read returns only the principal's tenant; actions on the other tenant are 404 without existence leak; forged tenant header 403. | passed | `test/quartets/test_tc_ten_tenancy.py::test_every_bff_read_is_scoped_and_every_cross_tenant_action_refused` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-TEN-004 | NFR-TEN-01 | recovery | dev | Revoking tenant A stops only A (B keeps working), survives a restart, and is lifted only by two distinct approvers; all audited. | passed | `test/quartets/test_tc_ten_tenancy.py::test_tenant_wide_revocation_hits_one_tenant_survives_restart_and_needs_two_persons_to_lift` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |

@@ -67,11 +67,15 @@ class IdentityIssuer:
         revocations: RevocationList | None = None,
         audit: Callable[[str, dict[str, object]], object] | None = None,
         nonce_path: Path | None = None,
+        scope_valid: Callable[[str, str], bool] | None = None,
     ) -> None:
         self._ttl = default_ttl
         self._tokens: dict[str, AgentIdentity] = {}
         self._revocations = revocations or RevocationList()
         self._audit = audit or (lambda action, payload: None)
+        # (tenant_id, account_id) -> bool, answered by the identity service's account registry: an identity whose
+        # account sits outside its tenant is never minted (NFR-TEN-01). None keeps the unit-test issuer permissive.
+        self._scope_valid = scope_valid
         # nonces are keyed per agent (not per token) and journalled, so a replay survives neither a token
         # re-issue nor a process restart (IVA-08). Deployment target: replicated store [Open: R-05].
         self._seen_nonces: dict[str, set[str]] = {}
@@ -109,6 +113,19 @@ class IdentityIssuer:
         ttl: timedelta | None = None,
         issued_by: str = "identity_service",
     ) -> AgentIdentity:
+        if self._scope_valid is not None and not self._scope_valid(tenant_id, account_id):
+            self._audit(
+                "mcp.identity.refused",
+                {
+                    "agent_id": agent_id,
+                    "tenant": tenant_id,
+                    "account": account_id,
+                    "reason": "ACCOUNT_OUTSIDE_TENANT",
+                    "issued_by": issued_by,
+                    "correlation_id": f"identity:{agent_id}:{hash_of({'tenant': tenant_id, 'account': account_id})[:16]}",
+                },
+            )
+            raise ControlDenied("agent identity refused: account is not inside the identity's tenant")
         ident = AgentIdentity(
             token_id=new_id("tok"),
             agent_id=agent_id,
@@ -136,6 +153,7 @@ class IdentityIssuer:
                 "model": f"{model_id}@{model_version}",
                 "expires_at": ident.expires_at.isoformat(),
                 "issued_by": issued_by,
+                "correlation_id": f"identity:{ident.token_id}",
             },
         )
         return ident
@@ -178,11 +196,12 @@ class IdentityIssuer:
 
     def revoke_agent(self, agent_id: str, *, by: str = "system", now: datetime | None = None, reason: str = "") -> None:
         self._revocations.revoke("agent", agent_id, by=by, at=now or datetime.now().astimezone(), reason=reason)
-        self._audit("mcp.identity.revoked", {"agent_id": agent_id, "by": by, "reason": reason})
+        self._audit("mcp.identity.revoked", {"agent_id": agent_id, "by": by, "reason": reason, "correlation_id": f"agent:{agent_id}"})
 
     def revoke_scope(self, level: str, target: str, *, by: str = "killswitch", now: datetime | None = None) -> list[str]:
-        self._revocations.revoke("scope", f"{level}:{target}", by=by, at=now or datetime.now().astimezone())
-        return [
+        at = now or datetime.now().astimezone()
+        self._revocations.revoke("scope", f"{level}:{target}", by=by, at=at)
+        revoked = [
             i.agent_id
             for i in self._tokens.values()
             if level == "PLATFORM"
@@ -190,6 +209,27 @@ class IdentityIssuer:
             or (level == "ACCOUNT" and i.account_id == target)
             or (level == "STRATEGY" and i.strategy_id == target)
         ]
+        self._audit(
+            "mcp.scope.revoked",
+            {"level": level, "target": target, "by": by, "revoked_agents": revoked, "correlation_id": f"scope:{level}:{target}"},
+        )
+        return revoked
 
-    def restore_scope(self, level: str, target: str, *, by: str = "two-person", now: datetime | None = None) -> None:
-        self._revocations.lift("scope", f"{level}:{target}", by=by, at=now or datetime.now().astimezone())
+    def restore_scope(
+        self,
+        level: str,
+        target: str,
+        *,
+        by: str = "two-person",
+        approvers: tuple[str, str] | None = None,
+        now: datetime | None = None,
+    ) -> None:
+        """Lifting a scope revocation is a two-person action: ``approvers=(a, b)`` or the ``by="a+b"`` string form."""
+        names = tuple(approvers) if approvers is not None else tuple(part.strip() for part in by.split("+"))
+        if len(names) != 2 or len(set(names)) != 2 or not all(names):
+            raise ControlDenied("scope restore requires two distinct approvers")
+        self._revocations.lift("scope", f"{level}:{target}", by="+".join(names), at=now or datetime.now().astimezone())
+        self._audit(
+            "mcp.scope.restored",
+            {"level": level, "target": target, "by": list(names), "correlation_id": f"scope:{level}:{target}"},
+        )

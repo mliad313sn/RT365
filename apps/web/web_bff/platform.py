@@ -40,7 +40,7 @@ from market_data.calendar import SessionCalendar
 from market_data.instruments import InstrumentMaster
 from market_data.service import MarketDataService
 from market_data.store import BitemporalStore
-from mcp_servers.allowlist import TenantAllowlist
+from mcp_servers.allowlist import AllowlistStore
 from mcp_servers.egress import EgressPolicy
 from mcp_servers.identity import AgentIdentity, IdentityIssuer, Principal
 from mcp_servers.registry import ToolRegistry, load_registry
@@ -58,6 +58,7 @@ from risk_engine.monitors import RuntimeMetrics, evaluate_runtime
 from risk_engine.policy import RiskPolicy, apply_limit_change, load_policy
 from rtcore.envelope import make_event
 from rtcore.errors import ControlDenied
+from rtcore.ids import hash_of
 from rtcore.lines import Actor, ActorKind, Role, system_actor
 from rtcore.money import ZERO
 from rtcore.planes import Plane, PlaneGuard, enter
@@ -88,6 +89,32 @@ from strategy_service.signals import SmaCrossoverStrategy, intent_from_signal
 TENANT = "tenant-sim"
 ACCOUNT = "acct-sim-001"
 CUSTOMER = "cust-sim-001"
+# Second simulated tenant (opt-in via build_sim_platform(second_tenant=True)) for the TC-TEN isolation quartet [RAID R-22, RT-03]
+TENANT_B = "tenant-sim-b"
+ACCOUNT_B = "acct-sim-b-001"
+CUSTOMER_B = "cust-sim-b-001"
+# Human principals are bound to a tenant server-side (identity_service.accounts.bind_principal); in sim the fixture
+# roster below stands in for the IdP tenant claim [Open: R-06]. Tenant is never a client-asserted header.
+SIM_PRINCIPALS: dict[str, tuple[str, ...]] = {
+    TENANT: (
+        "risk.officer.1",
+        "chief.risk",
+        "sre.lead",
+        "trading.lead",
+        "compliance.agent",
+        "legal.agent",
+        "trader.1",
+        "pm.1",
+        "ops.1",
+        "auditor.1",
+        "iva.1",
+        "quant.fixture",
+        "model.risk",
+        "legal.fixture",
+        "compliance.fixture",
+    ),
+    TENANT_B: ("risk.officer.b", "pm.b", "sre.b", "trader.b", "ops.b", "trading.lead.b"),
+}
 INSTRUMENT = "SIMEQ1"
 INSTRUMENT_2 = "SIMEQ2"
 VENUE = "SIMX"
@@ -134,7 +161,7 @@ class SimPlatform:
     tracer: Tracer
     slis: SliCatalog
     guard: PlaneGuard
-    allowlists: dict[str, TenantAllowlist]
+    allowlists: AllowlistStore
     pipeline: TradePipeline = field(init=False)
     killswitch: KillSwitchService = field(init=False)
     tickets: BreakTicketService = field(init=False)
@@ -148,6 +175,15 @@ class SimPlatform:
     def advance(self, seconds: float) -> datetime:
         self.now = self.now + timedelta(seconds=seconds)
         return self.now
+
+    # --- tenancy ---------------------------------------------------------------------------------------
+    def tenant_for(self, account_id: str | None) -> str:
+        """The tenant an account belongs to. An unknown account maps to the default sim tenant so the pipeline
+        can fail closed on inputs (IVA-24) instead of the composition root raising first."""
+        try:
+            return self.accounts.get(str(account_id)).tenant_id
+        except KeyError:
+            return TENANT
 
     # --- snapshot providers ------------------------------------------------------------------------------
     def account_snapshot(self, account_id: str, now: datetime | None = None) -> AccountSnapshot | None:
@@ -242,16 +278,25 @@ class SimPlatform:
         submitted_by: str = "agent:sim",
         plane: Plane = Plane.ANALYTICS,
         now: datetime | None = None,
+        tenant_id: str | None = None,
     ) -> ValidatedIntent:
+        """Seal the intent under the tenant of its account; ``tenant_id`` overrides only for defence-in-depth tests."""
+        account_id = raw.get("account_id") if isinstance(raw, dict) else raw.account_id
+        tenant = tenant_id or self.tenant_for(str(account_id))
         with enter(plane):
-            return self.intent_queue.submit(raw, tenant_id=TENANT, submitted_by=submitted_by, now=now or self.now)
+            return self.intent_queue.submit(raw, tenant_id=tenant, submitted_by=submitted_by, now=now or self.now)
 
     def run_intent(
-        self, raw: dict[str, Any] | TradeIntent, *, submitted_by: str = "agent:sim", now: datetime | None = None
+        self,
+        raw: dict[str, Any] | TradeIntent,
+        *,
+        submitted_by: str = "agent:sim",
+        now: datetime | None = None,
+        tenant_id: str | None = None,
     ) -> PipelineResult:
         now = now or self.now
-        vi = self.submit_intent(raw, submitted_by=submitted_by, now=now)
-        self.intent_queue.pop()
+        vi = self.submit_intent(raw, submitted_by=submitted_by, now=now, tenant_id=tenant_id)
+        self.intent_queue.take(str(vi.intent.intent_id), vi.tenant_id)
         result = self.pipeline.process(vi, now=now)
         self.settle(now)
         if result.order is not None:
@@ -295,6 +340,7 @@ class SimPlatform:
             now=now,
         )
         corr = f"recon:{account_id}:{now.isoformat()}"
+        tenant = self.tenant_for(account_id)
         payload = {
             "account_id": account_id,
             "as_of": now.isoformat(),
@@ -304,7 +350,7 @@ class SimPlatform:
         }
         self.audit.append(
             correlation_id=corr,
-            tenant=TENANT,
+            tenant=tenant,
             account=account_id,
             actor="reconciliation_service",
             action="reconciliation.completed.v1",
@@ -314,7 +360,7 @@ class SimPlatform:
             make_event(
                 "reconciliation.completed.v1",
                 correlation_id=corr,
-                tenant=TENANT,
+                tenant=tenant,
                 account=account_id,
                 producer="reconciliation_service",
                 payload=payload,
@@ -327,7 +373,7 @@ class SimPlatform:
                 make_event(
                     "reconciliation.break.v1",
                     correlation_id=brk.correlation_ids[0] if brk.correlation_ids else brk.break_id,
-                    tenant=TENANT,
+                    tenant=tenant,
                     account=account_id,
                     producer="reconciliation_service",
                     payload=brk,
@@ -352,7 +398,7 @@ class SimPlatform:
             corr = f"halt:{account_id}:{ev.reason_code}"
             self.audit.append(
                 correlation_id=corr,
-                tenant=TENANT,
+                tenant=snap.tenant_id,
                 account=account_id,
                 actor="runtime_monitor",
                 action="risk.halt.v1",
@@ -362,7 +408,7 @@ class SimPlatform:
                 make_event(
                     "risk.halt.v1",
                     correlation_id=corr,
-                    tenant=TENANT,
+                    tenant=snap.tenant_id,
                     account=account_id,
                     producer="runtime_monitor",
                     payload=ev,
@@ -389,13 +435,14 @@ class SimPlatform:
             if change is None or change.kind != "limit.changed" or change.change_id in self.applied_changes:
                 continue
             payload = change.payload
+            tenant = str(payload.get("tenant_id") or TENANT)
             self.policy = apply_limit_change(
                 self.policy,
                 level=str(payload["level"]),
                 scope_id=str(payload["scope_id"]),
                 metric=str(payload["metric"]),
                 threshold=Decimal(str(payload["threshold"])),
-                tenant_id=str(payload.get("tenant_id") or TENANT),
+                tenant_id=tenant,
                 maker=change.maker_id,
                 checker=change.checker_id or "",
                 change_id=change.change_id,
@@ -404,7 +451,7 @@ class SimPlatform:
             self.applied_changes.add(change.change_id)
             self.audit.append(
                 correlation_id=change.change_id,
-                tenant=TENANT,
+                tenant=tenant,
                 account=None,
                 actor="policy_store",
                 action="limit.changed.v1",
@@ -427,7 +474,7 @@ class SimPlatform:
         self.accounts._accounts[account_id] = acct.model_copy(update={"autonomy_suspended": False})
         self.audit.append(
             correlation_id=f"autonomy:{account_id}",
-            tenant=TENANT,
+            tenant=acct.tenant_id,
             account=account_id,
             actor=actor.actor_id,
             action="account.autonomy.restored",
@@ -444,10 +491,12 @@ class SimPlatform:
         account_id: str = ACCOUNT,
         now: datetime | None = None,
         ttl: timedelta | None = None,
+        tenant_id: str | None = None,
     ) -> AgentIdentity:
+        """Mint an agent identity in the tenant of its account; ``tenant_id`` overrides only for negative tests."""
         return self.issuer.issue(
             agent_id=agent_id,
-            tenant_id=TENANT,
+            tenant_id=tenant_id or self.tenant_for(account_id),
             account_id=account_id,
             strategy_id=strategy_id,
             strategy_version=strategy_version,
@@ -494,14 +543,14 @@ class SimPlatform:
         }
 
 
-def _default_customer(now: datetime) -> CustomerProfile:
+def _default_customer(now: datetime, customer_id: str = CUSTOMER, tenant_id: str = TENANT) -> CustomerProfile:
     # Fixture standing (council P-3/P-4): disclosures acknowledged, consent recorded for every order-placing mode so the sim
     # cell for each mode is exercisable, classification established by the fixture assessor (never self-declared). All values
     # are labelled simulated; none is evidence of a real onboarding.
     recorded = now - timedelta(days=1)
     return CustomerProfile(
-        customer_id=CUSTOMER,
-        tenant_id=TENANT,
+        customer_id=customer_id,
+        tenant_id=tenant_id,
         customer_type=CustomerType.RETAIL,
         jurisdiction=JURISDICTION,
         product_permissions=("EQUITY", "ETF"),
@@ -546,6 +595,7 @@ def build_sim_platform(
     store_dir: Path | None = None,
     executor_id: str = "executor-a",
     authorisation_key: bytes | None = None,
+    second_tenant: bool = False,
 ) -> SimPlatform:
     root = resource_root()  # source checkout, installed bundle or frozen executable; fails closed when absent (ADR-016)
     # Durable control state (ADR-010 seam): None keeps every store in memory (the default for tests and backtests);
@@ -581,16 +631,49 @@ def build_sim_platform(
 
     guard.alert_hook = on_deny
 
+    # Every audit row is tenant-tagged and correlated (NFR-AUD-01, NFR-TEN-01). Hooks that only receive a payload
+    # resolve the tenant from it (tenant id, account, intent) instead of stamping the default tenant constant.
+    # (``tracker`` and ``platform`` are bound later in this scope; the closures look them up at call time.)
+    def tenant_of(payload: dict[str, Any]) -> str:
+        for key in ("tenant_id", "tenant"):
+            if payload.get(key):
+                return str(payload[key])
+        nested = payload.get("payload")
+        if isinstance(nested, dict) and nested.get("tenant_id"):
+            return str(nested["tenant_id"])
+        brk = payload.get("brk")
+        account = payload.get("account_id") or payload.get("account") or (brk.get("account_id") if isinstance(brk, dict) else None)
+        if account:
+            return platform.tenant_for(str(account))
+        intent_id = payload.get("intent_id")
+        if intent_id and tracker.exists(str(intent_id)):
+            return tracker.get(str(intent_id)).tenant_id
+        return TENANT
+
+    def corr_of(action: str, payload: dict[str, Any]) -> str:
+        for key in ("correlation_id", "change_id", "activation_id", "token_id", "snapshot_id", "break_id", "cell_id"):
+            if payload.get(key):
+                return str(payload[key])
+        if payload.get("intent_id") and tracker.exists(str(payload["intent_id"])):
+            return tracker.get(str(payload["intent_id"])).correlation_id
+        if payload.get("account_id"):
+            return f"account:{payload['account_id']}"
+        if payload.get("strategy_id"):
+            return f"strategy:{payload['strategy_id']}@{payload.get('version', '')}"
+        return f"{action}:{hash_of(payload)[:16]}"
+
     def audit5(action: str, correlation_id: str, tenant: str, account: str | None, payload: dict[str, Any]) -> None:
         audit.append(correlation_id=correlation_id, tenant=tenant, account=account, actor="platform", action=action, payload=payload)
 
     def audit3(action: str, correlation_id: str, payload: dict[str, Any]) -> None:
-        audit.append(correlation_id=correlation_id, tenant=TENANT, account=None, actor="platform", action=action, payload=payload)
+        audit.append(
+            correlation_id=correlation_id, tenant=tenant_of(payload), account=None, actor="platform", action=action, payload=payload
+        )
 
     def audit2(action: str, payload: dict[str, Any]) -> None:
         audit.append(
-            correlation_id=str(payload.get("correlation_id", "-")),
-            tenant=TENANT,
+            correlation_id=corr_of(action, payload),
+            tenant=tenant_of(payload),
             account=None,
             actor="platform",
             action=action,
@@ -608,32 +691,40 @@ def build_sim_platform(
     )
     accounts = AccountRegistry(
         audit_hook=lambda action, tenant, payload: audit.append(
-            correlation_id="-",
+            correlation_id=corr_of(action, payload),
             tenant=tenant,
-            account=str(payload.get("account_id")),
+            account=str(payload["account_id"]) if payload.get("account_id") else None,
             actor="identity_service",
             action=action,
             payload=payload,
         )
     )
-    accounts.add_tenant(Tenant(tenant_id=TENANT, name="Simulation tenant", residency_region="sim", jurisdiction=JURISDICTION))
-    accounts.add_account(
-        Account(
-            account_id=ACCOUNT,
-            tenant_id=TENANT,
-            customer_id=CUSTOMER,
-            broker=BROKER,
-            jurisdiction=JURISDICTION,
-            customer_type=CustomerType.RETAIL.value,
-            base_currency="USD",
-            mode=mode,
-            authorised_strategies=(STRATEGY,),
-            capital_envelope=Decimal("200000") if mode == AccountMode.BOUNDED_AUTONOMOUS else None,
-        )
-    )
-
+    # Tenants of the simulation: the default one always; the second only when a test asks for it (TC-TEN).
+    tenants: tuple[tuple[str, str, str], ...] = ((TENANT, ACCOUNT, CUSTOMER),)
+    if second_tenant:
+        tenants += ((TENANT_B, ACCOUNT_B, CUSTOMER_B),)
     ledger = Ledger()
-    ledger.open_account(ACCOUNT, TENANT, "USD", cash)
+    for tenant_id, account_id, customer_id in tenants:
+        accounts.add_tenant(
+            Tenant(tenant_id=tenant_id, name=f"Simulation tenant {tenant_id}", residency_region="sim", jurisdiction=JURISDICTION)
+        )
+        accounts.add_account(
+            Account(
+                account_id=account_id,
+                tenant_id=tenant_id,
+                customer_id=customer_id,
+                broker=BROKER,
+                jurisdiction=JURISDICTION,
+                customer_type=CustomerType.RETAIL.value,
+                base_currency="USD",
+                mode=mode,
+                authorised_strategies=(STRATEGY,),
+                capital_envelope=Decimal("200000") if mode == AccountMode.BOUNDED_AUTONOMOUS else None,
+            )
+        )
+        ledger.open_account(account_id, tenant_id, "USD", cash)
+        for principal in SIM_PRINCIPALS.get(tenant_id, ()):
+            accounts.bind_principal(principal, tenant_id)
     cal.add_venue(VENUE, time(0, 0), time(23, 59, 59))
     valid_from = datetime(2020, 1, 1, tzinfo=UTC)
     for iid, sector in ((INSTRUMENT, "SIM-TECH"), (INSTRUMENT_2, "SIM-TECH")):
@@ -666,13 +757,15 @@ def build_sim_platform(
         )
     )
     market = MarketDataService(store, master, cal, audit=audit2)
-    feed = SimulatedFeed(start_prices={INSTRUMENT: Decimal("100"), INSTRUMENT_2: Decimal("50")}, entitlements={TENANT: {"*"}})
+    feed = SimulatedFeed(
+        start_prices={INSTRUMENT: Decimal("100"), INSTRUMENT_2: Decimal("50")}, entitlements={t: {"*"} for t, _a, _c in tenants}
+    )
     broker = SimulatedBroker(known_instruments={INSTRUMENT: "EQUITY", INSTRUMENT_2: "EQUITY"}, venues=(VENUE,))
     broker.connect(VaultRef(path="vault://brokers/sim/creds", version=1), now=now)
-    broker.fund(ACCOUNT, cash)
+    for _tenant_id, account_id, _customer_id in tenants:
+        broker.fund(account_id, cash)
     leases = LeaseStore(control_store)
     # Control-plane command authorisation key: created here, handed only to the pipeline (sign) and the gateway
-    # (verify). No MCP/AI component, tool, handler or BFF route ever receives it (IVA V-C2).
     # (verify). No MCP/AI component, tool, handler or BFF route ever receives it (IVA V-C2). A caller-supplied key is the
     # vault/KMS path of a deployment (O-53): it lets a restarted process verify commands its predecessor signed.
     authoriser = CommandAuthoriser(authorisation_key) if authorisation_key is not None else CommandAuthoriser.generate()
@@ -753,7 +846,7 @@ def build_sim_platform(
     restricted = RestrictedLists(
         policy_version="lists-sim-v0.1", restricted_instruments=("SIMRESTRICTED",), restricted_venues=("SIMBANNED",)
     )
-    customers = {CUSTOMER: _default_customer(now)}
+    customers = {customer_id: _default_customer(now, customer_id, tenant_id) for tenant_id, _account_id, customer_id in tenants}
     cell = jurisdictions.propose(
         country=JURISDICTION,
         customer_type=CustomerType.RETAIL,
@@ -769,9 +862,18 @@ def build_sim_platform(
         cell = jurisdictions.record_legal(cell, legal_record_ref=_sim_legal_record(now), actor=legal)
         jurisdictions.activate_flag(cell, actor=comp, now=now)
     revocations = RevocationList(revocations_path)
-    issuer = IdentityIssuer(revocations=revocations, audit=audit2, nonce_path=nonce_path)
+    # An agent identity is minted only for an account inside its tenant: the registry answers, the issuer refuses.
+    issuer = IdentityIssuer(
+        revocations=revocations,
+        audit=audit2,
+        nonce_path=nonce_path,
+        scope_valid=lambda tenant_id, account_id: accounts.get_in_tenant(account_id, tenant_id) is not None,
+    )
     registry = load_registry(registry_path or root / "mcp" / "policies" / "tool_registry.signed.json")
-    allowlists = {TENANT: TenantAllowlist.load(root / "mcp" / "policies" / "allowlist.tenant-sim.yaml", revocations)}
+    allowlists = AllowlistStore.load_dir(root / "mcp" / "policies", revocations, tenants=(TENANT,), audit=audit2)
+    if second_tenant:
+        # The second tenant's grants are a test fixture; shipping them under mcp/policies is the MCP Security Agent's call.
+        allowlists.add(AllowlistStore.load_file(root / "test" / "fixtures" / "policies" / f"allowlist.{TENANT_B}.yaml", revocations))
     egress = EgressPolicy.load(root / "mcp" / "policies" / "egress.yaml")
     runtime = ToolRuntime(
         registry=registry,
@@ -917,14 +1019,32 @@ def build_sim_platform(
     def halt_account(account_id: str, reason: str) -> None:
         accounts.halt(account_id, system_actor("killswitch"), reason=reason, now=platform.now)
 
+    def ks_tenant(payload: dict[str, Any]) -> str:
+        """ACCOUNT-level rows belong to the account's tenant, TENANT-level rows to the target; other levels are platform-wide."""
+        level, target = str(payload.get("level", "")), str(payload.get("target") or payload.get("target_id") or "")
+        if level == KillSwitchLevel.TENANT.value and target:
+            return target
+        if level == KillSwitchLevel.ACCOUNT.value and target:
+            return platform.tenant_for(target)
+        return tenant_of(payload)
+
     def ks_audit(action: str, corr: str, payload: dict[str, Any]) -> None:
-        audit.append(correlation_id=corr, tenant=TENANT, account=None, actor="killswitch_service", action=action, payload=payload)
+        if "level" not in payload:
+            try:  # deactivation rows carry the activation id as correlation: resolve level/target from the activation
+                act = platform.killswitch.get(corr)
+                payload_scope: dict[str, Any] = {**payload, "level": act.level.value, "target": act.target_id}
+            except (KeyError, AttributeError):
+                payload_scope = payload
+        else:
+            payload_scope = payload
+        tenant = ks_tenant(payload_scope)
+        audit.append(correlation_id=corr, tenant=tenant, account=None, actor="killswitch_service", action=action, payload=payload)
         if action in ("killswitch.activated", "killswitch.deactivated"):
             outbox.publish(
                 make_event(
                     f"{action}.v1",
                     correlation_id=corr,
-                    tenant=TENANT,
+                    tenant=tenant,
                     producer="killswitch_service",
                     payload={k: v for k, v in payload.items() if k != "evidence_snapshot"},
                     emitted_ts=platform.now,
@@ -968,7 +1088,12 @@ def build_sim_platform(
         return run
 
     def revoke_grant_for_scope(a: Alert) -> None:
-        allowlists[TENANT].revoke_grant(
+        # the runtime's alert payload names the tenant of the offending identity; only that tenant's grant is revoked
+        tenant = str(a.payload.get("tenant") or platform.tenant_for(str(a.payload["account"])))
+        allowlist = allowlists.get(tenant)
+        if allowlist is None:
+            return
+        allowlist.revoke_grant(
             account_id=str(a.payload["account"]),
             strategy_id=str(a.payload["strategy"]),
             tool=str(a.payload["tool"]),

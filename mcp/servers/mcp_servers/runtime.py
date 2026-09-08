@@ -7,7 +7,7 @@ from __future__ import annotations
 import contextvars
 import time
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from concurrent.futures import Future, ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from datetime import UTC, datetime
@@ -49,6 +49,7 @@ class ToolResult(StrictModel):
     error_code: str | None
     elapsed_ms: int
     call_hash: str
+    correlation_id: str
 
 
 def _delimit_strings(value: Any, label: Provenance) -> Any:
@@ -67,7 +68,7 @@ class ToolRuntime:
         *,
         registry: ToolRegistry,
         issuer: IdentityIssuer,
-        allowlists: dict[str, TenantAllowlist],
+        allowlists: Mapping[str, TenantAllowlist],
         audit: Callable[[str, str, str, dict[str, Any]], object],
         alert: Callable[[str, dict[str, Any]], object] | None = None,
         revocations: RevocationList | None = None,
@@ -98,13 +99,18 @@ class ToolRuntime:
 
     def revoke_tool(self, tool: str, *, by: str, now: datetime | None = None, reason: str = "") -> None:
         self._revocations.revoke("tool", tool, by=by, at=now or self._quota_clock(), reason=reason)
-        self._audit("mcp.tool.revoked", "-", "-", {"tool": tool, "by": by, "reason": reason})
+        self._audit("mcp.tool.revoked", f"tool:{tool}", "-", {"tool": tool, "by": by, "reason": reason})
 
     def revoke_registry(self, *, by: str, now: datetime | None = None) -> None:
         """Emergency revocation: every runtime sharing the revocation list refuses at next call and after restart."""
         self._revocations.revoke("registry", self._registry.registry_version, by=by, at=now or self._quota_clock())
         self._registry_revoked = True
-        self._audit("mcp.registry.revoked", "-", "-", {"by": by, "version": self._registry.registry_version})
+        self._audit(
+            "mcp.registry.revoked",
+            f"registry:{self._registry.registry_version}",
+            "-",
+            {"by": by, "version": self._registry.registry_version},
+        )
 
     def restore_registry(self, registry: ToolRegistry, *, approvers: tuple[str, str], now: datetime | None = None) -> None:
         """Two distinct human approvers are required to restore (P4 two-person rule)."""
@@ -113,7 +119,12 @@ class ToolRuntime:
         self._revocations.lift("registry", registry.registry_version, by="+".join(approvers), at=now or self._quota_clock())
         self._registry = registry
         self._registry_revoked = False
-        self._audit("mcp.registry.restored", "-", "-", {"by": list(approvers), "version": registry.registry_version})
+        self._audit(
+            "mcp.registry.restored",
+            f"registry:{registry.registry_version}",
+            "-",
+            {"by": list(approvers), "version": registry.registry_version},
+        )
 
     @staticmethod
     def label_untrusted(text: str, provenance: Provenance) -> str:
@@ -134,10 +145,19 @@ class ToolRuntime:
 
     # --- call path ----------------------------------------------------------------------------------------
     def call(
-        self, *, token_id: str, signature: CallSignature, tool: str, args: dict[str, Any], now: datetime, correlation_id: str = "-"
+        self,
+        *,
+        token_id: str,
+        signature: CallSignature,
+        tool: str,
+        args: dict[str, Any],
+        now: datetime,
+        correlation_id: str | None = None,
     ) -> ToolResult:
         started = time.perf_counter()
         call_hash = hash_of({"token": token_id, "tool": tool, "args": args, "nonce": signature.nonce})
+        # every audit row of this call is correlated: the caller's id when supplied, else the call hash (NFR-AUD-01)
+        correlation_id = correlation_id if correlation_id and correlation_id != "-" else f"call:{call_hash[:16]}"
         tenant = "-"
         actor = f"token:{token_id[-8:]}"
 
@@ -159,6 +179,7 @@ class ToolRuntime:
                 error_code=code,
                 elapsed_ms=int((time.perf_counter() - started) * 1000),
                 call_hash=call_hash,
+                correlation_id=correlation_id,
             )
 
         if self._registry_revoked or self._revocations.is_revoked("registry", self._registry.registry_version):
@@ -183,6 +204,9 @@ class ToolRuntime:
         if self._revocations.is_revoked("tool", tool):
             return deny("TOOL_REVOKED", f"{tool} revoked")
         allow = self._allowlists.get(ident.tenant_id)
+        if allow is not None and allow.revoked:
+            # tenant-wide suspension (two-person restore): its own reason code, no per-scope grant auto-revocation as collateral
+            return deny("TENANT_REVOKED", "tenant grants revoked")
         if allow is None or not allow.allowed(
             tenant_id=ident.tenant_id, account_id=ident.account_id, strategy_id=ident.strategy_id, tool=tool
         ):
@@ -259,4 +283,5 @@ class ToolRuntime:
             error_code=None,
             elapsed_ms=int(elapsed * 1000),
             call_hash=call_hash,
+            correlation_id=correlation_id,
         )

@@ -70,6 +70,7 @@ INTENT_MACHINE: MonotonicStateMachine[IntentState] = MonotonicStateMachine({k: f
 class IntentStatus(StrictModel):
     intent_id: str
     correlation_id: str
+    tenant_id: str  # the tenant the intent was sealed under: every read of the status is filtered by it (NFR-TEN-01)
     state: IntentState
     history: tuple[tuple[str, str], ...]
     updated_at: datetime
@@ -83,18 +84,19 @@ class IntentTracker:
     def exists(self, intent_id: str) -> bool:
         return intent_id in self._status
 
-    def create(self, intent_id: str, correlation_id: str, *, now: datetime) -> IntentStatus:
+    def create(self, intent_id: str, correlation_id: str, *, tenant_id: str, now: datetime) -> IntentStatus:
         if intent_id in self._status:
             raise TransitionError(f"intent {intent_id} already tracked; states are monotonic and never reset")
         st = IntentStatus(
             intent_id=intent_id,
             correlation_id=correlation_id,
+            tenant_id=tenant_id,
             state=IntentState.CREATED,
             history=((IntentState.CREATED.value, now.isoformat()),),
             updated_at=now,
         )
         self._status[intent_id] = st
-        self._audit("intent.state", correlation_id, {"intent_id": intent_id, "state": st.state.value})
+        self._audit("intent.state", correlation_id, {"intent_id": intent_id, "tenant_id": tenant_id, "state": st.state.value})
         return st
 
     def transition(self, intent_id: str, nxt: IntentState, *, now: datetime, detail: dict[str, object] | None = None) -> IntentStatus:
@@ -102,11 +104,20 @@ class IntentTracker:
         INTENT_MACHINE.assert_transition(cur.state, nxt)
         st = cur.model_copy(update={"state": nxt, "history": (*cur.history, (nxt.value, now.isoformat())), "updated_at": now})
         self._status[intent_id] = st
-        self._audit("intent.state", cur.correlation_id, {"intent_id": intent_id, "state": nxt.value, **(detail or {})})
+        self._audit(
+            "intent.state", cur.correlation_id, {"intent_id": intent_id, "tenant_id": cur.tenant_id, "state": nxt.value, **(detail or {})}
+        )
         return st
 
     def get(self, intent_id: str) -> IntentStatus:
         return self._status[intent_id]
+
+    def get_in_tenant(self, intent_id: str, tenant_id: str) -> IntentStatus | None:
+        """Tenant-scoped read: ``None`` for an unknown intent and for another tenant's (no existence leak)."""
+        st = self._status.get(intent_id)
+        if st is None or st.tenant_id != tenant_id:
+            return None
+        return st
 
     def all(self) -> tuple[IntentStatus, ...]:
         return tuple(self._status.values())

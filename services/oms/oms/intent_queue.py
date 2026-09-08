@@ -51,7 +51,7 @@ class IntentQueue:
             # Replayed intent_id (review F-01): the first submission stands; the replay is refused, not reset.
             self._on_reject(corr, {"intent_id": intent_id, "reason": "DUPLICATE_INTENT_ID"})
             raise SchemaViolation(f"intent {intent_id} was already submitted")
-        self._tracker.create(intent_id, corr, now=now)
+        self._tracker.create(intent_id, corr, tenant_id=tenant_id, now=now)
         try:
             intent = raw if isinstance(raw, TradeIntent) else TradeIntent.model_validate(raw)
         except ValidationError as exc:
@@ -99,6 +99,16 @@ class IntentQueue:
 
     def pop(self) -> ValidatedIntent | None:
         return self._q.popleft() if self._q else None
+
+    def take(self, intent_id: str, tenant_id: str) -> ValidatedIntent | None:
+        """Remove and return one queued intent of ``tenant_id``; other tenants' intents are neither drained nor revealed."""
+        for ix, vi in enumerate(self._q):
+            if str(vi.intent.intent_id) == intent_id:
+                if vi.tenant_id != tenant_id:
+                    return None
+                del self._q[ix]
+                return vi
+        return None
 
     def __len__(self) -> int:
         return len(self._q)

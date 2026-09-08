@@ -95,6 +95,9 @@ class BreakTicketService:
         self._audit("reconciliation.ticket.updated", t.brk.break_id, t.model_dump(mode="json"))
         return t
 
+    def get(self, ticket_id: str) -> BreakTicket | None:
+        return self._tickets.get(ticket_id)
+
     def open_tickets(self, account_id: str | None = None) -> tuple[BreakTicket, ...]:
         return tuple(
             t
