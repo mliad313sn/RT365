@@ -2,7 +2,7 @@
 
 Control: Deterministic risk engine — Requirement: FR-11 — RTM row: FR-11 — Owner: Backend Lead — Reviewer (≠ owner): Chief Risk Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:20:15.686197+00:00 at `7d61bd14972d4a8d16c011f4349e3a9dc9677340` (tree dirty, tested tree `1a23b8278a11`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T14:24:37.721432+00:00 at `ded8e17eca992f34eb69273844424f7972adeb1b` (tree dirty, tested tree `25095be101a8`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|

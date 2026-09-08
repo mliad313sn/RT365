@@ -40,10 +40,17 @@ MERIDIAN_URL=http://localhost:4173 MERIDIAN_EMAIL=<account> MERIDIAN_PASSWORD=<s
 5. Gates: convene with the `gate-x` agent on a commit; on a pass, tick the `Gate X` milestone in Meridian with the decider named (acceptance criteria = exit evidence). Meridian's own four-gate phase machine is not used for authorisation; our six gates are.
 
 ## 4. First load, 2026-09-08 (evidence)
-Instance: Meridian 5.9.0 (commit 77c4b49), PGlite, `npm test` 449/449 pass. Load: `docs/PMO/meridian_sync_2026-09-08.json` — 16 projects, milestones Gate A–F (Gate A done), 86 RAID items, 14 decisions and 21 open actions on the weekly; second run 0 creating writes. Archive export: 1,529 rows across 47 tables. **Re-test 2026-09-08 on Meridian 5.10.0 (commit e352bc8):** `npm test` 513/513 pass in 101 suites; migrations 039; the first hour now works with no `.env` and no `PGLITE_DIR`; `make pmo-sync` loaded 16 projects, 10 milestones and 122 RAID items in 256 writes and a second run made no creating writes; all twelve improvements we filed were delivered upstream and a new list V-1..V-12 is in docs/PMO_MERIDIAN_ASSESSMENT.md §8. Screens: `docs/PMO/meridian_*_5.10.0.png`. Screens: `docs/PMO/meridian_portfolio.png`, `meridian_project.png`, `meridian_meetings.png`.
+Instance: Meridian 5.9.0 (commit 77c4b49), PGlite, `npm test` 449/449 pass. Load: `docs/PMO/meridian_sync_2026-09-08.json` — 16 projects, milestones Gate A–F (Gate A done), 86 RAID items, 14 decisions and 21 open actions on the weekly; second run 0 creating writes. Archive export: 1,529 rows across 47 tables. **Re-test 2026-09-08 on Meridian 5.10.0 (commit e352bc8):** `npm test` 513/513 pass in 101 suites; migrations 039; the first hour now works with no `.env` and no `PGLITE_DIR`; `make pmo-sync` loaded 16 projects, 10 milestones and 122 RAID items in 256 writes and a second run made no creating writes; all twelve improvements we filed were delivered upstream and a new list V-1..V-12 is in docs/PMO_MERIDIAN_ASSESSMENT.md §8. Screens: `docs/PMO/meridian_*_5.10.0.png`. First-load screens: `docs/PMO/meridian_portfolio.png`, `meridian_project.png`, `meridian_meetings.png`.
 
 ## 5. Limits to know
-- Meridian's public API (`/api/v1`) is read-only; the sync uses the session routes the web client uses (undocumented, may change between versions — pin the Meridian commit).
+- Meridian 5.10.0 added a **write** API v1 (`PUT /api/v1/{projects,milestones,raid,activities,workitems,criteria}` under `write:portfolio`, `{decisions,actions}` under `write:meetings`, with `Idempotency-Key`). Our loader still uses the session routes the web client uses (undocumented, may change between versions — pin the Meridian commit); migrating it to the documented write API is register item E-4, and the business case and benefits are not writable through either (assessment §8, V-1).
 - Dates in Meridian are planning placeholders until O-17; budgets are 0 until the cost model (O-13).
-- Meridian scaffolds its own four gates (Mandate, Design authority, Readiness, Benefits) on every project; they coexist with `Gate A…F` on `RBT-GOV` and are ignored for authorisation.
+- Meridian scaffolds its own four gates (Mandate, Design authority, Readiness, Benefits) on every project; they coexist with `Gate A…F` on `RBT-GOV` and are ignored for authorisation. Since 5.10.0 made the ladder configurable per programme, **both ladders now appear** (ten milestones where six were intended) — filed as V-8, a defect, not a preference.
 - Operating Meridian for real needs what its SECURITY.md lists: a tested backup, a second instance, a written security policy, changed demo credentials, PostgreSQL rather than PGlite (assessment §3).
+
+## 6. Later loads
+| When | Instance | Load |
+|---|---|---|
+| 2026-09-08, first | 5.9.0 (77c4b49) | 16 projects, 86 RAID items, 14 decisions, 21 actions |
+| 2026-09-08, re-test | 5.10.0 (e352bc8) | 16 projects, 10 milestones, 122 RAID items, 256 writes; second run no creating writes |
+| 2026-09-08, after the E01/E07/E11/E13 merges and D-058..D-062 | 5.10.0 (e352bc8) | 134 RAID items, 17 incremental writes — the loader wrote only what the ledgers had changed |
