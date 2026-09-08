@@ -43,6 +43,13 @@ class StoreIntegrityError(StoreError):
     """A row or the journal does not match its digest: the store is refused."""
 
 
+# Reason codes for a store that would not open (docs/REASON_CODES.md). The composition root puts one of these on the
+# catalogued S1 it raises before the exception propagates, because the two classes have opposite recoveries: an
+# integrity refusal is a suspected tampering incident, an availability refusal is an environment fault (RB-13, F-02).
+STORE_OPEN_REFUSED = "STORE-OPEN-REFUSED"
+STORE_OPEN_UNAVAILABLE = "STORE-OPEN-UNAVAILABLE"
+
+
 def row_digest(table: str, key: str, value: str, seq: int) -> str:
     return sha256(_SEP.join((table, key, value, str(seq))).encode("utf-8")).hexdigest()
 

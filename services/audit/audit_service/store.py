@@ -55,6 +55,11 @@ ANCHOR_CHAIN_BROKEN = "AUD-ANCHOR-CHAIN-BROKEN"
 ANCHOR_TAIL_REMOVED = "AUD-ANCHOR-TAIL-REMOVED"
 _ANCHOR_REASONS = frozenset({ANCHOR_MISSING, ANCHOR_STALE, ANCHOR_CHAIN_BROKEN, ANCHOR_TAIL_REMOVED})
 
+# The two catalogued alerts this store raises (docs/ALERT_CATALOG.md, observability/alerts.yaml). Named here so the
+# composition root raises the same name for a refusal it detects before this store exists (SRE review F-02).
+CHAIN_ALERT = "audit.chain_verification_failed"  # S1, auto-action killswitch_platform
+ANCHOR_ALERT = "audit.anchor_missing"  # S1, auto-action none: the chain may be intact; a human restores the witness
+
 
 class AuditIntegrityError(RuntimeError):
     """The persisted chain does not verify when the store is opened; the caller must not proceed (fail closed)."""
@@ -147,6 +152,7 @@ class AuditStore:
         anchor_every: int = DEFAULT_ANCHOR_EVERY,
         max_anchor_lag: int = DEFAULT_MAX_ANCHOR_LAG,
         alerts: Callable[[str, dict[str, Any]], object] | None = None,
+        correlation_id: str = "",
     ) -> None:
         self._events: list[AuditEvent] = []
         self._seals: list[SealRecord] = []
@@ -170,7 +176,11 @@ class AuditStore:
         if self._path is not None and self._events:
             # Legacy JSONL backend: the sequence lives in the file, so bring the store's counter up to it.
             self._store.put(SEQUENCE_TABLE, AUDIT_SEQUENCE, str(len(self._events)), correlation_id="audit:open")
-        opened = self.verify(published=False)
+        # ``alerts`` is accepted at construction, not only through ``set_alert_sink``, so that the open-time
+        # verification below has somewhere to raise: a chain refused at open is the loudest failure this platform
+        # has, and it used to be silent because the composition root wired the sink after the store was built
+        # (SRE review F-02 / SRE-R1). ``correlation_id`` carries the caller's start-up id onto that alert.
+        opened = self.verify(published=False, correlation_id=correlation_id)
         if not opened.ok:
             raise AuditIntegrityError(f"audit chain refused at open: {opened.detail} (seq {opened.first_bad_seq})")
         if self._publisher is not None and not self._events and self._publisher.latest() is None:
@@ -326,7 +336,7 @@ class AuditStore:
             if not best_effort:
                 raise
             self._alert(
-                "audit.anchor_missing",
+                ANCHOR_ALERT,
                 {
                     "reason": ANCHOR_MISSING if "no anchor published" in str(exc) else ANCHOR_CHAIN_BROKEN,
                     "detail": str(exc),
@@ -346,10 +356,13 @@ class AuditStore:
         *,
         anchor: ChainHead | None = None,
         published: bool = True,
+        correlation_id: str = "",
     ) -> ChainVerification:
         """Verify the chain; with ``anchor`` against that sealed head, and by default against the published witness.
 
         A failure alerts and, for an anchor failure, opens exactly one incident row until the chain verifies again.
+        ``correlation_id`` lets a caller that already owns an id (the composition root's start-up attempt) put the
+        failure under it instead of a fresh one; an open incident's id always wins, so an incident is never split.
         """
         items = list(events) if events is not None else list(self._events)
         result = self._verify_chain(items)
@@ -358,7 +371,7 @@ class AuditStore:
         if result.ok and published and events is None and self._publisher is not None:
             result = self._verify_published(items)
         if not result.ok:
-            self._on_failed(result)
+            self._on_failed(result, correlation_id=correlation_id)
         elif events is None:
             self._on_recovered(result)
         return result
@@ -455,9 +468,9 @@ class AuditStore:
         return ChainVerification(ok=True, length=len(items), head_hash=head, anchor_length=latest.length, lag=lag)
 
     # --- incident handling --------------------------------------------------------------
-    def _on_failed(self, result: ChainVerification) -> None:
+    def _on_failed(self, result: ChainVerification, *, correlation_id: str = "") -> None:
         anchor_failure = result.reason in _ANCHOR_REASONS
-        correlation_id = self._incident or f"audit-anchor-{new_id('inc')}"
+        correlation_id = self._incident or correlation_id or f"audit-anchor-{new_id('inc')}"
         payload = {
             "reason": result.reason,
             "detail": result.detail,
@@ -468,7 +481,7 @@ class AuditStore:
             "max_lag": self._max_anchor_lag,
         }
         if anchor_failure:
-            self._alert("audit.anchor_missing", payload)
+            self._alert(ANCHOR_ALERT, payload)
             if self._incident is None:
                 self._incident = correlation_id
                 self._incident_reason = result.reason
@@ -480,7 +493,7 @@ class AuditStore:
                     payload={k: v for k, v in payload.items() if k != "correlation_id"},
                 )
         else:
-            self._alert("audit.chain_verification_failed", payload)
+            self._alert(CHAIN_ALERT, payload)
 
     def _on_recovered(self, result: ChainVerification) -> None:
         if self._incident is None:

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
@@ -24,7 +25,16 @@ from typing import Any
 from approval_service.queue import ApprovalQueue, ApprovalRecord
 from audit_service.anchor import FileAnchorPublisher
 from audit_service.journal_witness import AuditJournalWitness
-from audit_service.store import DEFAULT_ANCHOR_EVERY, DEFAULT_MAX_ANCHOR_LAG, AuditStore
+from audit_service.store import (
+    CHAIN_ALERT as AUDIT_CHAIN_ALERT,
+)
+from audit_service.store import (
+    DEFAULT_ANCHOR_EVERY,
+    DEFAULT_MAX_ANCHOR_LAG,
+    AuditIntegrityError,
+    AuditStore,
+    ChainVerification,
+)
 from backtest_engine.costs import CostModel
 from backtest_engine.runner import BacktestReport, BacktestRunner
 from broker_adapters.base import VaultRef
@@ -62,7 +72,7 @@ from risk_engine.monitors import RuntimeMetrics, evaluate_runtime
 from risk_engine.policy import RiskPolicy, apply_limit_change, load_policy
 from rtcore.envelope import make_event
 from rtcore.errors import ControlDenied
-from rtcore.ids import hash_of
+from rtcore.ids import hash_of, new_id
 from rtcore.journal_anchor import DEFAULT_ANCHOR_EVERY as DEFAULT_JOURNAL_ANCHOR_EVERY
 from rtcore.journal_anchor import DEFAULT_MAX_LAG as DEFAULT_MAX_JOURNAL_LAG
 from rtcore.journal_anchor import JournalAnchor
@@ -86,7 +96,15 @@ from rtcore.schemas.fx import FxSnapshot
 from rtcore.schemas.intent import TradeIntent, ValidatedIntent
 from rtcore.schemas.market import InstrumentAttributes, MarketSnapshot
 from rtcore.schemas.order import OrderCommand, OrderRecord
-from rtcore.store import MemoryStore, SqliteStore, Store, StoreIntegrityError
+from rtcore.store import (
+    STORE_OPEN_REFUSED,
+    STORE_OPEN_UNAVAILABLE,
+    MemoryStore,
+    SqliteStore,
+    Store,
+    StoreError,
+    StoreIntegrityError,
+)
 from rtcore.trust import TrustSet
 from rtobs.alerts import Alert, AlertRouter
 from rtobs.metrics import MetricsRegistry
@@ -188,6 +206,11 @@ class SimPlatform:
     # Present only for a durable store: it anchors ``store``'s journal head into ``audit`` and refuses the store
     # when the two disagree (O-128, D-061 (5)). An operator or a monitor re-runs ``verify(with_witness=True)``.
     journal_anchor: JournalAnchor | None = None
+    # The verdict of the start-up verification against the *published* anchor (D-066 / O-164; ADR-020 amendment 2).
+    # ``None`` when no external witness is configured: a memory platform has published nothing to be checked against.
+    # A failing verdict has already raised its catalogued S1 and run the auto-action; it is kept so that an operator,
+    # ``rt365 check`` and the dashboard can see what the platform concluded about itself when it started.
+    startup_verification: ChainVerification | None = None
 
     # --- clock ----------------------------------------------------------------------------------------
     def advance(self, seconds: float) -> datetime:
@@ -685,28 +708,84 @@ def build_sim_platform(
     second_tenant: bool = False,
     command_signer: Ed25519CommandAuthoriser | None = None,
     command_trust_set: TrustSet | None = None,
+    alert_router: AlertRouter | None = None,
 ) -> SimPlatform:
     root = resource_root()  # source checkout, installed bundle or frozen executable; fails closed when absent (ADR-016)
+    # --- the alert path, before any store is opened (SRE review F-02 / SRE-R1; ADR-020 amendment 2) ------------------
+    # The two integrity checks with the largest blast radius on this platform run *inside* the code that opens a store:
+    # ``SqliteStore.verify()`` replays the control journal (ADR-018) and ``AuditStore`` verifies its chain (ADR-020).
+    # Until this change the router was loaded a few lines *after* those opens, so both failed silently: no catalogued
+    # S1, no auto-action, nothing delivered, and the operator's only signal was a process that would not come back.
+    # The router is therefore the first thing built, and every open below is attempted with the sink already in place.
+    # It is a router, never a swallowing wrapper: each failure is announced and then **re-raised unchanged**, so the
+    # platform still fails closed. Emitting an alert is not a licence to continue. A caller (a supervisor, or a
+    # deployment that wants a bootstrap sink reaching a pager before a platform object exists) may pass its own
+    # router; it must be one loaded from the catalogue, because severity and auto-action come from there.
+    alerts = alert_router if alert_router is not None else AlertRouter.load(root / "observability" / "alerts.yaml")
+    boot = f"startup:{new_id('boot')}"  # one correlation id for this composition attempt, on every start-up alert
+
+    def open_store(path: Path, *, alert: str) -> Store:
+        """Open a durable store, announcing a refusal on the catalogued alert before letting it propagate.
+
+        Integrity and availability are named apart in the payload because their recoveries are opposite: a refused
+        journal is a suspected tampering incident, an unreadable file is an environment fault (runbook RB-13).
+        """
+        store: SqliteStore | None = None
+        try:
+            store = SqliteStore(path, verify=False)  # schema only; nothing is read or written before verify()
+            store.verify()
+        except StoreError as exc:
+            alerts.raise_alert(
+                alert,
+                {
+                    "correlation_id": boot,
+                    "reason": STORE_OPEN_REFUSED if isinstance(exc, StoreIntegrityError) else STORE_OPEN_UNAVAILABLE,
+                    "detail": str(exc),
+                    "store": path.name,
+                    "phase": "open",
+                    "error": type(exc).__name__,
+                },
+            )
+            if store is not None:
+                with suppress(StoreError):
+                    store.close()
+            raise  # fail closed: the alert is a notification, never permission to continue
+        return store
+
     # Durable control state (ADR-010 seam): None keeps every store in memory (the default for tests and backtests);
     # a directory keeps lease, outbox/inbox, gateway indexes and Kill Switch activations in one SQLite file so a
     # rebuilt platform is a restart. The revocation and nonce journals default to the same directory so that a
     # restored activation is never paired with forgotten revocations. Audit durability is E11 (B-5), not this seam.
-    control_store: Store = SqliteStore(store_dir / STORE_FILENAME) if store_dir is not None else MemoryStore()
+    control_store: Store = open_store(store_dir / STORE_FILENAME, alert="execution.store_unavailable") if store_dir else MemoryStore()
     if store_dir is not None:
         revocations_path = revocations_path or store_dir / "revocations.jsonl"
         nonce_path = nonce_path or store_dir / "nonces.jsonl"
     # Durable, witnessed audit (B-5, ADR-020 proposed): the trail lives in its own store so that control state and
     # the evidence of what happened to it are never one file, and its head is anchored by a different principal in a
     # directory the audit process does not own (anchor_dir; a WORM bucket or replica in deployment) [Open: O-54].
-    audit = AuditStore(
-        store=SqliteStore(store_dir / AUDIT_STORE_FILENAME) if store_dir is not None else MemoryStore(),
-        publisher=FileAnchorPublisher(anchor_dir) if anchor_dir is not None else None,
-        anchor_every=anchor_every,
-        max_anchor_lag=max_anchor_lag,
-    )
+    # The alert sink is passed at construction, not wired afterwards: the chain verification that can refuse this
+    # store runs inside the constructor, and it must be able to raise its own catalogued S1 (F-02).
+    audit_seam: Store | None = None
+    try:
+        audit_seam = open_store(store_dir / AUDIT_STORE_FILENAME, alert=AUDIT_CHAIN_ALERT) if store_dir else MemoryStore()
+        audit = AuditStore(
+            store=audit_seam,
+            publisher=FileAnchorPublisher(anchor_dir) if anchor_dir is not None else None,
+            anchor_every=anchor_every,
+            max_anchor_lag=max_anchor_lag,
+            alerts=alerts.raise_alert,
+            correlation_id=boot,
+        )
+    except (StoreError, AuditIntegrityError):
+        # Both failures have already raised their catalogued S1 under ``boot`` — the seam refusal above, the chain
+        # refusal inside ``AuditStore``. Nothing is swallowed: the handles are closed and the exception propagates.
+        if audit_seam is not None:
+            with suppress(StoreError):
+                audit_seam.close()
+        with suppress(StoreError):
+            control_store.close()
+        raise
     outbox = Outbox(control_store)
-    alerts = AlertRouter.load(root / "observability" / "alerts.yaml")
-    audit.set_alert_sink(alerts.raise_alert)
     # The two halves of D-061 (5) joined (O-128): the control store's journal head is written into the audit chain,
     # which is itself witnessed off-box by a different principal (ADR-020). ``start`` refuses the store *before*
     # anything reads or writes it — a rolled-back or re-journalled file must never be written on top of. The
@@ -1280,6 +1359,17 @@ def build_sim_platform(
     )
     for name, handler in handlers.items():
         runtime.register_handler(name, handler)
+
+    # --- start-up verification against the published witness (D-066 / O-164; ADR-020 amendment 2) ----------------
+    # ``JournalAnchor.start()`` above compared the control store's journal head with the audit chain. That is cheap
+    # and it is blind to the attacker who rewrote *both* stores consistently (TC-DUR-007 (d)): the two agree with
+    # each other, and only the anchor a different principal published disagrees. Nothing asked that anchor until the
+    # next scheduled publication, an explicit ``/v1/audit/verify`` or ``rt365 check`` — so the platform traded in the
+    # meantime. Composition now asks. On failure this follows ADR-020's existing path (the catalogued S1 and its
+    # auto-action, up to the platform Kill Switch) and does **not** refuse to compose: it runs here, after the
+    # auto-actions are bound, precisely because a composition that refused could not run the halt it just called for.
+    if audit.publisher is not None:
+        platform.startup_verification = audit.verify(correlation_id=boot)
 
     if bars:
         # Last bar at now-1s, ingested 200 ms later: fresh at decision time ``now``.
