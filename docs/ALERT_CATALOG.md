@@ -15,6 +15,7 @@
 | Reconciliation break | any | S2 | account → Supervised | reconciliation break |
 | Drift threshold | per model card | S2 | suspend signals | model drift |
 | Broker health fail | health check | S2 | cancel-only | broker disconnected |
+| store.journal_unwitnessed | the control store's journal head is rolled back, forked, unwitnessed or staler than the ceiling against the audit chain that witnesses it [Committee: ADR-018 amendment 1, D-061 (5), D-066] | S1 | none (page; the platform has already refused to open the store — deliberately no automatic halt, because a Kill Switch activation is itself a control-store row and writing to a store under investigation would destroy the evidence) | store unavailable |
 | audit.anchor_missing | the external audit anchor is absent, stale beyond the configured lag, its own chain is broken, or its tail was removed [Committee: ADR-020, BUILD_E11] | S1 | none (page; no automatic halt because the audit chain itself may be intact — restore the witness, verify, then seal) | Kill Switch activation |
 | Audit chain verification fail | hash mismatch | S1 | halt trading; forensic | Kill Switch activation |
 | Limit changed | any | info | — | — |

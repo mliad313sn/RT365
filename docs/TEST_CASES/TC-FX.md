@@ -2,7 +2,7 @@
 
 Control: FX as a deterministic decision input: cross-currency NAV, cash and limits, fail closed when missing or stale — Requirement: FR-05 — RTM row: FR-05 — Owner: Backend Lead — Reviewer (≠ owner): Chief Risk Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:15:20.750889+00:00 at `8fe02a72878f4098c937c45f0c657c543de772e2` (tree dirty, tested tree `3f71b53abbd6`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:17:21.875941+00:00 at `6a1404078da4a8a376b9f25a769845b66249dd05` (tree dirty, tested tree `fd11cec4787c`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
