@@ -16,3 +16,4 @@ apps/cli/rt365_cli/_bundle/
 *.spec.bak
 installer/out/
 .claude/worktrees/
+security/scans/

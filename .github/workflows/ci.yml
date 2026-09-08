@@ -26,8 +26,8 @@ jobs:
         run: make agents-check
       - name: Secret scan (T-05)
         run: make secret-scan
-      - name: SAST (bandit) and SCA (pip-audit) — advisory until O-23 wires the gating scanners
-        run: make lock && make security-scan
+      - name: SAST (bandit HIGH/MEDIUM+ conf) and SCA (pip-audit on the declared-closure lock) — gating per D-054
+        run: make security-scan
       - name: Registry must NOT be deployable to production as signed (dev key / fixture refused)
         run: |
           if python scripts/verify_tool_registry.py --production; then echo "fixture registry accepted for production"; exit 1; fi
@@ -49,3 +49,4 @@ jobs:
             docs/TEST_CASES/EVIDENCE_REPORT.md
             docs/BROKER_CERTIFICATIONS/sim-broker.md
             security/sbom/sbom.cdx.json
+            security/scans/

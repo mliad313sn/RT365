@@ -41,9 +41,13 @@ sbom:
 lock:
 	$(PY) scripts/lock_requirements.py
 
-security-scan:
-	$(PY) -m bandit -q -r libs services mcp connectors observability apps -x test || true
-	$(PY) -m pip_audit -r requirements.lock.txt || true
+security-scan:  # gating per D-054: bandit HIGH severity at MEDIUM+ confidence; pip-audit on the declared-closure lock; exceptions file
+	mkdir -p security/scans
+	$(PY) scripts/check_scan_exceptions.py
+	$(PY) -m bandit -q -r libs services mcp connectors observability apps -x test -lll -ii -f json -o security/scans/bandit.json
+	$(PY) -m bandit -q -r libs services mcp connectors observability apps -x test -lll -ii
+	$(PY) -m pip_audit -r requirements.lock.txt -f json -o security/scans/pip-audit.json
+	$(PY) -m pip_audit -r requirements.lock.txt
 
 secret-scan:
 	$(PY) scripts/secret_scan.py

@@ -1,0 +1,11 @@
+# Risk-accepted scanner findings [D-054]. Inline suppressions (# nosec, # noqa for security rules) are forbidden;
+# every exception lives here with an owner, a justification, the Product Owner decision reference and an expiry
+# of at most 90 days. scripts/check_scan_exceptions.py fails CI on an expired or unreferenced entry.
+exceptions: []
+# - tool: bandit            # bandit | pip-audit | zap
+#   id: B101                # rule / advisory id
+#   location: apps/web/web_bff/app.py:171
+#   justification: ...
+#   owner: Backend Lead
+#   decision: D-0nn
+#   expires: 2026-12-01
