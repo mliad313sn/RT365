@@ -1,0 +1,8 @@
+# Second simulated tenant used only by the TC-TEN tenant-isolation quartet [Committee; RAID R-22, RT-03].
+# Test fixture: shipping a second tenant under mcp/policies/ is the MCP Security Agent's call (CODEOWNERS).
+tenant_id: tenant-sim-b
+accounts:
+  acct-sim-b-001:
+    strategies:
+      strat-sma-xover:
+        tools: [read_market_snapshot, read_account_state, calculate_indicator, run_simulation, get_strategy_docs, submit_trade_intent]

@@ -146,11 +146,15 @@ class AuditStore:
     def all(self) -> tuple[AuditEvent, ...]:
         return tuple(self._events)
 
-    def by_correlation(self, correlation_id: str) -> tuple[AuditEvent, ...]:
-        return tuple(e for e in self._events if e.correlation_id == correlation_id)
+    def by_correlation(self, correlation_id: str, *, tenant: str | None = None) -> tuple[AuditEvent, ...]:
+        """Rows of one correlation; with ``tenant`` only that tenant's rows (tenant-partitioned reads, NFR-TEN-01)."""
+        return tuple(e for e in self._events if e.correlation_id == correlation_id and (tenant is None or e.tenant == tenant))
 
-    def by_action(self, action: str) -> tuple[AuditEvent, ...]:
-        return tuple(e for e in self._events if e.action == action)
+    def by_action(self, action: str, *, tenant: str | None = None) -> tuple[AuditEvent, ...]:
+        return tuple(e for e in self._events if e.action == action and (tenant is None or e.tenant == tenant))
+
+    def for_tenant(self, tenant: str) -> tuple[AuditEvent, ...]:
+        return tuple(e for e in self._events if e.tenant == tenant)
 
     def head_hash(self) -> str:
         return self._events[-1].hash if self._events else GENESIS_HASH
@@ -197,6 +201,6 @@ class AuditStore:
             seq_expected += 1
         return ChainVerification(ok=True, length=len(items), head_hash=prev)
 
-    def export(self, correlation_id: str | None = None) -> str:
-        items = self.by_correlation(correlation_id) if correlation_id else self.all()
+    def export(self, correlation_id: str | None = None, *, tenant: str | None = None) -> str:
+        items = self.by_correlation(correlation_id, tenant=tenant) if correlation_id else self.for_tenant(tenant) if tenant else self.all()
         return "\n".join(json.dumps(e.model_dump(mode="json"), sort_keys=True) for e in items)

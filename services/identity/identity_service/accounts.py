@@ -66,13 +66,23 @@ class Account(StrictModel):
 
 
 class AccountRegistry:
+    """Tenants, accounts and the tenant binding of human principals [Source: 01, 06; NFR-TEN-01].
+
+    The tenant of a principal is a server-side fact recorded here (``bind_principal``), never a claim the
+    client asserts; ``tenant_of_principal`` fails closed for an unbound principal (RAID R-22).
+    """
+
     def __init__(self, audit_hook: Callable[[str, str, dict[str, object]], object] | None = None) -> None:
         self._tenants: dict[str, Tenant] = {}
         self._accounts: dict[str, Account] = {}
+        self._principals: dict[str, str] = {}
         self._audit = audit_hook or (lambda action, tenant, payload: None)
 
     def add_tenant(self, tenant: Tenant) -> None:
         self._tenants[tenant.tenant_id] = tenant
+
+    def tenants(self) -> tuple[Tenant, ...]:
+        return tuple(self._tenants.values())
 
     def add_account(self, account: Account) -> None:
         if account.tenant_id not in self._tenants:
@@ -85,8 +95,32 @@ class AccountRegistry:
     def get(self, account_id: str) -> Account:
         return self._accounts[account_id]
 
+    def get_in_tenant(self, account_id: str, tenant_id: str) -> Account | None:
+        """Tenant-scoped lookup: ``None`` both for a missing account and for another tenant's (no existence leak)."""
+        acct = self._accounts.get(account_id)
+        if acct is None or acct.tenant_id != tenant_id:
+            return None
+        return acct
+
     def accounts(self, tenant_id: str | None = None) -> tuple[Account, ...]:
         return tuple(a for a in self._accounts.values() if tenant_id is None or a.tenant_id == tenant_id)
+
+    # --- principals ---------------------------------------------------------------------------
+    def bind_principal(self, actor_id: str, tenant_id: str) -> None:
+        """Record the tenant a human principal belongs to (IdP claim in deployment [Open: R-06]; fixture in sim)."""
+        if tenant_id not in self._tenants:
+            raise ControlDenied("unknown tenant")
+        if not actor_id:
+            raise ControlDenied("principal id required")
+        self._principals[actor_id] = tenant_id
+        self._audit("principal.bound", tenant_id, {"actor_id": actor_id, "tenant_id": tenant_id, "correlation_id": f"principal:{actor_id}"})
+
+    def tenant_of_principal(self, actor_id: str) -> str:
+        """The bound tenant of a principal; an unbound principal is refused (fail closed), never defaulted."""
+        tenant = self._principals.get(actor_id)
+        if tenant is None:
+            raise ControlDenied("principal is not bound to a tenant")
+        return tenant
 
     def _save(self, account: Account, action: str, extra: dict[str, object]) -> Account:
         self._accounts[account.account_id] = account

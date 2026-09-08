@@ -4,6 +4,11 @@ Authentication in the dev/sim build [Committee; Open: IdP/MFA integration is E01
 - Agents: ``Authorization: Bearer <token_id>`` + ``X-Call-Signature`` (signed MCP identity); the BFF
   routes the call through the MCP tool runtime so every control applies (allowlist, quota, schema).
 - Humans: ``X-Actor-Id``, ``X-Actor-Role``, ``X-MFA: verified`` headers stand in for an IdP session.
+
+Tenant isolation (NFR-TEN-01; RAID R-22): the tenant of a human principal is resolved server-side from the
+identity service (``accounts.tenant_of_principal``), never from a header — an ``X-Actor-Tenant`` header is
+refused and audited. Every read is filtered to the principal's tenant and every write is scope-checked;
+another tenant's object is indistinguishable from a missing one (404, no existence leak).
 """
 
 from __future__ import annotations
@@ -24,13 +29,14 @@ from mcp_servers.identity import CallSignature
 from pydantic import BaseModel, Field
 from rtcore.clock import utc_now
 from rtcore.errors import ControlDenied, PlaneViolation, RTError, SchemaViolation, TransitionError
+from rtcore.ids import new_id, sha256_hex
 from rtcore.lines import Actor, ActorKind, Role
 from rtcore.planes import Plane, enter
 from rtcore.resources import resource_root
 from rtobs.correlation import correlation
 from rtobs.logging import get_logger
 
-from web_bff.platform import ACCOUNT, TENANT, SimPlatform, build_sim_platform
+from web_bff.platform import SimPlatform, build_sim_platform
 from web_bff.reason_codes import REASON_CODES, explain
 
 log = get_logger("web_bff")
@@ -93,10 +99,22 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
         return p.now if platform is not None else utc_now() if False else p.now
 
     # --- principals ------------------------------------------------------------------------------------------
+    def deny_scope(reason: str, *, actor_id: str, tenant: str | None, target: str | None = None) -> None:
+        """Audit a tenant-scope refusal (reason code + hashed target, never the other tenant's identifier) with a correlation id."""
+        p.audit.append(
+            correlation_id=new_id("scope"),
+            tenant=tenant or "-",
+            account=None,
+            actor=actor_id or "-",
+            action="tenant.scope.denied",
+            payload={"reason": reason, "actor_id": actor_id, "target_hash": sha256_hex(target)[:16] if target else None},
+        )
+
     def human(
         x_actor_id: str | None = Header(default=None),
         x_actor_role: str | None = Header(default=None),
         x_mfa: str | None = Header(default=None),
+        x_actor_tenant: str | None = Header(default=None),
     ) -> Actor:
         if not x_actor_id or not x_actor_role:
             raise HTTPException(401, "human principal required (X-Actor-Id, X-Actor-Role)")
@@ -109,12 +127,26 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
             raise HTTPException(403, f"role {role.value} is not a human role; agents use the signed MCP path")
         if x_mfa != "verified":
             raise HTTPException(401, "MFA required")
-        return Actor(actor_id=x_actor_id, role=role, kind=ActorKind.HUMAN, tenant_id=TENANT)
+        if x_actor_tenant is not None:
+            # tenant is a server-side fact, never a client claim (RAID R-22): a forged tenant header is refused outright
+            deny_scope("TENANT_HEADER_FORGED", actor_id=x_actor_id, tenant=None, target=x_actor_tenant)
+            raise HTTPException(403, "tenant is not a client-asserted claim")
+        try:
+            tenant = p.accounts.tenant_of_principal(x_actor_id)
+        except ControlDenied as exc:
+            deny_scope("UNBOUND_PRINCIPAL", actor_id=x_actor_id, tenant=None)
+            raise HTTPException(403, "principal is not bound to a tenant") from exc
+        return Actor(actor_id=x_actor_id, role=role, kind=ActorKind.HUMAN, tenant_id=tenant)
+
+    def tenant_of(actor: Actor) -> str:
+        if not actor.tenant_id:  # unreachable through human(); kept so no route can run tenant-less by accident
+            raise HTTPException(403, "principal is not bound to a tenant")
+        return actor.tenant_id
 
     def require(actor: Actor, permission: Permission) -> None:
         user = User(
             user_id=actor.actor_id,
-            tenant_id=TENANT,
+            tenant_id=tenant_of(actor),
             roles=(actor.role,),
             mfa_enrolled=True,
             privileged_until=p.now.replace(year=p.now.year + 1),
@@ -123,6 +155,57 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
             authorize(user, permission, now=p.now, mfa_verified=True)
         except ControlDenied as exc:
             raise HTTPException(403, str(exc)) from exc
+
+    # --- tenant scope helpers: another tenant's object is indistinguishable from a missing one (404) -------------
+    def scoped_account(account_id: str, actor: Actor) -> Any:
+        acct = p.accounts.get_in_tenant(account_id, tenant_of(actor))
+        if acct is None:
+            deny_scope("TENANT_SCOPE", actor_id=actor.actor_id, tenant=tenant_of(actor), target=account_id)
+            raise HTTPException(404, "unknown account")
+        return acct
+
+    def tenant_accounts(actor: Actor) -> tuple[str, ...]:
+        return tuple(sorted(a.account_id for a in p.accounts.accounts(tenant_of(actor))))
+
+    def activation_in_scope(act: Any, actor: Actor) -> bool:
+        """ACCOUNT activations of the tenant's accounts, the tenant's own TENANT activation, platform-wide levels
+        (PLATFORM/ASSET/VENUE) and STRATEGY activations for strategies authorised in the tenant are visible."""
+        tenant = tenant_of(actor)
+        if act.level == KillSwitchLevel.ACCOUNT:
+            return act.target_id in tenant_accounts(actor)
+        if act.level == KillSwitchLevel.TENANT:
+            return act.target_id == tenant
+        if act.level == KillSwitchLevel.STRATEGY:
+            return any(act.target_id in a.authorised_strategies for a in p.accounts.accounts(tenant))
+        return True
+
+    def scoped_activation(activation_id: str, actor: Actor) -> Any:
+        try:
+            act = p.killswitch.get(activation_id)
+        except KeyError as exc:
+            raise HTTPException(404, "unknown activation") from exc
+        if not activation_in_scope(act, actor) or act.level in (KillSwitchLevel.PLATFORM, KillSwitchLevel.ASSET, KillSwitchLevel.VENUE):
+            # tenant-bound principals never lift a platform-wide switch; other tenants' switches do not exist for them
+            deny_scope("TENANT_SCOPE", actor_id=actor.actor_id, tenant=tenant_of(actor), target=activation_id)
+            raise HTTPException(404, "unknown activation")
+        return act
+
+    def scoped_approval(approval_id: str, actor: Actor) -> Any:
+        try:
+            item = p.approvals.get(approval_id)
+        except KeyError as exc:
+            raise HTTPException(404, "unknown approval") from exc
+        if item.validated_intent.tenant_id != tenant_of(actor):
+            deny_scope("TENANT_SCOPE", actor_id=actor.actor_id, tenant=tenant_of(actor), target=approval_id)
+            raise HTTPException(404, "unknown approval")
+        return item
+
+    def scoped_ticket(ticket_id: str, actor: Actor) -> Any:
+        t = p.tickets.get(ticket_id)
+        if t is None or t.brk.account_id not in tenant_accounts(actor):
+            deny_scope("TENANT_SCOPE", actor_id=actor.actor_id, tenant=tenant_of(actor), target=ticket_id)
+            raise HTTPException(404, "unknown ticket")
+        return t
 
     @app.exception_handler(RTError)
     async def _rt_error(request: Request, exc: RTError) -> JSONResponse:
@@ -148,6 +231,7 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
         x_actor_id: str | None = Header(default=None),
         x_actor_role: str | None = Header(default=None),
         x_mfa: str | None = Header(default=None),
+        x_actor_tenant: str | None = Header(default=None),
     ) -> dict[str, Any]:
         if authorization and authorization.lower().startswith("bearer "):
             token = authorization.split(" ", 1)[1]
@@ -170,10 +254,11 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
                 raise HTTPException(status, {"error": code})
             assert res.output is not None
             return {"accepted": True, **res.output}
-        actor = human(x_actor_id, x_actor_role, x_mfa)
+        actor = human(x_actor_id, x_actor_role, x_mfa, x_actor_tenant)
         require(actor, Permission.SUBMIT_INTENT)
+        scoped_account(str(body.get("account_id")), actor)  # the intent's account must sit inside the principal's tenant
         with enter(Plane.EDGE):
-            vi = p.intent_queue.submit(body, tenant_id=TENANT, submitted_by=actor.actor_id, now=p.now)
+            vi = p.intent_queue.submit(body, tenant_id=tenant_of(actor), submitted_by=actor.actor_id, now=p.now)
         return {
             "accepted": True,
             "intent_id": str(vi.intent.intent_id),
@@ -186,10 +271,9 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
     async def process_intent(intent_id: str, actor: Actor = Depends(human)) -> dict[str, Any]:
         """Dev/sim only: drain the queue and run the control pipeline for the intent (in deployment a consumer does this)."""
         require(actor, Permission.VIEW_DASHBOARD)
-        vi = p.intent_queue.pop()
-        while vi is not None and str(vi.intent.intent_id) != intent_id:
-            vi = p.intent_queue.pop()
+        vi = p.intent_queue.take(intent_id, tenant_of(actor))  # never drains another tenant's intents
         if vi is None:
+            deny_scope("TENANT_SCOPE", actor_id=actor.actor_id, tenant=tenant_of(actor), target=intent_id)
             raise HTTPException(404, "intent not queued")
         with correlation(vi.correlation_id):
             result = p.pipeline.process(vi, now=p.now)
@@ -205,16 +289,16 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
     @app.get("/v1/intents/{intent_id}")
     async def intent_status(intent_id: str, actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.VIEW_DASHBOARD)
-        try:
-            st = p.tracker.get(intent_id)
-        except KeyError as exc:
-            raise HTTPException(404, "unknown intent") from exc
+        st = p.tracker.get_in_tenant(intent_id, tenant_of(actor))
+        if st is None:
+            deny_scope("TENANT_SCOPE", actor_id=actor.actor_id, tenant=tenant_of(actor), target=intent_id)
+            raise HTTPException(404, "unknown intent")
         return st.model_dump(mode="json")
 
     @app.get("/v1/decisions/{decision_id}")
     async def get_decision(decision_id: str, actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.VIEW_DASHBOARD)
-        for ev in p.audit.by_action("risk.decided.v1"):
+        for ev in p.audit.by_action("risk.decided.v1", tenant=tenant_of(actor)):
             if ev.payload.get("decision_id") == decision_id:
                 payload = dict(ev.payload)
                 payload["reasons_explained"] = [explain(c) for c in payload.get("reason_codes", [])]
@@ -224,19 +308,30 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
     @app.post("/v1/killswitch", status_code=202)
     async def activate_killswitch(body: KillSwitchRequest, actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.ACTIVATE_KILL_SWITCH)
+        tenant = tenant_of(actor)
+        if body.level == KillSwitchLevel.PLATFORM:
+            # a tenant-bound principal never engages the platform-wide switch through the tenant BFF (platform operator path)
+            deny_scope("PLATFORM_LEVEL", actor_id=actor.actor_id, tenant=tenant, target=body.target_id)
+            raise HTTPException(403, "PLATFORM level is not available to a tenant-bound principal")
+        if body.level == KillSwitchLevel.TENANT and body.target_id != tenant:
+            deny_scope("TENANT_SCOPE", actor_id=actor.actor_id, tenant=tenant, target=body.target_id)
+            raise HTTPException(403, "tenant scope: only the principal's own tenant")
+        if body.level == KillSwitchLevel.ACCOUNT:
+            scoped_account(body.target_id, actor)
         act = p.killswitch.activate(body.level, body.target_id, reason=body.reason, actor=actor, now=p.now)
         return act.model_dump(mode="json")
 
     @app.post("/v1/killswitch/{activation_id}/deactivate", status_code=202)
     async def deactivate_killswitch(activation_id: str, body: DeactivateRequest, actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.DEACTIVATE_KILL_SWITCH)
+        scoped_activation(activation_id, actor)
         act = p.killswitch.deactivate(activation_id, actor=actor, reason=body.reason, now=p.now)
         return act.model_dump(mode="json")
 
     @app.get("/v1/killswitch")
     async def list_killswitch(actor: Actor = Depends(human)) -> list[dict[str, Any]]:
         require(actor, Permission.VIEW_DASHBOARD)
-        return [a.model_dump(mode="json") for a in p.killswitch.active()]
+        return [a.model_dump(mode="json") for a in p.killswitch.active() if activation_in_scope(a, actor)]
 
     # --- approvals (FR-12) ---------------------------------------------------------------------------------------
     @app.get("/v1/approvals")
@@ -244,6 +339,8 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
         require(actor, Permission.VIEW_DASHBOARD)
         out = []
         for item in p.approvals.pending():
+            if item.validated_intent.tenant_id != tenant_of(actor):
+                continue
             d = item.decision
             out.append(
                 {
@@ -263,12 +360,14 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
     @app.post("/v1/approvals/{approval_id}/approve")
     async def approve(approval_id: str, body: ApprovalAction, actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.APPROVE_ORDER)
+        scoped_approval(approval_id, actor)
         order = p.approve(approval_id, actor, reason=body.reason)
         return {"approval_id": approval_id, "order_id": order.order_id, "state": order.state.value}
 
     @app.post("/v1/approvals/{approval_id}/decline")
     async def decline(approval_id: str, body: ApprovalAction, actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.APPROVE_ORDER)
+        scoped_approval(approval_id, actor)
         item = p.approvals.decline(approval_id, actor, reason=body.reason, now=p.now)
         from oms.lifecycle import IntentState
 
@@ -279,7 +378,7 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
     @app.get("/v1/audit")
     async def audit_search(correlation_id: str, actor: Actor = Depends(human)) -> list[dict[str, Any]]:
         require(actor, Permission.VIEW_AUDIT)
-        return [e.model_dump(mode="json") for e in p.audit.by_correlation(correlation_id)]
+        return [e.model_dump(mode="json") for e in p.audit.by_correlation(correlation_id, tenant=tenant_of(actor))]
 
     @app.get("/v1/audit/verify")
     async def audit_verify(actor: Actor = Depends(human)) -> dict[str, Any]:
@@ -289,42 +388,65 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
     @app.get("/v1/audit/export")
     async def audit_export(actor: Actor = Depends(human), correlation_id: str | None = None) -> dict[str, Any]:
         require(actor, Permission.EXPORT_AUDIT)
-        return {"jsonl": p.audit.export(correlation_id), "head_hash": p.audit.head_hash()}
+        # the chain head is chain-wide (integrity anchor, no tenant data); the rows are the principal's tenant only
+        return {"jsonl": p.audit.export(correlation_id, tenant=tenant_of(actor)), "head_hash": p.audit.head_hash()}
 
     # --- accounts, reconciliation, limits ------------------------------------------------------------------------------
     @app.get("/v1/accounts/{account_id}")
     async def account(account_id: str, actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.VIEW_DASHBOARD)
+        scoped_account(account_id, actor)
         snap = p.account_snapshot(account_id)
         if snap is None:
             raise HTTPException(404, "unknown account")
         return snap.model_dump(mode="json")
 
     @app.post("/v1/reconciliation/run")
-    async def run_reconciliation(actor: Actor = Depends(human)) -> dict[str, Any]:
+    async def run_reconciliation(actor: Actor = Depends(human), account_id: str | None = None) -> dict[str, Any]:
         require(actor, Permission.RESOLVE_BREAK)
-        res = p.reconcile()
+        target = account_id or (tenant_accounts(actor) or ("",))[0]
+        scoped_account(target, actor)
+        res = p.reconcile(target)
         return res.model_dump(mode="json")
 
     @app.get("/v1/reconciliation/breaks")
     async def breaks(actor: Actor = Depends(human)) -> list[dict[str, Any]]:
         require(actor, Permission.VIEW_DASHBOARD)
-        return [t.model_dump(mode="json") for t in p.tickets.open_tickets()]
+        mine = tenant_accounts(actor)
+        return [t.model_dump(mode="json") for t in p.tickets.open_tickets() if t.brk.account_id in mine]
 
     @app.post("/v1/reconciliation/tickets/{ticket_id}/resolve")
     async def resolve_ticket(ticket_id: str, body: ResolveRequest, actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.RESOLVE_BREAK)
+        scoped_ticket(ticket_id, actor)
         return p.tickets.resolve(ticket_id, actor, resolution=body.resolution, now=p.now).model_dump(mode="json")
 
     @app.post("/v1/limits", status_code=202)
     async def propose_limit(body: LimitProposal, actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.PROPOSE_LIMIT)
-        change = p.limits_mc.propose("limit.changed", body.model_dump(), actor, now=p.now)
+        tenant = tenant_of(actor)
+        if body.level == "PLATFORM":
+            deny_scope("PLATFORM_LEVEL", actor_id=actor.actor_id, tenant=tenant, target=body.scope_id)
+            raise HTTPException(403, "PLATFORM limits are not proposed through a tenant principal")
+        if body.level == "TENANT" and body.scope_id != tenant:
+            deny_scope("TENANT_SCOPE", actor_id=actor.actor_id, tenant=tenant, target=body.scope_id)
+            raise HTTPException(403, "tenant scope: only the principal's own tenant")
+        if body.level == "ACCOUNT":
+            scoped_account(body.scope_id, actor)
+        # tenant_id is injected server-side: STRATEGY/INSTRUMENT limits are tenant-qualified and never leak (TC-RK-018)
+        change = p.limits_mc.propose("limit.changed", {**body.model_dump(), "tenant_id": tenant}, actor, now=p.now)
         return change.model_dump(mode="json")
 
     @app.post("/v1/limits/{change_id}/check")
     async def check_limit(change_id: str, body: ApprovalAction, actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.CHECK_LIMIT)
+        try:
+            change = p.limits_mc.get(change_id)
+        except KeyError as exc:
+            raise HTTPException(404, "unknown change") from exc
+        if change.payload.get("tenant_id") != tenant_of(actor):
+            deny_scope("TENANT_SCOPE", actor_id=actor.actor_id, tenant=tenant_of(actor), target=change_id)
+            raise HTTPException(404, "unknown change")
         return p.limits_mc.check(change_id, actor, now=p.now, reason=body.reason).model_dump(mode="json")
 
     @app.get("/v1/reason-codes")
@@ -335,12 +457,17 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
     @app.get("/v1/status")
     async def status(actor: Actor = Depends(human)) -> dict[str, Any]:
         require(actor, Permission.VIEW_DASHBOARD)
-        snap = p.account_snapshot(ACCOUNT)
+        tenant = tenant_of(actor)
+        mine = tenant_accounts(actor)
+        if not mine:
+            raise HTTPException(404, "no account in tenant")
+        account_id = mine[0]  # dashboard of the tenant's first account (single-account fixture tenants in sim)
+        snap = p.account_snapshot(account_id)
         mkt = p.market_snapshot(__import__("web_bff.platform", fromlist=["INSTRUMENT"]).INSTRUMENT)
         health = p.broker.health(now=p.now)
         from risk_engine.policy import LimitScope, Metric, effective_limit
 
-        scope = LimitScope(tenant_id=TENANT, account_id=ACCOUNT, strategy_id="*", instrument_id="*")
+        scope = LimitScope(tenant_id=tenant, account_id=account_id, strategy_id="*", instrument_id="*")
         limits = (
             {
                 m.value: str(effective_limit(p.policy, m, scope, p.now).threshold)
@@ -360,7 +487,9 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
 
         return {
             "1_global_status": {
-                "kill_switch_active": [a.model_dump(mode="json") for a in p.killswitch.active()],
+                "tenant_id": tenant,
+                "account_id": account_id,
+                "kill_switch_active": [a.model_dump(mode="json") for a in p.killswitch.active() if activation_in_scope(a, actor)],
                 "account_mode": snap.mode.value,
                 "trading_status": snap.trading_status.value,
                 "autonomy_suspended": snap.autonomy_suspended,
@@ -388,14 +517,19 @@ def create_app(platform: SimPlatform | None = None) -> FastAPI:
             "4_positions_orders": {
                 "positions": [pos.model_dump(mode="json") for pos in snap.positions],
                 "open_orders": [o.model_dump(mode="json") for o in snap.open_orders],
-                "pending_approvals": len(p.approvals.pending()),
+                "pending_approvals": sum(1 for i in p.approvals.pending() if i.validated_intent.tenant_id == tenant),
             },
             "5_pnl": {
                 "nav": str(snap.nav),
                 "daily_pnl": str(snap.daily_pnl),
                 "note": "PnL is an outcome, never a promise; shown below risk state by design [Source: 09].",
             },
-            "6_alerts": [{"name": a.name, "severity": a.severity, "auto_action": a.auto_action} for a in p.alerts.fired[-20:]],
+            "6_alerts": [
+                {"name": a.name, "severity": a.severity, "auto_action": a.auto_action}
+                for a in p.alerts.fired
+                # alerts naming another tenant's account or tenant are not this tenant's data; platform-wide ones are shown
+                if (a.payload.get("account") in (None, *mine)) and (a.payload.get("tenant") in (None, tenant))
+            ][-20:],
             "7_data_freshness": {
                 "snapshot_id": mkt.snapshot_id if mkt else None,
                 "market_ts": mkt.market_ts.isoformat() if mkt else None,

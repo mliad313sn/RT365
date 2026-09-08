@@ -2,7 +2,7 @@
 
 Control: Compliance eligibility, dual key, surveillance, retention — Requirement: FR-15 — RTM row: FR-15 — Owner: Backend Lead — Reviewer (≠ owner): Compliance Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T09:33:22.476365+00:00 at `d1ccb21596456977a7d1b69d4694eb4724546445` (tree dirty, tested tree `82b5387263ba`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T10:10:05.428914+00:00 at `1e8555eb5e680250e890268e40acfcf34c2dad06` (tree dirty, tested tree `ac0147b77594`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
