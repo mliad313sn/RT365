@@ -14,6 +14,7 @@ from decimal import Decimal
 
 import pytest
 from conftest import ACCOUNT
+from conftest import INSTRUMENT as INSTRUMENT_ID
 from portfolio_service.ledger import Ledger
 from rtcore.errors import FxBudgetUndefined, FxPairUnknown, FxSnapshotMissing, FxSnapshotStale, FxUnavailable
 from rtcore.money import convert, is_iso4217, minor_units, quantize_money
@@ -262,3 +263,49 @@ def test_fresh_fx_snapshot_restores_numeric_nav(platform):  # type: ignore[no-un
     earlier = p.fx.latest(as_of=p.now, knowledge_ts=p.now - timedelta(seconds=1))
     assert earlier is None
     assert p.fx.latest(as_of=p.now, knowledge_ts=p.now).snapshot_id == fresh.snapshot_id
+
+
+@pytest.mark.tc("TC-FX-005")
+@pytest.mark.req("FR-11")
+@pytest.mark.quartet("negative")
+@pytest.mark.env("sim")
+def test_risk_engine_takes_fx_as_an_input_and_halts_when_it_is_missing_or_stale(platform):  # type: ignore[no-untyped-def]
+    """The deterministic engine receives the FX snapshot as an argument (it never fetches one): an UNKNOWN account value, or an order it cannot express in the account base currency, is HALTED with RK-FX-MISSING / RK-FX-STALE / RK-FX-UNDEFINED, and the decision stays reproducible."""
+    from risk_engine.engine import decide
+    from rtcore.schemas.decision import Outcome
+
+    p = platform
+    vi = p.submit_intent(p.make_intent())
+    p.intent_queue.pop()
+    usd_acct, mkt = p.account_snapshot(ACCOUNT), p.market_snapshot(INSTRUMENT_ID)
+    assert usd_acct.valuation.status == NavStatus.KNOWN  # a single-currency book needs no rate at all
+    clean = decide(vi, usd_acct, mkt, p.policy, p.now)
+    assert not any(c.startswith("RK-FX-") for c in clean.reason_codes) and clean.outcome != Outcome.HALTED
+
+    # 1. the book itself cannot be valued (a JPY leg, no snapshot) -> HALTED on the account's own reason code
+    p.ledger.register_instrument(_instrument("SIMJP1", "JPY"))
+    p.ledger.apply_fill(ACCOUNT, "SIMJP1", Side.BUY, Decimal("10"), Decimal("15000"))
+    p.ledger.mark("SIMJP1", Decimal("16000"))
+    unknown_acct = p.account_snapshot(ACCOUNT)
+    halted = decide(vi, unknown_acct, mkt, p.policy, p.now)
+    assert halted.outcome == Outcome.HALTED and halted.reason_codes == ("RK-FX-MISSING",)
+    assert decide(vi, unknown_acct, mkt, p.policy, p.now) == halted  # same inputs, same record: no clock, no I/O
+
+    # 2. the order is priced in a currency the engine cannot convert with the snapshot it was handed
+    foreign = mkt.model_copy(update={"instrument": _instrument(INSTRUMENT_ID, "JPY")})
+    stale = FxSnapshot.build(
+        base_currency="USD",
+        rates={"USD/JPY": Decimal("150")},
+        as_of=p.now - timedelta(seconds=3600),
+        source="sim-fx",
+        provenance=Provenance.SIMULATED,
+    )
+    assert decide(vi, usd_acct, foreign, p.policy, p.now, None, p.fx_max_age_s).reason_codes == ("RK-FX-MISSING",)
+    assert decide(vi, usd_acct, foreign, p.policy, p.now, stale, None).reason_codes == ("RK-FX-UNDEFINED",)
+    stale_decision = decide(vi, usd_acct, foreign, p.policy, p.now, stale, p.fx_max_age_s)
+    assert stale_decision.outcome == Outcome.HALTED and stale_decision.reason_codes == ("RK-FX-STALE",)
+    fresh = FxSnapshot.build(
+        base_currency="USD", rates={"USD/JPY": Decimal("150")}, as_of=p.now, source="sim-fx", provenance=Provenance.SIMULATED
+    )
+    with_fx = decide(vi, usd_acct, foreign, p.policy, p.now, fresh, p.fx_max_age_s)
+    assert not any(code.startswith("RK-FX-") for code in with_fx.reason_codes)  # valued in USD, then judged there

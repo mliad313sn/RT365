@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-08T14:37:53.435493+00:00 at base commit `cf662d3bc5014a833edce7c659aecbef3da5611e`, working tree DIRTY, tested tree `7caeaeed42ff8bb602687e779c947eea7a0d1f74` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-08T14:39:50.238862+00:00 at base commit `09b3ff679fccfc4a6f87090d8b4514fe1683f558`, working tree DIRTY, tested tree `507653dd6d58b908fd451b54c753f9f53b5c3c02` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
@@ -19,7 +19,7 @@ Reviewer column is **pending** by construction: the author never certifies their
 | TC-DUR | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-E2E | 2 | 1 | 2 | 1 | yes | 6 | 0 |
 | TC-EX | 3 | 5 | 4 | 5 | yes | 17 | 0 |
-| TC-FX | 1 | 1 | 1 | 1 | yes | 4 | 0 |
+| TC-FX | 1 | 2 | 1 | 1 | yes | 5 | 0 |
 | TC-GLO | 1 | 1 | 1 | 1 | yes | 4 | 0 |
 | TC-ID | 1 | 1 | 3 | 1 | yes | 6 | 0 |
 | TC-KS | 8 | 2 | 1 | 3 | yes | 14 | 0 |
@@ -136,6 +136,7 @@ Areas with a full quartet: 23/23.
 | TC-FX-002 | FR-05 | negative | sim | A missing snapshot, a missing pair, an undefined budget or a stale snapshot make the NAV UNKNOWN (typed, value None, reason code); `nav()` raises a typed FX error; nothing falls back to a 1.0 rate. | passed | `test/quartets/test_tc_fx_valuation.py::test_missing_or_stale_rate_makes_nav_unknown_never_a_number` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-FX-003 | FR-05 | abuse | sim | Rate 0, negative, NaN/Infinity, unknown or lower-case ISO 4217 code, bad pair form, same-currency pair, duplicate pair, naive timestamp, unknown field and a snapshot id that does not match its content are rejected at the schema boundary; no MCP tool can write a rate and an intent cannot carry one. | passed | `test/quartets/test_tc_fx_valuation.py::test_fx_snapshot_schema_boundary_rejects_bad_rates_and_no_agent_can_supply_one` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-FX-004 | FR-05 | recovery | sim | UNKNOWN (missing, then stale) -> a fresh snapshot ingested through the store restores a numeric NAV; the audit trail shows the ingests under one correlation id and the store never serves a snapshot beyond knowledge time. | passed | `test/quartets/test_tc_fx_valuation.py::test_fresh_fx_snapshot_restores_numeric_nav` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
+| TC-FX-005 | FR-11 | negative | sim | The deterministic engine receives the FX snapshot as an argument (it never fetches one): an UNKNOWN account value, or an order it cannot express in the account base currency, is HALTED with RK-FX-MISSING / RK-FX-STALE / RK-FX-UNDEFINED, and the decision stays reproducible. | passed | `test/quartets/test_tc_fx_valuation.py::test_risk_engine_takes_fx_as_an_input_and_halts_when_it_is_missing_or_stale` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-GLO-001 | NFR-GLO-01 | positive | dev | The world registry covers every ISO 3166-1 country/territory on all seven continents with an ISO 4217 currency; each can be proposed as a jurisdiction cell (proposed, never enabled). | passed | `test/quartets/test_tc_glo_global.py::test_every_country_on_every_continent_is_a_valid_cell_with_a_currency` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-GLO-002 | NFR-GLO-01 | negative | dev | A cell for a code that is neither ISO 3166-1 nor user-assigned is refused; user-assigned codes (ZZ) are accepted only as simulated and say so. | passed | `test/quartets/test_tc_glo_global.py::test_unknown_country_codes_are_refused_and_simulated_codes_are_labelled` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
 | TC-GLO-003 | NFR-GLO-01 | abuse | dev | Proposing every country enables nothing: no legal record, no flag, eligibility stays INELIGIBLE; a simulated cell can be exercised in sim but its legal record is labelled simulated in the audit. | passed | `test/quartets/test_tc_glo_global.py::test_world_coverage_never_means_legal_availability` | Backend Lead (author of code and test) | pending — QA Lead / 2nd-line reviewer must sign in docs/AUDIT_EVIDENCE_INDEX.md |
