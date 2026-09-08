@@ -85,7 +85,7 @@ Effort key: S = days · M = weeks · L = a release. "Who" names the accountable 
 |---|---|---|---|---|---|
 | F-1 | World registry verified against ISO 3166/4217 registers and signed (H-29) | B | Data Architect (human) | S | open |
 | F-2 | Subdivision codes (ISO 3166-2) for federal regimes where rules differ by state/province | D | Data Engineering Lead | S | open |
-| F-3 | FX rates as a deterministic decision input (fail closed when missing/stale); cross-currency NAV, limits and cash ledger | C | Backend Lead | M | open |
+| F-3 | FX rates as a deterministic decision input (fail closed when missing/stale); cross-currency NAV, limits and cash ledger | C | Backend Lead | M | open — **built in dev/sim 2026-09-08** (D-064, merge 335ec18): typed FX snapshot, Decimal conversion, multi-currency NAV with a typed unknown state, engine halts on missing/stale/undefined-budget FX, TC-FX-001..005; open: licensed source (O-147), freshness budget (O-148), base currency (O-149), settlement vs quotation unit (O-150), ISO 4217 verification (O-151) |
 | F-4 | Licensed holiday calendars per venue; DST-aware freshness budgets | C | Data Engineering Lead | M | open |
 | F-5 | Venue registry (MIC), tick tables and settlement conventions per market | C | Trading Domain Lead, Data Engineering Lead | M | open |
 | F-6 | Locale packs (dashboard, reason dictionary, disclosures), CLDR formatting, RTL layout, accessibility per script (launch locales O-14) | F | Frontend Lead, Support & Training Lead | M | open |
