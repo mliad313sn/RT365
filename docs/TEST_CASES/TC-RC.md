@@ -2,7 +2,7 @@
 
 Control: Reconciliation and break management — Requirement: FR-14 — RTM row: FR-14 — Owner: Backend Lead — Reviewer (≠ owner): Trading Domain Lead — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:25:55.470537+00:00 at `370199edfd4701ebdbe976102131d5508e152e1d` (tree dirty, tested tree `6b8be0405dd2`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T15:27:49.350565+00:00 at `c991075d014343f731eeaa4a911340e31a1eb7d4` (tree dirty, tested tree `f673199b3f63`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|
