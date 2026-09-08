@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
-from conftest import ACCOUNT, CHIEF_RISK, PM, RISK_OFFICER, SRE, agent
+from conftest import ACCOUNT, CHIEF_RISK, PM, RISK_OFFICER, SRE, TENANT, agent, human
 from identity_service.accounts import GateRecord
 from identity_service.makerchecker import MakerChecker
 from identity_service.rbac import Permission, User, authorize, permissions_for
@@ -157,3 +157,66 @@ def test_reject_requires_human_and_pending_change():  # type: ignore[no-untyped-
         mc.check(change.change_id, PM, now=RISK_OFFICER_NOW)
     with pytest.raises(ControlDenied):
         mc.reject(change.change_id, PM, now=RISK_OFFICER_NOW, reason="again")
+
+
+# Roles whose persona has no trading mode (control, read, governance and assurance roles) [Committee: D-045; COUNCIL product_director §4.4].
+NO_TRADING_MODE_ROLES = (
+    Role.TENANT_ADMIN,
+    Role.AUDITOR,
+    Role.SUPPORT_ENGINEER,
+    Role.OPERATIONS_ANALYST,
+    Role.COMPLIANCE_ANALYST,
+    Role.LEGAL_AGENT,
+    Role.PRIVACY_LEAD,
+    Role.MCP_SECURITY_AGENT,
+    Role.MODEL_RISK_LEAD,
+    Role.PRODUCT_OWNER,
+    Role.PRODUCT_DIRECTOR,
+    Role.PROGRAM_ORCHESTRATOR,
+    Role.BACKEND_LEAD,
+    Role.QUANT_RESEARCH_LEAD,
+    Role.INDEPENDENT_VALIDATION,
+    Role.QA_LEAD,
+    Role.RED_TEAM,
+)
+
+
+@pytest.mark.tc("TC-ID-006")
+@pytest.mark.req("FR-01")
+@pytest.mark.quartet("abuse")
+def test_roles_without_a_trading_persona_cannot_change_mode_or_submit_intents(platform):  # type: ignore[no-untyped-def]
+    """A role whose persona has no trading mode (control, read, governance, assurance; the tenant admin in particular, D-045) can never promote, demote, halt-restore or submit an intent, in the registry, in RBAC and through the BFF; a persona is never an entitlement."""
+    from fastapi.testclient import TestClient
+    from web_bff.app import create_app
+
+    p = platform
+    gate_d = GateRecord(gate="D", passed=True, decision_log_ref="D-x", iva_verdict="APPROVE")
+    before = p.accounts.get(ACCOUNT)
+    assert before.mode == AccountMode.PAPER and before.enabled_feature == AccountMode.PAPER
+    for role in NO_TRADING_MODE_ROLES:
+        actor = human(f"{role.value}.1", role)
+        with pytest.raises(ControlDenied):
+            p.accounts.promote(ACCOUNT, AccountMode.SUPERVISED, actor, gate_d, reason="persona is not an entitlement", now=p.now)
+        with pytest.raises(ControlDenied):
+            p.accounts.promote(ACCOUNT, AccountMode.BACKTEST, actor, None, reason="demote", now=p.now)
+        perms = permissions_for(User(user_id=actor.actor_id, tenant_id=TENANT, roles=(role,), mfa_enrolled=True))
+        assert Permission.CHANGE_MODE not in perms and Permission.SUBMIT_INTENT not in perms and Permission.APPROVE_ORDER not in perms
+    assert p.accounts.get(ACCOUNT) == before and not p.audit.by_action("account.mode.changed")
+    # Tenant admin explicitly (D-045): users, roles and brokers only; never a mode, a halt, a halt restore or an order.
+    admin = human("tenant.admin", Role.TENANT_ADMIN)
+    p.accounts.halt(ACCOUNT, RISK_OFFICER, reason="drill", now=p.now)
+    with pytest.raises(ControlDenied):
+        p.accounts.restore_from_halt(ACCOUNT, admin, reason="admin restore", now=p.now)
+    with pytest.raises(ControlDenied):
+        p.accounts.halt(ACCOUNT, admin, reason="admin halt", now=p.now)
+    assert p.accounts.get(ACCOUNT).mode == AccountMode.HALTED and p.accounts.get(ACCOUNT).pending_unhalt_by is None
+    # Through the BFF: intents from these roles are refused (403) before they reach the intent queue.
+    c = TestClient(create_app(p))
+    body = p.make_intent()
+    for role in (Role.TENANT_ADMIN, Role.AUDITOR, Role.SUPPORT_ENGINEER, Role.OPERATIONS_ANALYST, Role.COMPLIANCE_ANALYST):
+        r = c.post("/v1/intents", json=body, headers={"X-Actor-Id": f"{role.value}.1", "X-Actor-Role": role.value, "X-MFA": "verified"})
+        assert r.status_code == 403, (role, r.text)
+    assert not [e for e in p.audit.all() if e.action.startswith("intent.")]
+    # Agents never hold a persona: the agent path cannot promote either (re-asserted next to the persona rule).
+    with pytest.raises(ControlDenied):
+        p.accounts.promote(ACCOUNT, AccountMode.SUPERVISED, agent(), gate_d, reason="agent", now=p.now)

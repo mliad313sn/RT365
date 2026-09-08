@@ -13,6 +13,7 @@ write path (Risk review F-04), RT-RECON fed from open tickets and two-person aut
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
@@ -62,7 +63,16 @@ from rtcore.money import ZERO
 from rtcore.planes import Plane, PlaneGuard, enter
 from rtcore.resources import resource_root
 from rtcore.schemas.account import AccountMode, AccountSnapshot, EmergencyPolicy, OpenOrder, TradingStatus
-from rtcore.schemas.compliance import CustomerProfile, CustomerType, RestrictedLists
+from rtcore.schemas.compliance import (
+    ClassificationBasis,
+    ClassificationEvidence,
+    CustomerProfile,
+    CustomerType,
+    DisclosureAcknowledgement,
+    LegalRecordRef,
+    ModeConsent,
+    RestrictedLists,
+)
 from rtcore.schemas.decision import DecisionRecord, Outcome
 from rtcore.schemas.intent import TradeIntent, ValidatedIntent
 from rtcore.schemas.market import InstrumentAttributes, MarketSnapshot
@@ -84,6 +94,8 @@ BROKER = "sim-broker"
 STRATEGY = "strat-sma-xover"
 STRATEGY_VERSION = "0.1"
 JURISDICTION = "ZZ"  # ISO 3166 user-assigned code: explicitly not a real jurisdiction [Open: O-11]
+SIM_DISCLOSURE_VERSION = "SIM-DISCL-v0.1"  # fixture disclosure pack version; approved wording per cell is a human act [Open: H-16]
+SIM_LEGAL_RECORD_ID = "SIM-LEGAL-FIXTURE-001"  # SIM- prefix: valid only on the simulated cell, never a legal opinion (D-012)
 BASE_TIME = datetime(2026, 9, 7, 14, 0, tzinfo=UTC)  # a Monday, session open
 BACKTEST_START = datetime(2026, 9, 4, 14, 0, tzinfo=UTC)  # a Friday, session open
 
@@ -479,7 +491,11 @@ class SimPlatform:
         }
 
 
-def _default_customer() -> CustomerProfile:
+def _default_customer(now: datetime) -> CustomerProfile:
+    # Fixture standing (council P-3/P-4): disclosures acknowledged, consent recorded for every order-placing mode so the sim
+    # cell for each mode is exercisable, classification established by the fixture assessor (never self-declared). All values
+    # are labelled simulated; none is evidence of a real onboarding.
+    recorded = now - timedelta(days=1)
     return CustomerProfile(
         customer_id=CUSTOMER,
         tenant_id=TENANT,
@@ -489,6 +505,27 @@ def _default_customer() -> CustomerProfile:
         appropriateness_assessed=False,
         complex_products_allowed=False,
         short_selling_allowed=False,
+        disclosure_acknowledgement=DisclosureAcknowledgement(version=SIM_DISCLOSURE_VERSION, acknowledged_at=recorded),
+        mode_consents=tuple(
+            ModeConsent(mode=m, consented_at=recorded, consent_ref="SIM-CONSENT-FIXTURE [Committee: simulated]")
+            for m in ("PAPER", "SUPERVISED", "BOUNDED_AUTONOMOUS")
+        ),
+        classification_evidence=ClassificationEvidence(
+            evidence_ref="SIM-CLASS-FIXTURE-001 [Committee: simulated assessment]",
+            assessed_by="compliance.fixture",
+            assessed_at=recorded,
+            basis=ClassificationBasis.ASSESSOR_REVIEW,
+        ),
+    )
+
+
+def _sim_legal_record(now: datetime) -> LegalRecordRef:
+    """Typed fixture record for the simulated cell: hash of a fixture byte string, never a document or an opinion."""
+    return LegalRecordRef(
+        record_id=SIM_LEGAL_RECORD_ID,
+        signing_entity="sim fixture counsel [Committee: simulated cell, not a legal opinion]",
+        signed_on=now.date(),
+        document_sha256=hashlib.sha256(SIM_LEGAL_RECORD_ID.encode()).hexdigest(),
     )
 
 
@@ -699,16 +736,20 @@ def build_sim_platform(
     restricted = RestrictedLists(
         policy_version="lists-sim-v0.1", restricted_instruments=("SIMRESTRICTED",), restricted_venues=("SIMBANNED",)
     )
-    customers = {CUSTOMER: _default_customer()}
+    customers = {CUSTOMER: _default_customer(now)}
     cell = jurisdictions.propose(
-        country=JURISDICTION, customer_type=CustomerType.RETAIL, broker=BROKER, venue=VENUE, asset_class="EQUITY", feature=mode.value
+        country=JURISDICTION,
+        customer_type=CustomerType.RETAIL,
+        broker=BROKER,
+        venue=VENUE,
+        asset_class="EQUITY",
+        feature=mode.value,
+        required_disclosure_version=SIM_DISCLOSURE_VERSION,
     )
     if enable_cell:
         legal = Actor(actor_id="legal.fixture", role=Role.LEGAL_AGENT)
         comp = Actor(actor_id="compliance.fixture", role=Role.COMPLIANCE_AGENT)
-        cell = jurisdictions.record_legal(
-            cell, legal_record_ref="SIM-LEGAL-FIXTURE-001 [Committee: simulated cell, not a legal opinion]", actor=legal
-        )
+        cell = jurisdictions.record_legal(cell, legal_record_ref=_sim_legal_record(now), actor=legal)
         jurisdictions.activate_flag(cell, actor=comp, now=now)
     revocations = RevocationList(revocations_path)
     issuer = IdentityIssuer(revocations=revocations, audit=audit2, nonce_path=nonce_path)

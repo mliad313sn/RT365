@@ -2,7 +2,7 @@
 
 Control: Plane topology / network policy — Requirement: NFR-SEC-01 — RTM row: NFR-SEC-01 — Owner: Cloud Architect — Reviewer (≠ owner): Security Architect — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T09:33:22.476365+00:00 at `d1ccb21596456977a7d1b69d4694eb4724546445` (tree dirty, tested tree `82b5387263ba`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-08T09:48:59.107273+00:00 at `d1ccb21596456977a7d1b69d4694eb4724546445` (tree dirty, tested tree `202110f30bb2`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|

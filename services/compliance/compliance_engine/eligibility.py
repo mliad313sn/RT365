@@ -9,6 +9,8 @@ from pathlib import Path
 from rtcore.clock import ensure_utc
 from rtcore.ids import deterministic_id
 from rtcore.schemas.compliance import (
+    CONSENT_REQUIRED_MODES,
+    ClassificationBasis,
     CustomerProfile,
     EligibilityDecision,
     EligibilityOutcome,
@@ -50,6 +52,41 @@ def find_cell(
         if c.key == (country, customer_type, broker, venue, asset_class, feature):
             return c
     return None
+
+
+def _customer_standing_checks(
+    customer: CustomerProfile, cell: JurisdictionCell | None, *, feature: str, now: datetime
+) -> list[EvaluatedCheck]:
+    """Classification evidence, disclosure acknowledgement and per-mode consent (council P-3/P-4; D-045). Fail closed on absence."""
+    out: list[EvaluatedCheck] = []
+    ce = customer.classification_evidence
+    if ce is None:
+        value, ok = "none", False
+    else:
+        value = f"{ce.basis.value} by {ce.assessed_by} at {ce.assessed_at.isoformat()} ({ce.evidence_ref})"
+        ok = (
+            ce.basis != ClassificationBasis.SELF_DECLARED
+            and ce.assessed_by.strip() not in ("", customer.customer_id)
+            and ce.assessed_at <= now
+        )
+    out.append(_ev("classification_evidence", value, "assessed by a third party on or before now, not self-declared", ok, "CP-CLASS"))
+    da = customer.disclosure_acknowledgement
+    required = cell.required_disclosure_version if cell is not None else None
+    threshold = required if required is not None else "any acknowledged version"
+    disc_ok = da is not None and da.acknowledged_at <= now and (required is None or da.version == required)
+    out.append(_ev("disclosure_acknowledged", da.version if da else "none", threshold, disc_ok, "CP-DISCL"))
+    if feature in CONSENT_REQUIRED_MODES:
+        consents = [c for c in customer.mode_consents if c.mode == feature and c.consented_at <= now]
+        out.append(
+            _ev(
+                "mode_consent",
+                ",".join(c.mode for c in customer.mode_consents) or "none",
+                f"recorded consent for {feature} on or before now",
+                bool(consents),
+                "CP-MODE-CONSENT",
+            )
+        )
+    return out
 
 
 def decide_eligibility(
@@ -130,9 +167,9 @@ def decide_eligibility(
         evaluated.append(
             _ev(
                 "legal_record",
-                cell.legal_record_ref or "none",
-                "signed legal record",
-                bool(cell.legal_record_ref and cell.legal_signed_by),
+                cell.legal_record_ref.short() if cell.legal_record_ref else "none",
+                "typed, hashed legal record signed by a Legal Agent",
+                cell.legal_record_ref is not None and bool(cell.legal_signed_by),
                 "CP-JURIS-LEGAL",
             )
         )
@@ -149,6 +186,7 @@ def decide_eligibility(
             )
         )
 
+    evaluated.extend(_customer_standing_checks(customer, cell, feature=feature, now=now))
     evaluated.append(
         _ev(
             "product_permission",

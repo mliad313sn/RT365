@@ -4,12 +4,14 @@ import os
 
 os.environ.setdefault("RT_ENV", "sim")  # the dev registry key is accepted only in an explicit dev/sim environment
 
-from datetime import datetime, timedelta
+import hashlib
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 import pytest
 from rtcore.lines import Actor, ActorKind, Role
 from rtcore.schemas.account import AccountMode
+from rtcore.schemas.compliance import LegalRecordRef
 from web_bff.platform import ACCOUNT, BASE_TIME, INSTRUMENT, INSTRUMENT_2, STRATEGY, TENANT, VENUE, SimPlatform, build_sim_platform
 
 __all__ = ["ACCOUNT", "BASE_TIME", "INSTRUMENT", "INSTRUMENT_2", "STRATEGY", "TENANT", "VENUE"]
@@ -71,3 +73,15 @@ def resting_limit_intent(p: SimPlatform, **overrides: object) -> dict[str, objec
 
 def later(p: SimPlatform, seconds: float) -> datetime:
     return p.now + timedelta(seconds=seconds)
+
+
+def sim_legal_record(
+    record_id: str = "SIM-LEGAL-TEST-001", *, signing_entity: str = "sim fixture counsel [Committee: simulated]"
+) -> LegalRecordRef:
+    """A typed, hashed legal-record reference for a *simulated* cell (record id prefixed SIM-; never a legal opinion)."""
+    return LegalRecordRef(
+        record_id=record_id,
+        signing_entity=signing_entity,
+        signed_on=date(2026, 9, 1),
+        document_sha256=hashlib.sha256(record_id.encode()).hexdigest(),
+    )
