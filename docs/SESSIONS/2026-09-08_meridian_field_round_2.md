@@ -84,7 +84,7 @@ Proposed for the owning act.
 | A second identical load creates nothing | `scripts/meridian_sync.py` idempotency | Program Orchestrator | title/id keying, `row_version` | TC-PMO-002 | `load_2_meridian_sync_run2.json` | B |
 | Gate exit evidence is stated in advance and found met by a reviewer who does not own it | Meridian `gate_criterion` (037) — **advisory mirror only** | Product Owner | author ≠ reviewer ≠ approver | `probe_2.json` Q1 (abuse: no reviewer → 400; unknown reviewer → 400) | `probe_2.json`, `02_project_governance.png` | B |
 | No portfolio health colour is quoted outside the room without a measured input | — | Product Owner | manual rule until D-6 closes upstream | none — this is a rule, not a control | `01_portfolio.png`, `EVIDENCE.md` §8 D-6 | B |
-| The programme record is reversible without the vendor | `GET /api/admin/archive`, Apache-2.0 | Program Orchestrator | export + restore | **not re-run this round — [Open]** | round 1 only | C |
+| The programme record is reversible without the vendor | `GET /api/admin/archive`, `npm run backup`/`restore-drill`, Apache-2.0 | Program Orchestrator | export + a restore proven by re-count | archive 51 tables / 2,115 rows / 145 ms; restore drill 1.2 s, every counted table matched | `backup_and_restore_drill.txt`, `/api/health` `backup.ok true` | C |
 
 ## 5. Threat-model delta
 
