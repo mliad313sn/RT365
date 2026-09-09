@@ -1,1088 +1,1254 @@
 {
- "$schema": "meridian-request-register/1",
- "source": {
-  "repository": "mliad313sn/RT365",
-  "branch": "docs/meridian-consolidated",
-  "commit": "23ac998",
-  "documents": [
-   "docs/REPORTS/PMO_MERIDIAN_CONSOLIDATED_REPORT.md",
-   "docs/REPORTS/PMO/round2/EVIDENCE.md",
-   "docs/REPORTS/PMO/round2/ (10 screenshots, 4 load and probe JSON files, 2 first-hour transcripts, test counts, backup and restore drill)",
-   "docs/REPORTS/PMO_MERIDIAN_REPORT_VALUE.md",
-   "docs/REPORTS/PMO_MERIDIAN_REPORT_EVIDENCE.md",
-   "docs/PMO_MERIDIAN_ASSESSMENT.md",
-   "docs/ADRs/ADR-017.md",
-   "docs/PMO.md"
+  "$schema": "meridian-request-register/1",
+  "source": {
+    "repository": "mliad313sn/RT365",
+    "branch": "claude/project-owner-agent-setup-hi3xqu",
+    "commit": "fe2ee02",
+    "documents": [
+      "docs/REPORTS/PMO_MERIDIAN_CONSOLIDATED_REPORT.md",
+      "docs/REPORTS/PMO/round2/EVIDENCE.md",
+      "docs/REPORTS/PMO/round2/ (10 screenshots, 4 load and probe JSON files, 2 first-hour transcripts, test counts, backup and restore drill)",
+      "docs/REPORTS/PMO_MERIDIAN_REPORT_VALUE.md",
+      "docs/REPORTS/PMO_MERIDIAN_REPORT_EVIDENCE.md",
+      "docs/PMO_MERIDIAN_ASSESSMENT.md",
+      "docs/ADRs/ADR-017.md",
+      "docs/PMO.md",
+      "docs/REPORTS/PMO/round3/PACKAGING_EVIDENCE.md"
+    ],
+    "reviewedAt": "2026-09-09",
+    "branchPinned": "claude/meridian-rt365-feedback-d6vo3i (453d331) — no tag carries 5.14.0"
+  },
+  "productOwner": {
+    "charter": "docs/33-retour-terrain-rt365.md#1",
+    "command": ".claude/commands/product-owner.md",
+    "lastRun": "2026-09-09"
+  },
+  "channel": {
+    "issues": "https://github.com/mliad313sn/Meridian/issues",
+    "rule": "issue #n = improvement I-n = REQ-0n; the Product Owner answers on the issue and closes it when the line is done",
+    "counterpart": "RT365 Program Orchestrator (docs/PMO.md); RT365 Product Owner agent decides on its side",
+    "acceptance": {
+      "done": "on the branch with its test",
+      "accepted": "the requester said so on the issue",
+      "released": "a version tag carries it"
+    },
+    "escalation": "a rejected refusal or done goes back to open with the objection quoted; the sponsor of both repositories is the tie-breaker",
+    "cadence": {
+      "routine": "Meridian Product Owner — RT365 field-return round",
+      "triggerId": "trig_01JCnLkW5KAv4bNx4A2x3ELn",
+      "schedule": "0 7 * * 1-5 (UTC), a fresh session per firing",
+      "onDemand": "/product-owner",
+      "quietRound": "a round that finds nothing new changes nothing and says so"
+    },
+    "release": {
+      "tag": "v5.10.0",
+      "state": "tagged locally on 985d6af; not pushed — a session gets HTTP 403 on a tag ref, a maintainer must push it",
+      "consequence": "no line is `released` yet; pin the branch claude/meridian-rt365-feedback-d6vo3i, not the version"
+    }
+  },
+  "requests": [
+    {
+      "id": "REQ-06",
+      "origin": [
+        "I-6",
+        "M-08",
+        "O-76",
+        "H-28",
+        "G-01",
+        "SaaS-03",
+        "SaaS-04",
+        "SaaS-05"
+      ],
+      "title": "Operate-for-real kit: backup, restore drill, instance identity, production refusals, runbook",
+      "status": "done",
+      "version": "5.10.0",
+      "decidedOn": "2026-09-08",
+      "delivered": [
+        "server/src/backup.js",
+        "scripts/backup.mjs",
+        "scripts/restore-drill.mjs",
+        "GET /api/health#instance,backup",
+        "docs/34-exploitation.md"
+      ],
+      "measure": "server/test/backup.test.js",
+      "remaining": "the acts: PostgreSQL, scheduled backup, monthly drill, signed policy — RT365's operator (H-28)",
+      "issue": 6,
+      "accepted": null,
+      "released": false,
+      "observed": "RT365 field round 2 measured the operate-for-real kit on a real book rather than reading it. `npm run backup` with the server running refused, named the holding pid and the remedy (`process 3195 holds .../server/.data/pgdata and this book is PGlite - stop it first`). With the server stopped by SIGTERM: backup 4609 KB in about 1 s; `npm run restore-drill` restored elsewhere in 1.2 s and reported `every counted table matches the live book`; `GET /api/health` then carried `backup:{lastDrillAt:2026-09-08T16:28:00.594Z, ok:true, restoreSeconds:1.2}` and `instance:{org:MERIDIAN, id:null, migrations:41}`. The book (16 projects, 176 register items, 519 criteria, 102 milestones, 96 documents, 85 decisions, 7 benefits, 3 business cases) survived the stop and start intact. `GET /api/admin/archive` returned 200, 803,561 bytes in 145 ms, 51 tables / 34 non-empty / 2,115 rows.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Measured confirmation only. `accepted` is not set: saying so upstream is a human act on RT365's side (H-31, open), and no agent may record it.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 1,
+          "status": "done"
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 2,
+          "status": "done",
+          "note": "runbook corrected: createdb right, first administrator before start, tenant .env in cron, restore-to-live and rollback, PGlite refuses while the server runs"
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Measured confirmation only. `accepted` is not set: saying so upstream is a human act on RT365's side (H-31, open), and no agent may record it.",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "REQ-09",
+      "origin": [
+        "I-9",
+        "M-09"
+      ],
+      "title": "Release discipline: one version everywhere, F10 gate, release workflow",
+      "status": "done",
+      "version": "5.10.0",
+      "decidedOn": "2026-09-08",
+      "delivered": [
+        "scripts/audit/release-audit.mjs",
+        ".github/workflows/release.yml",
+        "server/src/env.js#packageVersion"
+      ],
+      "measure": "npm run audit (F10)",
+      "remaining": "tags are pushed by a maintainer",
+      "issue": 9,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured against the default branch rather than the working branch, and it does not hold there. A fresh clone on 2026-09-08 gives `main` at 77c4b49, `package.json` 5.9.0, 33 migrations, and no `docs/requests/rt365.json` at all; the newest tag is `v5.9.0`. The register's own `channel.release` says the v5.10.0 tag is `tagged locally on 985d6af; not pushed - a maintainer must push it`, which is an honest statement of the same fact. By the register's own rule (`released` = a version tag carries it), none of the 31 lines is released, including this one.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Not a contradiction of REQ-09's delivery on the branch; a statement that from an adopter's position it is not yet true. The act itself is filed as REQ-32.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 1,
+          "status": "done"
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Not a contradiction of REQ-09's delivery on the branch; a statement that from an adopter's position it is not yet true. The act itself is filed as REQ-32.",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "origin": [
+        "integrator, third round"
+      ],
+      "title": "Raise an action into the next scheduled occurrence, without opening it",
+      "status": "open",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "server/src/v1write.js#upsertAction (series + raiseIn: next)",
+        "server/src/routes/v1.js"
+      ],
+      "answerToSource": "D-33.14 holds: the API still never OPENS a meeting.",
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured, as the exact failure REQ-16 predicts. After the weekly occurrence was closed and frozen, RT365's loader re-opened the day's occurrence - which returns the closed one - and posted three new decisions: `POST /api/meetings/occurrences/MS-SUWK22-20260908/decisions -> 409 {\"error\":\"This meeting is closed - its decisions are final\"}`. The refusal is correct and is a control working. The consequence for a one-way integrator is that the day the record is frozen is the day new facts stop landing: nine register rows were written before the 409 and the loader then aborted. Half of that is RT365's - its loader has no notion of a closed occurrence and writes its evidence file only on success. The half REQ-16 names is that there is no public route to raise into the next scheduled occurrence.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Evidence added for a request already open on their side. No status proposed.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 5,
+          "status": "open",
+          "note": "Opened by the third-round committee: the integrator rewrote meridian_sync.py against the published contract and measured what it still could not do."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Evidence added for a request already open on their side. No status proposed.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "origin": [
+        "integrator, third round"
+      ],
+      "title": "A public write for structure under a scope an administrator grants",
+      "status": "open",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "server/src/integrations.js (write:structure)",
+        "PUT /api/v1/{sites,programmes,people}",
+        "programme.gateModel on the contract"
+      ],
+      "answerToSource": "To be put to the interoperability committee first, as D-33.4 said.",
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured as a proportion. Of 626 audit events on this book, 621 name `System Administrator (admin)` and 4 name `RT365 loader probe 160756 (service)` - the four writes that went through `PUT /api/v1/*` with an integration key. The audit-under-the-integration's-name that 035_write_api.sql delivered covered 0.6 % of this programme's record, because a first load begins with `POST /api/admin/{sites,programmes,people}` and `PUT /api/v1/{sites,programmes,people}` all answer 404. A consequence RT365 records against itself as well: because the loader authenticates as an administrator, Meridian's documented break-glass exemption let one account sign all four steps of a change request - each step correctly labelled `BREAK-GLASS: administrator signing a request they raised`.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Evidence added; the request is theirs and already open. The break-glass behaviour is documented, deliberate and labelled, and is recorded as a fact an integrator must plan for, not as a defect.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 5,
+          "status": "open",
+          "note": "Opened by the third-round committee: the integrator rewrote meridian_sync.py against the published contract and measured what it still could not do."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Evidence added; the request is theirs and already open. The break-glass behaviour is documented, deliberate and labelled, and is recorded as a fact an integrator must plan for, not as a defect.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-19",
+      "origin": [
+        "integrator, third round"
+      ],
+      "title": "A project date says what it rests on, as a milestone's does",
+      "status": "open",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "project.date_basis / condition",
+        "the write API refuses unknown fields instead of accepting them silently"
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Two further instances measured, both on session routes rather than v1, which widens the request beyond the write API. (1) `PATCH /api/projects/{id}/health {\"health\":\"U\",\"note\":\"...\",\"version\":n}` -> 200 `{\"version\":3}`; the recognised field is `rag` (server/src/routes/portfolio.js:333, values G|A|R). An unrecognised field was accepted, an audit row was written saying \"Project status returned to automatic\", and the thing the caller asked for did not happen. (2) `POST /api/meetings/occurrences/{id}/attendance {\"present\":[3 ids]}` -> 200 `{\"ok\":true}`, audited \"0 present of 0\"; the recognised shape is `{attendance:[{personId,state}]}` (server/src/routes/meetings.js:501). The frozen minute now records that nobody was in the room. Both bodies were RT365's error; the class of fault is that a 200 was returned for a body the route did not understand, and on (2) the wrong answer is now inside a record designed to be final.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Evidence added for a request already open on their side.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 5,
+          "status": "open",
+          "note": "Opened by the third-round committee: the integrator rewrote meridian_sync.py against the published contract and measured what it still could not do."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Evidence added for a request already open on their side.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-20",
+      "origin": [
+        "V-1"
+      ],
+      "title": "Value objects in the write API v1: PUT /api/v1/business-case/{externalId} and /benefits/{externalId} under write:portfolio, with the same external-id, idempotency and audit rules as the delivery collections",
+      "status": "open",
+      "priority": "highest",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "An external integration creates and updates a business case and three benefits by external id; a second identical run makes zero creating writes; both appear in /api/v1/portfolio and in the audit trail under the integration's name."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Re-measured on the branch with an integration key scoped read:portfolio, write:portfolio, write:meetings, read:audit. `PUT /api/v1/{business-case,benefits}/RT365-PROBE-X` -> 404 `No such endpoint`; eleven further collections answer the same (sites, programmes, people, stakeholders, comms, lessons, tolerances, waves, changes, documents, exceptions) - thirteen 404s against the eight routes that exist (server/src/routes/v1.js:100-107). Meanwhile `GET /api/v1/portfolio` returns `counts:{projects:16, sites:1, programmes:1, risks:165, benefits:7, lessons:4}` (v1.js:49-62): benefits are in the read contract and not in the write contract. Measured consequence: the three business cases and seven benefits on this book are the only facts no loader can refresh, and they exist solely because a person typed them through a human session.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Round 1's figure of 0 benefits is superseded: 7 benefits and 3 business cases now exist, by hand. The asymmetry the request names is unchanged.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Round 1's figure of 0 benefits is superseded: 7 benefits and 3 business cases now exist, by hand. The asymmetry the request names is unchanged.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-21",
+      "origin": [
+        "V-2"
+      ],
+      "title": "The benefit review is a scheduled act: when realise_on passes, an agenda item appears on the owning board's next occurrence, and an unreviewed benefit past its date is a portfolio exception like a tolerance breach",
+      "status": "open",
+      "priority": "highest",
+      "effort": "M",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "A benefit with realise_on in the past appears automatically on the next meeting agenda and in the exception list; recording a benefit.review clears it; the trail shows who reviewed and against which measurement."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Not re-measured this round; the code paths cited in round 1 are unchanged on the branch (benefit.realise_on is written at server/src/portfolio.js:288 and rendered at web/src/views/index.js:3534, with no other reader in server/src, shared/ or web/src; shared/meetings.js:369-385 is a Gate-4 document count, not a benefit review). RT365 has no benefit past its realisation date on this book, so nothing could be observed. Round 2 adds one adjacent measurement in its favour: the meeting engine generated an agenda of 7 sections and 58 items from portfolio state, marked the single dated action OVERDUE and put it first, and scheduled the next occurrence itself on close - so the mechanism this request would hang the benefit review on demonstrably works.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Unchanged request; new supporting measurement of the mechanism it depends on.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Unchanged request; new supporting measurement of the mechanism it depends on.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-22",
+      "origin": [
+        "V-3"
+      ],
+      "title": "The business case is re-confirmed at every gate and the gate cannot pass without it: extend reconfirmed_gate into a criterion the ladder enforces, comparing expected cost and benefit against the last version",
+      "status": "open",
+      "priority": "highest",
+      "effort": "S",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "Passing a gate on a project whose case has not been reconfirmed at that gate is refused with a named reason; the gate record shows the case version, the delta against the previous one and who reconfirmed."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured and found blocked before it can be built. On this programme's six-gate ladder, `POST /api/projects/{id}/case/reconfirm {\"gate\":6}` -> 400 `Reconfirmation happens at a gate - 1 to 4` (server/src/routes/portfolio.js:2119; server/migrations/028_business_case.sql:52 `CHECK (reconfirmed_gate BETWEEN 1 AND 4)`). Gate 1 succeeds; one reconfirmation was recorded at Gate A. The two gates where this programme's case is most expensive to skip - capped autonomy and controlled market release - cannot record the answer at all. `Engine.canAdvance` (shared/engine.js:338-352) still reads only outstanding documents and criteria not yet found met, and never reads business_case.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Unchanged request, with a measured dependency: REQ-34 must land first.",
+        "statusChangedByUs": false,
+        "dependsOn": [
+          "REQ-34"
+        ]
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Unchanged request, with a measured dependency: REQ-34 must land first.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "origin": [
+        "V-4"
+      ],
+      "title": "Forecast versus realised as one report: per programme, expected benefit from the case against measured actuals in their own units, with counts by status and those overdue for review",
+      "status": "open",
+      "priority": "high",
+      "effort": "M",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "One page and one /api/v1 resource returning, per project: case expected cost and benefit, each benefit's baseline/target/actual with unit, status, review age; no derived money conversion of non-money units."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Not re-measured as a report - none exists to measure. One new fact in its favour: with 3 business cases and 7 benefits typed in by hand, the programme page computed `VALUE PROMISED 7` and `13 project(s) promise nothing` unprompted - the honest number a sponsor should act on, and the one this request would put beside the case figures. `Engine.valueProfile` (shared/engine.js:652-680) still reads benefits only and never reads the case.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Unchanged request.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Unchanged request.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-24",
+      "origin": [
+        "V-5"
+      ],
+      "title": "Portfolio prioritisation by value and risk against capacity: score demand and live projects on claimed value, confidence, RAID exposure and capacity consumed, ordered against available capacity",
+      "status": "open",
+      "priority": "high",
+      "effort": "M",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "A ranked list per programme with every input visible and editable, a stated weighting, and a line showing where committed capacity runs out; changing a weight re-ranks and is audited."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured only at the surface: `#/pipeline` renders `# NaN` and `SCORE unscored` for the sixteen projects and says plainly `16 project(s) carry no score, so the queue cannot rank them. They sort last rather than worst.` The refusal to invent an order is right and is credited. The NaN in the rank column is a rendering fault and is left to Meridian to classify - RT365 does not file it as a defect.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Unchanged request; the NaN observation is offered, not filed.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Unchanged request; the NaN observation is offered, not filed.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "origin": [
+        "V-6"
+      ],
+      "title": "Adoption and outcome telemetry per rollout wave: measured adoption on rollout_wave, and a link from wave to the benefits it is meant to move",
+      "status": "open",
+      "priority": "medium",
+      "effort": "M",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "Each wave carries an adoption measure with its source and date; a benefit's page shows the adoption trend of the waves feeding it; a wave below its own threshold raises an exception."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured, and found to have a prerequisite RT365 did not know about in round 1: `rollout_wave` cannot hold a phased rollout to one site at all. Three waves posted to one project and one site (seq 1, 2, 3) gave 201, then 409 `That record already exists`, then 409 - because `UNIQUE (project_id, site_id)` (server/migrations/010_plant_and_sites.sql:75) makes the `seq` column unusable for the thing it names. RT365's own rollout - supervised pilot, capped autonomous pilot, controlled market release - is three waves at one site. Filed separately as REQ-37 because it is a defect, not a feature request.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Unchanged request; its prerequisite is now REQ-37.",
+        "statusChangedByUs": false,
+        "dependsOn": [
+          "REQ-37"
+        ]
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Unchanged request; its prerequisite is now REQ-37.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-26",
+      "origin": [
+        "V-7"
+      ],
+      "title": "Lessons become a checklist, not an archive: lesson rows tagged to a gate and offered at the same gate on later projects, with a record of whether each was considered",
+      "status": "open",
+      "priority": "medium",
+      "effort": "S",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "At a gate the reviewer sees the lessons tagged to that gate from closed projects of the same programme and records considered / not-applicable per lesson; the gate record keeps that list."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured and found blocked before it can be built, by the same ceiling as REQ-22. `POST /api/lessons {\"gate\":5}` -> 400 `A gate is 1, 2, 3 or 4`; same at 6; gate 4 succeeds (server/src/routes/portfolio.js:2163,2209; server/migrations/024_lessons.sql:40 `CHECK (gate_n BETWEEN 1 AND 4)`). The lesson relevance index 024 builds (`lesson(status, programme_id, site_id)`) is exactly the query this request needs, so the schema was designed for the use and the use was never built.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Unchanged request, with a measured dependency: REQ-34 must land first.",
+        "statusChangedByUs": false,
+        "dependsOn": [
+          "REQ-34"
+        ]
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Unchanged request, with a measured dependency: REQ-34 must land first.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-27",
+      "origin": [
+        "V-8"
+      ],
+      "title": "One ladder per project: a project under a programme with a declared ladder carries exactly that ladder, and an existing book migrates onto it without duplicates",
+      "status": "partial",
+      "priority": "medium",
+      "effort": "S",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [
+        "server/src/wbs.js#scaffoldProject reads the programme's ladder only"
+      ],
+      "measure": "Measured on 5.10.0: a programme declared with a six-gate ladder, then a project created under it, carries exactly six gate milestones (Gate A..F, gates 1..6) and no default four.",
+      "remaining": [
+        "An existing project created before its programme declared a ladder can be moved onto that ladder by an explicit, audited act that adopts the milestones already matching and refuses to duplicate the rest. UNTESTED BY RT365: this book was created after the ladder was declared, so the requester has no measurement of this clause either way."
+      ],
+      "answerToSource": "Half of V-8 is already true and was measured again on this round: a project created under a programme that carries a ladder gets exactly that ladder's gates, never both. What you saw is the other half: your sixteen projects were scaffolded BEFORE RBT carried a gate model, and a declared ladder deliberately does not rewrite projects that already exist (D-33.2 — dated gates and filed evidence would move under people's feet). So the gap is the MIGRATION, and it is accepted as such: an explicit act that moves an existing project onto its programme's ladder, adopting the milestones that already match and refusing to duplicate. Until it ships, `adopt` on PUT /api/v1/milestones binds your Gate A..F rows to the scaffolded ones by their predictable ids rather than adding to them.",
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "RESTATED BY THE REQUESTER, and the half RT365 filed as a defect is withdrawn. Round 2 declared the A-F ladder on programme RBT and created sixteen projects into an empty book. Meridian scaffolded exactly one ladder: 96 milestones, six per project, named `Gate A - Discovery` .. `Gate F - Market release`, positions 1..6, with 517 gate criteria and 96 evidence documents derived from the ladder's own evidence strings; `POST /api/criteria {\"gate\":7}` -> 400 `A criterion belongs to a gate 1..6 of this project's programme`. The delivered half of REQ-27 is therefore confirmed by measurement, not by reading. RBT-GOV nonetheless carries TWELVE milestones, and the cause is entirely RT365's: its loader declares the ladder as `Gate A - Discovery` and then calls `ensure_milestone(gov, f\"Gate {g}\", ...)`, so the names never match and six plain milestones are added on top of the six scaffolded (scripts/meridian_sync.py:36-43 against :311). Round 1 published this as a Meridian defect; round 2 confirms it is not, and that it got worse - ten milestones in round 1, twelve in round 2, on two different date lines. The genuine remaining request is the migration of a book created before its ladder was declared, and RT365 CANNOT TEST IT: this book was created after. Their own answerToSource already offers `adopt` on `PUT /api/v1/milestones` as the interim (server/src/v1write.js:161-213, 307-310), which RT365 has not adopted.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Restated. The duplication claim is withdrawn as the requester's own defect. Only the migration clause is proposed as remaining, and it is untested by us.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Restated. The duplication claim is withdrawn as the requester's own defect. Only the migration clause is proposed as remaining, and it is untested by us.",
+          "status": "partial"
+        }
+      ]
+    },
+    {
+      "id": "REQ-28",
+      "origin": [
+        "V-9"
+      ],
+      "title": "Governance quality signals on the portfolio page: decision latency, action ageing, gate cycle time, RAID review compliance, exception age",
+      "status": "open",
+      "priority": "medium",
+      "effort": "S",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "Each metric computed from existing timestamps, shown per programme with its trend and available on /api/v1; no new data entry required."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Not measured; no metric of this kind exists to measure. One observation that strengthens the case: on this book Meridian computed, unprompted, `DECISIONS OWED 130, 113 urgent`, escalation bands of 113 at steering level and 54 at PMO level, a response mix of Mitigate 40 / Monitor 33 / Fix 94 and a highest exposure of 25 - all from timestamps and fields it already holds. The five signals this request asks for are the same kind of arithmetic on rows that already exist.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Unchanged request.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Unchanged request.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-29",
+      "origin": [
+        "V-10"
+      ],
+      "title": "Evidence provenance for gate criteria: a typed external reference (repository, commit, artefact, checksum) the reviewer confirms, instead of a document link",
+      "status": "open",
+      "priority": "medium",
+      "effort": "M",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "A criterion can carry a typed external reference with a commit or checksum; the gate record shows what was cited and by whom; changing the reference after the gate is a new version, never an edit."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured twice, from both ends. `PATCH /api/criteria/{id} {\"externalRef\":{\"repo\":\"RT365\",\"commit\":\"b912249\",\"artefact\":\"docs/THREAT_MODEL.md\"}}` -> 400 `Nothing recognisable to change - check the field names`. `POST /api/decisions {\"evidenceUri\":\"docs/PRODUCT_OWNER.md v2.0; GOAL.md ...\"}` -> 400 `The evidence link is an http(s) address`. Consequence: nineteen decision records were written to this book with an empty evidenceUri, because the true evidence is a repository path and a commit hash in the repository beside the tool. Fifty-four gate criteria carry a document row and none can cite the commit that proves it.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Unchanged request, now measured rather than inferred.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Unchanged request, now measured rather than inferred.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-30",
+      "origin": [
+        "V-11"
+      ],
+      "title": "A value dashboard for the executive: spend against case, benefits by status, overdue reviews, top risks by exposure, gates due, exceptions open",
+      "status": "open",
+      "priority": "medium",
+      "effort": "M",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "One printable page generated from the objects above with no manual entry, and a snapshot stored per reporting period so a claim made in March can be re-read in December."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Not measured as a dashboard. The status reporting page was measured and is credited for saying, in its own words, `No period has been closed yet... it will read differently tomorrow` - which is the discipline this request would make permanent. The same page is the one that prints `SCHEDULE Green Portfolio SPI 1.00 / COST Green CPI 1.00` and a per-project column of `SPI 1.00 / CPI 1.00` for sixteen projects that have measured nothing, so REQ-33 must land before this dashboard is worth snapshotting.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Unchanged request, with a new dependency on REQ-33.",
+        "statusChangedByUs": false,
+        "dependsOn": [
+          "REQ-33"
+        ]
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Unchanged request, with a new dependency on REQ-33.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-31",
+      "origin": [
+        "V-12"
+      ],
+      "title": "A public reference implementation of the loop: package scripts/rt365-review.mjs and the request register as a documented pattern any field repository can adopt",
+      "status": "open",
+      "priority": "highest",
+      "effort": "S",
+      "version": null,
+      "decidedOn": "2026-09-08",
+      "delivered": [],
+      "measure": null,
+      "remaining": [
+        "A documented schema and command let a second repository file its register and see its requests tracked, without Meridian-specific code in that repository."
+      ],
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Raised in RT365's recommended priority by what round 2 found. The register mechanism worked exactly as designed - RT365's V-1..V-12 were read in verbatim as REQ-20..REQ-31 with the requester's own acceptance criteria carried into `remaining`, and REQ-14 was raised from an RT365 decision (D-057) that carried no request id at all. That is the strongest capability in the product. It is also, today, one script with a hard-coded register path (scripts/rt365-review.mjs) and no published JSON Schema for `meridian-request-register/1` anywhere in the repository - and none of it is on the default branch, where `docs/requests/` does not exist. A capability an adopter cannot clone reads as an anecdote.",
+      "rt365": {
+        "round": 2,
+        "action": "reference",
+        "note": "Unchanged request; RT365 raises its own recommended priority from high to highest on this evidence, which is a recommendation and not a status change.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 6,
+          "status": "open",
+          "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
+        },
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Unchanged request; RT365 raises its own recommended priority from high to highest on this evidence, which is a recommendation and not a status change.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-32",
+      "origin": [
+        "R2-D-7",
+        "REQ-09"
+      ],
+      "title": "The default branch carries what the register calls done, and an adopter can clone a tag that holds it",
+      "status": "open",
+      "priority": "highest",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "A clone of the default branch with no flags reports the version the register names, contains docs/requests/rt365.json, completes the README quick start unaided (the seed persists to disk, `/` answers 200, the documented first login succeeds), states its own test count correctly, and carries a tag naming that version; and a CI check fails when any request marked `done` names files the default branch does not contain.",
+      "remaining": [
+        "Merge the work to the default branch, or make the default branch the one the register describes.",
+        "Push the tag the register's channel.release already names as tagged locally on 985d6af.",
+        "Make README.md's quick start and test count true on whatever branch an adopter clones.",
+        "A CI check that fails when a request is `done` on a ref the default branch does not contain."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured on 2026-09-08. A fresh clone of https://github.com/mliad313sn/Meridian gives `main` at 77c4b49aecacf3e3b4e3792c52939b2e51d38d76, last moved 2026-09-01, `package.json` 5.9.0, 33 migrations, and no `docs/requests/` directory. The remote carries one other head, claude/meridian-rt365-feedback-d6vo3i at cbe99ef - seven commits, all dated 2026-09-08, unmerged and untagged; the newest tag is v5.9.0. On main the documented quick start fails as it did in round 1: `npm run seed` reports `seeded 12 projects / 10 users / 7 meeting series` and writes nothing to disk (server/src/db.js:152 `const pglite = dataDir ? new PGlite(dataDir) : new PGlite();` and :226 `openPglite(opts.dataDir ?? process.env.PGLITE_DIR ?? null)`; nothing in server/src loads a .env, and .env.example:4 is the only place PGLITE_DIR is set), `GET /` answers `404 Cannot GET /`, and the published admin password answers 401 because the seeded account no longer exists. So M-01 and M-03, reported and fixed on 2026-09-08, reproduce verbatim on the branch a new adopter gets. `README.md:89` on main says `npm test  # 413 tests`; measured 449 pass in 80 suites, exit 0, 111 s. On the working branch: 520 pass in 102 suites, exit 0, 134 s, zero `not ok` lines. `npm install` reports 1 moderate severity vulnerability on both.",
+      "rt365": {
+        "round": 2,
+        "action": "new",
+        "note": "The frame for every other line in this file. Nothing else RT365 asks for is reachable by an adopter until this is done.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "The frame for every other line in this file. Nothing else RT365 asks for is reachable by an adopter until this is done.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-33",
+      "origin": [
+        "R2-D-6"
+      ],
+      "title": "Unmeasured is not green: a health state, and honest indices, for a project with nothing to measure",
+      "status": "open",
+      "priority": "highest",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "On a book of N budget-less projects with no reported progress, the portfolio tile reads `0 green / 0 amber / 0 red / N not measured`, the health cell reads not measured with its reason, and no schedule or cost index of 1.00 is asserted for those projects on any page, print, export or /api/v1 resource; a project with a budget and reported progress is unchanged; a project whose spend is below the 2 % threshold reads `too early to measure` rather than green.",
+      "remaining": [
+        "A `measurable` guard that treats bac === 0, or no reported progress, as not measurable rather than trivially measurable.",
+        "A fourth health state - not measured - counted separately in the ON TRACK tile.",
+        "SPI and CPI printed as `-` wherever they are not measured, on every page, export, evidence pack and /api/v1 resource, as the project register row already does correctly."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured on an EMPTY book carrying only this programme, in the week two of this programme's Gate B exit documents were refused by their own boards and the gate was not convened. The executive portfolio view reads `PORTFOLIO VALUE $0.00M / 0 funded projects / 16 strategy (no budget) / ON TRACK 100% / 16 green / 0 amber / 0 red / SCHEDULE INDEX 1.00 \"at or ahead of plan\" / COST INDEX 1.00 \"inside the envelope\" / FORECAST VARIANCE $0`, and every project row reads `Initiation / GREEN / 0% reported / SPI - / CPI -`. The exported status report goes further and prints a per-project column of `SPI 1.00 / CPI 1.00 / EAC $0.00M`, and the evidence pack for RBT-GOV prints `Health | G - SPI 1.00 and CPI 1.00 both inside tolerance`. The database holds `health: null, pct: null, spi: null, cpi: null, budget: 0` on all sixteen: the colour and the indices are manufactured at read time. The mechanism, in Meridian's own code: shared/engine.js:166-168 `const measurable = pv >= bac * 0.02 && ac >= bac * 0.005;` - with bac = 0 both comparisons are `0 >= 0`, so a zero-budget project is classified measurable, and `const spi = !measurable ? 1 : pv > 0.0001 ? ev / pv : 1;` (same for cpi) yields exactly 1.00; shared/engine.js:190-201 `health()` then returns `{rag:\"G\", derived:true, why:\"SPI 1.00 and CPI 1.00 both inside tolerance\"}`. The honest branch exists, is never reached, and is also green: `if (m.measurable === false) return {rag:\"G\", derived:true, why:\"Too early to measure - less than 2% of the plan has been spent\"}`. `Engine.roll()` counts these in `green`, which is where ON TRACK 100% comes from, and portfolio.js:333 allows only G|A|R. The same three lines are on the default branch at 5.9.0 (shared/engine.js:128-130), so this is not a branch-only fault. Round 1 saw the same thing diluted to 82% by demonstration data; on an empty book it is 100%.",
+      "rt365": {
+        "round": 2,
+        "action": "new",
+        "note": "RT365 rates this the most important finding of both rounds. It is the only one that would make a sponsor believe something positive that is not true, on the page a sponsor reads.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "RT365 rates this the most important finding of both rounds. It is the only one that would make a sponsor believe something positive that is not true, on the page a sponsor reads.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-34",
+      "origin": [
+        "V-13",
+        "R2-D-1",
+        "R2-D-2"
+      ],
+      "title": "The value and learning objects follow the programme's configurable ladder, as gate criteria already do",
+      "status": "open",
+      "priority": "highest",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "On a programme with a six-gate ladder, a business case is reconfirmed at gate 6 and a lesson is tagged to gate 5; a gate number outside the programme's declared ladder is refused with a named reason; existing four-gate books are unaffected and the migration alters no stored value.",
+      "remaining": [
+        "Replace the 1..4 ceilings on business_case.reconfirmed_gate and lesson.gate_n, and the reconfirm route's validation, with the range the programme's declared ladder actually carries, as gate_criterion already does."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured on a six-gate ladder. `POST /api/lessons {\"gate\":5}` -> 400 `A gate is 1, 2, 3 or 4`; same at 6; gate 4 succeeds. `POST /api/projects/{id}/case/reconfirm {\"gate\":6}` -> 400 `Reconfirmation happens at a gate - 1 to 4`; gate 1 succeeds. Source: server/migrations/024_lessons.sql:40 `gate_n integer CHECK (gate_n BETWEEN 1 AND 4)`; server/migrations/028_business_case.sql:52 `reconfirmed_gate integer CHECK (reconfirmed_gate BETWEEN 1 AND 4)`; server/src/routes/portfolio.js:2119, 2163, 2209. Against them, server/migrations/037_gate_criteria.sql:29 is `gate integer NOT NULL CHECK (gate BETWEEN 1 AND 12)` and POST /api/criteria refuses gate 7 with `A criterion belongs to a gate 1..6 of this project's programme` - the ladder is honoured exactly there. Migration 036 freed the ladder; the value and learning objects did not travel with it, and the failure is invisible until a six-gate programme reaches gate 5.",
+      "rt365": {
+        "round": 2,
+        "action": "new",
+        "note": "Was V-13 in RT365's own numbering and was never filed upstream. It is the cheapest line in this file and it blocks two of the three highest-value requests already open in your register.",
+        "statusChangedByUs": false,
+        "blocks": [
+          "REQ-22",
+          "REQ-26"
+        ]
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Was V-13 in RT365's own numbering and was never filed upstream. It is the cheapest line in this file and it blocks two of the three highest-value requests already open in your register.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "origin": [
+        "V-14"
+      ],
+      "title": "Not measured is not within tolerance: a third state in the benefit dimension, and an exception for silence",
+      "status": "open",
+      "priority": "high",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "A project whose benefits are all unmeasured and whose realisation dates have passed raises an exception naming how many benefits are unmeasured and since when; the exception carries its two numbers like every other and closes only by an answer; the benefit tolerance display distinguishes no margin set, nothing measured and within margin as three different statements; a project with no benefits at all is reported by the existing uncased count and raises no duplicate.",
+      "remaining": [
+        "Distinguish within margin, breached and nothing measured in the benefit tolerance and in the sweep.",
+        "A benefit past its realise_on with no actual raises its own exception kind, independently of whether a benefit tolerance is set on the project."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Not measured this round - RT365 has no benefit past its realisation date on this book, and no exception could be observed at all: `sweepExceptions()` runs on an hourly setInterval (server/src/index.js:428) with no immediate first pass and no route to trigger it, so a one-day tolerance breached by a four-month slip produced `exceptions: []` inside the session. [Open on RT365's side: leaving an instance running past a sweep tick would settle whether the sweep fires at all on this book.] The code path is unchanged and is cited as read: shared/engine.js:611-627 sets `out.benefit` only when some benefit on the project has an attainment, and attainment (shared/engine.js:646-651) is null unless baseline, target and actual are all present, so `breaches()` returns nothing on that dimension; server/src/exceptions.js returns early for any project with no active tolerance. Measured in passing, and a real constraint on a programme like this one: `Engine.tolerance` needs `bac > 0` for a cost breach (shared/engine.js:585-615), so on a budget-less programme the cost dimension is inert by construction.",
+      "rt365": {
+        "round": 2,
+        "action": "new",
+        "note": "Was V-14 in RT365's own numbering and was never filed upstream. The same principle as REQ-33, one object further down: Meridian's own comment says an unmeasured benefit is not a zero, and it is not compliance either.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Was V-14 in RT365's own numbering and was never filed upstream. The same principle as REQ-33, one object further down: Meridian's own comment says an unmeasured benefit is not a zero, and it is not compliance either.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-36",
+      "origin": [
+        "V-15"
+      ],
+      "title": "Carry the promise across the conversion: an approved demand becomes a project with the case it was justified by",
+      "status": "open",
+      "priority": "medium",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "Converting an approved demand creates a business case carrying its benefit_note and est_cost and citing the demand id; the case appears on the new project immediately; conversion is refused without a case where the programme requires one, with a named reason; converting a demand with no benefit_note still succeeds and the case is visibly a draft, never a fabricated justification.",
+      "remaining": [
+        "Seed the business case from the demand on conversion (benefit_note into summary or basis, est_cost into expected_cost, the demand id recorded), and let a programme require at least a draft case before converting."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Not measured - RT365 loads projects directly and has never used the demand pipeline. Read in the code at cbe99ef and offered as such: `POST /demand/:id/convert` (server/src/routes/portfolio.js:1542-1582) copies the four scores, est_cost into budget and detail into description, and does not copy `demand.benefit_note`, whose own schema comment (server/migrations/011_demand_and_priority.sql:27) is \"what it is FOR, in the sponsor's words\"; no business_case is created. Migration 028's header describes the intended chain demand -> case -> benefit -> review, and the conversion route is where that chain breaks, at the moment the money is committed and the justification is freshest.",
+      "rt365": {
+        "round": 2,
+        "action": "new",
+        "note": "Was V-15 in RT365's own numbering and was never filed upstream. Read, not measured: RT365 has not used the pipeline and says so rather than implying otherwise.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Was V-15 in RT365's own numbering and was never filed upstream. Read, not measured: RT365 has not used the pipeline and says so rather than implying otherwise.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-37",
+      "origin": [
+        "R2-D-3"
+      ],
+      "title": "rollout_wave has a sequence number it forbids you to use",
+      "status": "open",
+      "priority": "medium",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "Three waves with different seq values can be recorded against the same project and site and read back in order; existing books with one wave per site are unaffected; if the one-per-site rule is the intended design, the seq column is removed and the 409 message says so.",
+      "remaining": [
+        "Either key the wave by (project_id, site_id, seq), or state in the schema that a wave is one per site and remove the seq column."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured. Three waves posted to one project and one site with seq 1, 2 and 3 gave 201, then `409 That record already exists`, then 409. Source: server/migrations/010_plant_and_sites.sql:64-76 `CREATE TABLE rollout_wave (... seq integer NOT NULL DEFAULT 1, ... UNIQUE (project_id, site_id))`. A project may hold at most one wave per site, so seq can only ever be 1 for that site and the column cannot express what it names. RT365's own rollout is three waves at one site - supervised pilot, then capped autonomous pilot, then controlled market release - and cannot be recorded. One of three intended waves went in.",
+      "rt365": {
+        "round": 2,
+        "action": "new",
+        "note": "A prerequisite RT365 did not know about when it filed REQ-25 (adoption per wave) in round 1.",
+        "statusChangedByUs": false,
+        "blocks": [
+          "REQ-25"
+        ]
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "A prerequisite RT365 did not know about when it filed REQ-25 (adoption per wave) in round 1.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-38",
+      "origin": [
+        "R2-D-9"
+      ],
+      "title": "A milestone marked done, with a named accepter and a date, reads as accepted on the page",
+      "status": "open",
+      "priority": "low",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "A milestone patched done with a named accepter renders as accepted, with the accepter's name and the acceptance date, on the project page and in the evidence pack; a milestone marked done without an accepter is still refused at the write path as it is today.",
+      "remaining": [
+        "Derive a non-gate milestone's state from `done` and `acceptedBy` where they are set, and show the accepter and the acceptance date."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured, settling a question round 1 left open. The row holds `done: true, acceptedBy: \"PE-29\", acceptedOn: \"2026-09-08\"`; the project page renders it `PLANNED`. Source: web/src/views/index.js:1108 `const state = g ? g.state : ms.dateBasis === \"placeholder\" ? \"Unscheduled\" : (late ? \"Cleared\" : \"Planned\");` - for a milestone that is not a ladder gate the state is derived from the date alone, and `done` and `acceptedBy` are never consulted. server/src/routes/portfolio.js:486-523 goes to real trouble to refuse `done` without a named accepter, and the page does not show the result. Low severity, and exactly the shape of fault this programme cares about: the control exists in the table and not in the room.",
+      "rt365": {
+        "round": 2,
+        "action": "new",
+        "note": "New in RT365 field round 2. `proposed` is ours; opening it is yours.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Filed by RT365 field round 2.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-39",
+      "origin": [
+        "R2-4.6"
+      ],
+      "title": "An action can be owned by a body, not only by a person",
+      "status": "open",
+      "priority": "medium",
+      "effort": "M",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "An action can be created with a body as its owner and appears on that body's agenda; closing it still records a named person; existing person-owned actions are unchanged; a body with no scheduled meeting is reported as such rather than silently unowned.",
+      "remaining": [
+        "An action owner may be a person or a named body; a body-owned action still requires a person to answer it before it can be closed."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured. Of 29 open human acts loaded from this programme's ledger, 15 could be given the ledger's own owner and 14 could not, because their stated owner is a body and not a person: Executive Steering, Trading Risk Committee, Compliance & Legal Committee, Finance + Privacy, Finance + Legal, Finance + Broker-Connector, Support & Training Lead, Trading Risk Committee + Exec Steering. `meeting_action.owner_id` is a foreign key to `person` and there is no committee owner. Half of this is RT365's - its ledger names bodies where a tool needs people, and 28 of its 29 open acts carry no due date at all, which is its own finding against itself. The half that is Meridian's is that a governance product which already models a council on a decision record (migrations 034/039) does not let a council own an action.",
+      "rt365": {
+        "round": 2,
+        "action": "new",
+        "note": "Filed with RT365's own half of the fault stated first. If this is a shape peculiar to committee-governed programmes, RT365 would rather see it declined with a reason than carried as debt.",
+        "statusChangedByUs": false
+      },
+      "history": [
+        {
+          "at": "2026-09-08",
+          "registerVersion": 7,
+          "note": "Filed with RT365's own half of the fault stated first. If this is a shape peculiar to committee-governed programmes, RT365 would rather see it declined with a reason than carried as debt.",
+          "status": "open"
+        }
+      ]
+    },
+    {
+      "id": "REQ-49",
+      "origin": [
+        "R3-3.1"
+      ],
+      "title": "The Windows package builds on a Linux runner, so a release can be published without a Windows host",
+      "status": "open",
+      "priority": "high",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "The release workflow, on its ordinary runner, produces dist/Meridian and attaches it to a GitHub release with its SHA-256; the artefact carries a NODE_SEA_BLOB resource and a flipped fuse; a Windows host still builds the identical package.",
+      "remaining": [
+        "scripts/package/build-exe.mjs takes its injection target from an environment variable, defaulting to process.execPath."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured 2026-09-09 while building 5.14.0 for this programme. build-exe.mjs copies process.execPath as the injection target, which ties the Windows package to a Windows host. The SEA blob is platform-neutral and postject injects into a PE from any host: with the one-line override `const SEA_NODE = process.env.MERIDIAN_SEA_NODE || process.execPath`, a Linux host built a working Windows package from the official node-v22.22.2-win-x64 binary. This is the cheapest available answer to REQ-39, which is still open.",
+      "evidence": [
+        "docs/REPORTS/PMO/round3/PACKAGING_EVIDENCE.md#31-the-windows-package-cannot-be-built-anywhere-but-windows--for-one-line"
+      ],
+      "history": [
+        {
+          "at": "2026-09-09",
+          "registerVersion": 8,
+          "status": "open",
+          "note": "Opened by the packaging round: built 5.14.0 from source because REQ-39 means there is nothing to download."
+        }
+      ]
+    },
+    {
+      "id": "REQ-50",
+      "origin": [
+        "R3-3.2"
+      ],
+      "title": "The offline install either runs on the embedded engine or stops saying it cannot",
+      "status": "open",
+      "priority": "high",
+      "effort": "M",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "An install with no PostgreSQL and no network either starts and serves on the embedded engine, or fails during the install with a message naming PostgreSQL as a prerequisite. In neither case does an installer report success and leave a service that cannot start.",
+      "remaining": [
+        "sea-entry.mjs honours PGLITE_DIR, and the embedded engine ships in the package; or prepare-db.ps1's offline branch and the README-INSTALL paragraph that promises it are removed."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Measured on the 5.14.0 artefact. README-INSTALL.txt and prepare-db.ps1 both promise a fall-back to the embedded PGlite engine when no PostgreSQL can be found; prepare-db.ps1 removes DATABASE_URL and writes PGLITE_DIR for it. The packaged executable exits with code 2 and 'No DATABASE_URL ...' before the server starts, and never reads PGLITE_DIR - tested with the variable set to a writable directory. @electric-sql/pglite is also marked external in the esbuild call and is not shipped in dist/Meridian, so the fall-back could not work even if the guard allowed it. An offline install therefore completes, reports success, and leaves a service that will never start.",
+      "evidence": [
+        "docs/REPORTS/PMO/round3/PACKAGING_EVIDENCE.md#32-the-documented-offline-fall-back-does-not-exist-in-the-packaged-build"
+      ],
+      "history": [
+        {
+          "at": "2026-09-09",
+          "registerVersion": 8,
+          "status": "open",
+          "note": "Opened by the packaging round: built 5.14.0 from source because REQ-39 means there is nothing to download."
+        }
+      ]
+    },
+    {
+      "id": "REQ-51",
+      "origin": [
+        "R3-3.3"
+      ],
+      "title": "A published artefact carries a hash, and ideally a signature",
+      "status": "open",
+      "priority": "medium",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "Every published artefact has its SHA-256 published beside it in the release; the build fails, rather than warns, if the executable it produced is not the one it hashed. Signing is a separate, later step and is named as such.",
+      "remaining": [
+        "The release publishes SHA-256 sums; a code-signing step is planned or explicitly deferred with a reason."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Injecting the SEA blob invalidates the Authenticode signature Node.js ships on node.exe; postject prints 'warning: The signature seems corrupted!' and the build continues. The result is an unsigned executable that SmartScreen will warn on, with no published hash for a user to check instead. RT365 carries the identical finding against its own Windows binary (H-30), so this is a shared problem and not a criticism from a cleaner house.",
+      "evidence": [
+        "docs/REPORTS/PMO/round3/PACKAGING_EVIDENCE.md#33-the-executable-is-unsigned-and-the-build-says-so-only-as-a-warning"
+      ],
+      "history": [
+        {
+          "at": "2026-09-09",
+          "registerVersion": 8,
+          "status": "open",
+          "note": "Opened by the packaging round: built 5.14.0 from source because REQ-39 means there is nothing to download."
+        }
+      ]
+    },
+    {
+      "id": "REQ-52",
+      "origin": [
+        "R3-3.4"
+      ],
+      "title": "A duplicate key in the portfolio response silently discards one computation",
+      "status": "open",
+      "priority": "medium",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "server/src/portfolio.js assigns caseReconfirmations once; a test covers whichever of the two computations is correct; the bundle step treats a duplicate-key warning as an error.",
+      "remaining": [
+        "The duplicate is resolved and the build no longer warns."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "esbuild reports during the 5.14.0 bundle: Duplicate key \"caseReconfirmations\" in object literal, server/src/portfolio.js:531:4, original at 425:4. The second literal silently wins and the first computation is dead. This is REQ-22's re-confirmation data - a value object, not a cosmetic field. Not diagnosed further from outside; a build that failed on the warning would have caught it.",
+      "evidence": [
+        "docs/REPORTS/PMO/round3/PACKAGING_EVIDENCE.md#34-a-duplicate-object-key-in-the-portfolio-response"
+      ],
+      "history": [
+        {
+          "at": "2026-09-09",
+          "registerVersion": 8,
+          "status": "open",
+          "note": "Opened by the packaging round: built 5.14.0 from source because REQ-39 means there is nothing to download."
+        }
+      ]
+    },
+    {
+      "id": "REQ-53",
+      "origin": [
+        "R3-5"
+      ],
+      "title": "The register schema is checkable by the field repository that writes the register",
+      "status": "open",
+      "priority": "medium",
+      "effort": "S",
+      "version": null,
+      "decidedOn": null,
+      "delivered": [],
+      "measure": "A field repository can validate its register file against meridian-request-register/1 with one published command, before it hands the file over, and the command names the failing line.",
+      "remaining": [
+        "The validator behind scripts/audit/register-schema.mjs is runnable against an arbitrary file path, and the schema and that command are named in the schema's own description."
+      ],
+      "answerToSource": null,
+      "issue": null,
+      "accepted": null,
+      "released": false,
+      "observed": "Found by validating our own file. RT365's registerVersion 7 - the register handed over with the consolidated report - declared \"$schema\": \"meridian-request-register/1\" and failed that schema in 55 places: status \"proposed\" is not in the enum (open|partial|done|refused); `accepted: false` is forbidden on an open line by an explicit rule in the schema (E-9: absence is not silence) and was wrong in our own words, since no agent may record an acceptance at all; and every history row we wrote omitted the required `status`. Meridian validates the copy it holds; the side that WRITES the file had no way to check it, so a register that would have bounced was handed over as finished. Fixed in registerVersion 8, which validates clean.",
+      "evidence": [
+        "docs/REPORTS/PMO/round3/PACKAGING_EVIDENCE.md#5-the-register-we-handed-over-did-not-validate-against-their-own-schema"
+      ],
+      "history": [
+        {
+          "at": "2026-09-09",
+          "registerVersion": 8,
+          "status": "open",
+          "note": "Filed against ourselves first: the defect was in RT365's file, and the missing tool is Meridian's."
+        }
+      ]
+    }
   ],
-  "reviewedAt": "2026-09-08",
-  "instancesTested": [
-   {
-    "ref": "main",
-    "commit": "77c4b49aecacf3e3b4e3792c52939b2e51d38d76",
-    "version": "5.9.0",
-    "migrations": 33,
-    "book": "demo seed",
-    "tests": "449 pass / 80 suites / 0 fail / 111 s"
-   },
-   {
-    "ref": "claude/meridian-rt365-feedback-d6vo3i",
-    "commit": "cbe99ef",
-    "version": "5.10.0",
-    "migrations": 41,
-    "book": "empty (npm run reset-book)",
-    "tests": "520 pass / 102 suites / 0 fail / 134 s"
-   }
-  ],
-  "supersedes": "docs/PMO/meridian_requests_v2.json (REQ-14..REQ-28) - WITHDRAWN BEFORE FILING. It renumbered requests that already exist in your register: your REQ-14 is a different request raised from RT365's D-057, and RT365's V-1..V-12 are already your REQ-20..REQ-31. That file must not be ingested."
- },
- "productOwner": {
-  "charter": "docs/33-retour-terrain-rt365.md#1",
-  "command": ".claude/commands/product-owner.md",
-  "lastRun": "2026-09-08"
- },
- "channel": {
-  "issues": "https://github.com/mliad313sn/Meridian/issues",
-  "rule": "issue #n = improvement I-n = REQ-0n; the Product Owner answers on the issue and closes it when the line is done",
-  "counterpart": "RT365 Program Orchestrator (docs/PMO.md); RT365 Product Owner agent decides on its side",
-  "acceptance": {
-   "done": "on the branch with its test",
-   "accepted": "the requester said so on the issue",
-   "released": "a version tag carries it"
-  },
-  "escalation": "a rejected refusal or done goes back to open with the objection quoted; the sponsor of both repositories is the tie-breaker",
-  "cadence": {
-   "routine": "Meridian Product Owner — RT365 field-return round",
-   "triggerId": "trig_01JCnLkW5KAv4bNx4A2x3ELn",
-   "schedule": "0 7 * * 1-5 (UTC), a fresh session per firing",
-   "onDemand": "/product-owner",
-   "quietRound": "a round that finds nothing new changes nothing and says so"
-  },
-  "release": {
-   "tag": "v5.10.0",
-   "state": "tagged locally on 985d6af; not pushed — a session gets HTTP 403 on a tag ref, a maintainer must push it",
-   "consequence": "no line is `released` yet; pin the branch claude/meridian-rt365-feedback-d6vo3i, not the version"
+  "registerVersion": 8,
+  "rt365Note": {
+    "read": "Merged against your registerVersion 12 as read at 453d331 (branch claude/meridian-rt365-feedback-d6vo3i) on 2026-09-09.",
+    "existingIds": "REQ-06, REQ-09, REQ-16, REQ-17, REQ-19 and REQ-20..REQ-31 are YOUR ids. Their id, status, delivered, issue, accepted and released are copied from your registerVersion 6 UNCHANGED. RT365 adds only `observed`, a reduced `remaining` on REQ-27 alone, a recommended priority and effort, and one history row at registerVersion 7. No status on any of your lines is changed by this file.",
+    "yourProgress": "Read and acknowledged: of the eight ids RT365 proposed in registerVersion 7 (REQ-32..REQ-39), seven are marked done in your registerVersion 12 and only REQ-39 - the default branch and a published release - remains open. REQ-40..REQ-48 are yours and are copied nowhere here; RT365 has not measured them.",
+    "newIds": "REQ-49..REQ-52 are proposed by RT365 and start above your highest id (REQ-48) so they cannot collide. All four come from one exercise on 2026-09-09: building an installable 5.14.0 from source, because REQ-39 means there is nothing to download. Renumber freely; the evidence document travels with them.",
+    "whyThisRound": "REQ-39 was the register's own first recommendation and had never been paid for in practice. Paying it once produced three defects in the packaging path and one in the portfolio response - none architectural, all a release workflow away.",
+    "schemaFix": "registerVersion 8 is the first version of this file that validates against meridian-request-register/1. Version 7 did not: 'proposed' is not a status in the enum (every such line is now 'open'), 'accepted: false' is forbidden on an open line and was wrong in our own words - no agent here may record an acceptance, so every line is now 'accepted: null' - and each history row now carries the status it was at. No title, measure, observation or priority changed; this was a shape correction, not a re-statement. The missing tool that would have caught it is filed as REQ-53."
   }
- },
- "requests": [
-  {
-   "id": "REQ-06",
-   "origin": [
-    "I-6",
-    "M-08",
-    "O-76",
-    "H-28",
-    "G-01",
-    "SaaS-03",
-    "SaaS-04",
-    "SaaS-05"
-   ],
-   "title": "Operate-for-real kit: backup, restore drill, instance identity, production refusals, runbook",
-   "status": "done",
-   "version": "5.10.0",
-   "decidedOn": "2026-09-08",
-   "delivered": [
-    "server/src/backup.js",
-    "scripts/backup.mjs",
-    "scripts/restore-drill.mjs",
-    "GET /api/health#instance,backup",
-    "docs/34-exploitation.md"
-   ],
-   "measure": "server/test/backup.test.js",
-   "remaining": "the acts: PostgreSQL, scheduled backup, monthly drill, signed policy — RT365's operator (H-28)",
-   "issue": 6,
-   "accepted": false,
-   "released": false,
-   "observed": "RT365 field round 2 measured the operate-for-real kit on a real book rather than reading it. `npm run backup` with the server running refused, named the holding pid and the remedy (`process 3195 holds .../server/.data/pgdata and this book is PGlite - stop it first`). With the server stopped by SIGTERM: backup 4609 KB in about 1 s; `npm run restore-drill` restored elsewhere in 1.2 s and reported `every counted table matches the live book`; `GET /api/health` then carried `backup:{lastDrillAt:2026-09-08T16:28:00.594Z, ok:true, restoreSeconds:1.2}` and `instance:{org:MERIDIAN, id:null, migrations:41}`. The book (16 projects, 176 register items, 519 criteria, 102 milestones, 96 documents, 85 decisions, 7 benefits, 3 business cases) survived the stop and start intact. `GET /api/admin/archive` returned 200, 803,561 bytes in 145 ms, 51 tables / 34 non-empty / 2,115 rows.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Measured confirmation only. `accepted` is not set: saying so upstream is a human act on RT365's side (H-31, open), and no agent may record it.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 1,
-     "status": "done"
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 2,
-     "status": "done",
-     "note": "runbook corrected: createdb right, first administrator before start, tenant .env in cron, restore-to-live and rollback, PGlite refuses while the server runs"
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Measured confirmation only. `accepted` is not set: saying so upstream is a human act on RT365's side (H-31, open), and no agent may record it."
-    }
-   ]
-  },
-  {
-   "id": "REQ-09",
-   "origin": [
-    "I-9",
-    "M-09"
-   ],
-   "title": "Release discipline: one version everywhere, F10 gate, release workflow",
-   "status": "done",
-   "version": "5.10.0",
-   "decidedOn": "2026-09-08",
-   "delivered": [
-    "scripts/audit/release-audit.mjs",
-    ".github/workflows/release.yml",
-    "server/src/env.js#packageVersion"
-   ],
-   "measure": "npm run audit (F10)",
-   "remaining": "tags are pushed by a maintainer",
-   "issue": 9,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured against the default branch rather than the working branch, and it does not hold there. A fresh clone on 2026-09-08 gives `main` at 77c4b49, `package.json` 5.9.0, 33 migrations, and no `docs/requests/rt365.json` at all; the newest tag is `v5.9.0`. The register's own `channel.release` says the v5.10.0 tag is `tagged locally on 985d6af; not pushed - a maintainer must push it`, which is an honest statement of the same fact. By the register's own rule (`released` = a version tag carries it), none of the 31 lines is released, including this one.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Not a contradiction of REQ-09's delivery on the branch; a statement that from an adopter's position it is not yet true. The act itself is filed as REQ-32.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 1,
-     "status": "done"
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Not a contradiction of REQ-09's delivery on the branch; a statement that from an adopter's position it is not yet true. The act itself is filed as REQ-32."
-    }
-   ]
-  },
-  {
-   "id": "REQ-16",
-   "origin": [
-    "integrator, third round"
-   ],
-   "title": "Raise an action into the next scheduled occurrence, without opening it",
-   "status": "open",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "server/src/v1write.js#upsertAction (series + raiseIn: next)",
-    "server/src/routes/v1.js"
-   ],
-   "answerToSource": "D-33.14 holds: the API still never OPENS a meeting.",
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured, as the exact failure REQ-16 predicts. After the weekly occurrence was closed and frozen, RT365's loader re-opened the day's occurrence - which returns the closed one - and posted three new decisions: `POST /api/meetings/occurrences/MS-SUWK22-20260908/decisions -> 409 {\"error\":\"This meeting is closed - its decisions are final\"}`. The refusal is correct and is a control working. The consequence for a one-way integrator is that the day the record is frozen is the day new facts stop landing: nine register rows were written before the 409 and the loader then aborted. Half of that is RT365's - its loader has no notion of a closed occurrence and writes its evidence file only on success. The half REQ-16 names is that there is no public route to raise into the next scheduled occurrence.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Evidence added for a request already open on their side. No status proposed.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 5,
-     "status": "open",
-     "note": "Opened by the third-round committee: the integrator rewrote meridian_sync.py against the published contract and measured what it still could not do."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Evidence added for a request already open on their side. No status proposed."
-    }
-   ]
-  },
-  {
-   "id": "REQ-17",
-   "origin": [
-    "integrator, third round"
-   ],
-   "title": "A public write for structure under a scope an administrator grants",
-   "status": "open",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "server/src/integrations.js (write:structure)",
-    "PUT /api/v1/{sites,programmes,people}",
-    "programme.gateModel on the contract"
-   ],
-   "answerToSource": "To be put to the interoperability committee first, as D-33.4 said.",
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured as a proportion. Of 626 audit events on this book, 621 name `System Administrator (admin)` and 4 name `RT365 loader probe 160756 (service)` - the four writes that went through `PUT /api/v1/*` with an integration key. The audit-under-the-integration's-name that 035_write_api.sql delivered covered 0.6 % of this programme's record, because a first load begins with `POST /api/admin/{sites,programmes,people}` and `PUT /api/v1/{sites,programmes,people}` all answer 404. A consequence RT365 records against itself as well: because the loader authenticates as an administrator, Meridian's documented break-glass exemption let one account sign all four steps of a change request - each step correctly labelled `BREAK-GLASS: administrator signing a request they raised`.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Evidence added; the request is theirs and already open. The break-glass behaviour is documented, deliberate and labelled, and is recorded as a fact an integrator must plan for, not as a defect.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 5,
-     "status": "open",
-     "note": "Opened by the third-round committee: the integrator rewrote meridian_sync.py against the published contract and measured what it still could not do."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Evidence added; the request is theirs and already open. The break-glass behaviour is documented, deliberate and labelled, and is recorded as a fact an integrator must plan for, not as a defect."
-    }
-   ]
-  },
-  {
-   "id": "REQ-19",
-   "origin": [
-    "integrator, third round"
-   ],
-   "title": "A project date says what it rests on, as a milestone's does",
-   "status": "open",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "project.date_basis / condition",
-    "the write API refuses unknown fields instead of accepting them silently"
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Two further instances measured, both on session routes rather than v1, which widens the request beyond the write API. (1) `PATCH /api/projects/{id}/health {\"health\":\"U\",\"note\":\"...\",\"version\":n}` -> 200 `{\"version\":3}`; the recognised field is `rag` (server/src/routes/portfolio.js:333, values G|A|R). An unrecognised field was accepted, an audit row was written saying \"Project status returned to automatic\", and the thing the caller asked for did not happen. (2) `POST /api/meetings/occurrences/{id}/attendance {\"present\":[3 ids]}` -> 200 `{\"ok\":true}`, audited \"0 present of 0\"; the recognised shape is `{attendance:[{personId,state}]}` (server/src/routes/meetings.js:501). The frozen minute now records that nobody was in the room. Both bodies were RT365's error; the class of fault is that a 200 was returned for a body the route did not understand, and on (2) the wrong answer is now inside a record designed to be final.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Evidence added for a request already open on their side.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 5,
-     "status": "open",
-     "note": "Opened by the third-round committee: the integrator rewrote meridian_sync.py against the published contract and measured what it still could not do."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Evidence added for a request already open on their side."
-    }
-   ]
-  },
-  {
-   "id": "REQ-20",
-   "origin": [
-    "V-1"
-   ],
-   "title": "Value objects in the write API v1: PUT /api/v1/business-case/{externalId} and /benefits/{externalId} under write:portfolio, with the same external-id, idempotency and audit rules as the delivery collections",
-   "status": "open",
-   "priority": "highest",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "An external integration creates and updates a business case and three benefits by external id; a second identical run makes zero creating writes; both appear in /api/v1/portfolio and in the audit trail under the integration's name."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Re-measured on the branch with an integration key scoped read:portfolio, write:portfolio, write:meetings, read:audit. `PUT /api/v1/{business-case,benefits}/RT365-PROBE-X` -> 404 `No such endpoint`; eleven further collections answer the same (sites, programmes, people, stakeholders, comms, lessons, tolerances, waves, changes, documents, exceptions) - thirteen 404s against the eight routes that exist (server/src/routes/v1.js:100-107). Meanwhile `GET /api/v1/portfolio` returns `counts:{projects:16, sites:1, programmes:1, risks:165, benefits:7, lessons:4}` (v1.js:49-62): benefits are in the read contract and not in the write contract. Measured consequence: the three business cases and seven benefits on this book are the only facts no loader can refresh, and they exist solely because a person typed them through a human session.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Round 1's figure of 0 benefits is superseded: 7 benefits and 3 business cases now exist, by hand. The asymmetry the request names is unchanged.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Round 1's figure of 0 benefits is superseded: 7 benefits and 3 business cases now exist, by hand. The asymmetry the request names is unchanged."
-    }
-   ]
-  },
-  {
-   "id": "REQ-21",
-   "origin": [
-    "V-2"
-   ],
-   "title": "The benefit review is a scheduled act: when realise_on passes, an agenda item appears on the owning board's next occurrence, and an unreviewed benefit past its date is a portfolio exception like a tolerance breach",
-   "status": "open",
-   "priority": "highest",
-   "effort": "M",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "A benefit with realise_on in the past appears automatically on the next meeting agenda and in the exception list; recording a benefit.review clears it; the trail shows who reviewed and against which measurement."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Not re-measured this round; the code paths cited in round 1 are unchanged on the branch (benefit.realise_on is written at server/src/portfolio.js:288 and rendered at web/src/views/index.js:3534, with no other reader in server/src, shared/ or web/src; shared/meetings.js:369-385 is a Gate-4 document count, not a benefit review). RT365 has no benefit past its realisation date on this book, so nothing could be observed. Round 2 adds one adjacent measurement in its favour: the meeting engine generated an agenda of 7 sections and 58 items from portfolio state, marked the single dated action OVERDUE and put it first, and scheduled the next occurrence itself on close - so the mechanism this request would hang the benefit review on demonstrably works.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Unchanged request; new supporting measurement of the mechanism it depends on.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Unchanged request; new supporting measurement of the mechanism it depends on."
-    }
-   ]
-  },
-  {
-   "id": "REQ-22",
-   "origin": [
-    "V-3"
-   ],
-   "title": "The business case is re-confirmed at every gate and the gate cannot pass without it: extend reconfirmed_gate into a criterion the ladder enforces, comparing expected cost and benefit against the last version",
-   "status": "open",
-   "priority": "highest",
-   "effort": "S",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "Passing a gate on a project whose case has not been reconfirmed at that gate is refused with a named reason; the gate record shows the case version, the delta against the previous one and who reconfirmed."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured and found blocked before it can be built. On this programme's six-gate ladder, `POST /api/projects/{id}/case/reconfirm {\"gate\":6}` -> 400 `Reconfirmation happens at a gate - 1 to 4` (server/src/routes/portfolio.js:2119; server/migrations/028_business_case.sql:52 `CHECK (reconfirmed_gate BETWEEN 1 AND 4)`). Gate 1 succeeds; one reconfirmation was recorded at Gate A. The two gates where this programme's case is most expensive to skip - capped autonomy and controlled market release - cannot record the answer at all. `Engine.canAdvance` (shared/engine.js:338-352) still reads only outstanding documents and criteria not yet found met, and never reads business_case.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Unchanged request, with a measured dependency: REQ-34 must land first.",
-    "statusChangedByUs": false,
-    "dependsOn": [
-     "REQ-34"
-    ]
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Unchanged request, with a measured dependency: REQ-34 must land first."
-    }
-   ]
-  },
-  {
-   "id": "REQ-23",
-   "origin": [
-    "V-4"
-   ],
-   "title": "Forecast versus realised as one report: per programme, expected benefit from the case against measured actuals in their own units, with counts by status and those overdue for review",
-   "status": "open",
-   "priority": "high",
-   "effort": "M",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "One page and one /api/v1 resource returning, per project: case expected cost and benefit, each benefit's baseline/target/actual with unit, status, review age; no derived money conversion of non-money units."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Not re-measured as a report - none exists to measure. One new fact in its favour: with 3 business cases and 7 benefits typed in by hand, the programme page computed `VALUE PROMISED 7` and `13 project(s) promise nothing` unprompted - the honest number a sponsor should act on, and the one this request would put beside the case figures. `Engine.valueProfile` (shared/engine.js:652-680) still reads benefits only and never reads the case.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Unchanged request.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Unchanged request."
-    }
-   ]
-  },
-  {
-   "id": "REQ-24",
-   "origin": [
-    "V-5"
-   ],
-   "title": "Portfolio prioritisation by value and risk against capacity: score demand and live projects on claimed value, confidence, RAID exposure and capacity consumed, ordered against available capacity",
-   "status": "open",
-   "priority": "high",
-   "effort": "M",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "A ranked list per programme with every input visible and editable, a stated weighting, and a line showing where committed capacity runs out; changing a weight re-ranks and is audited."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured only at the surface: `#/pipeline` renders `# NaN` and `SCORE unscored` for the sixteen projects and says plainly `16 project(s) carry no score, so the queue cannot rank them. They sort last rather than worst.` The refusal to invent an order is right and is credited. The NaN in the rank column is a rendering fault and is left to Meridian to classify - RT365 does not file it as a defect.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Unchanged request; the NaN observation is offered, not filed.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Unchanged request; the NaN observation is offered, not filed."
-    }
-   ]
-  },
-  {
-   "id": "REQ-25",
-   "origin": [
-    "V-6"
-   ],
-   "title": "Adoption and outcome telemetry per rollout wave: measured adoption on rollout_wave, and a link from wave to the benefits it is meant to move",
-   "status": "open",
-   "priority": "medium",
-   "effort": "M",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "Each wave carries an adoption measure with its source and date; a benefit's page shows the adoption trend of the waves feeding it; a wave below its own threshold raises an exception."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured, and found to have a prerequisite RT365 did not know about in round 1: `rollout_wave` cannot hold a phased rollout to one site at all. Three waves posted to one project and one site (seq 1, 2, 3) gave 201, then 409 `That record already exists`, then 409 - because `UNIQUE (project_id, site_id)` (server/migrations/010_plant_and_sites.sql:75) makes the `seq` column unusable for the thing it names. RT365's own rollout - supervised pilot, capped autonomous pilot, controlled market release - is three waves at one site. Filed separately as REQ-37 because it is a defect, not a feature request.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Unchanged request; its prerequisite is now REQ-37.",
-    "statusChangedByUs": false,
-    "dependsOn": [
-     "REQ-37"
-    ]
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Unchanged request; its prerequisite is now REQ-37."
-    }
-   ]
-  },
-  {
-   "id": "REQ-26",
-   "origin": [
-    "V-7"
-   ],
-   "title": "Lessons become a checklist, not an archive: lesson rows tagged to a gate and offered at the same gate on later projects, with a record of whether each was considered",
-   "status": "open",
-   "priority": "medium",
-   "effort": "S",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "At a gate the reviewer sees the lessons tagged to that gate from closed projects of the same programme and records considered / not-applicable per lesson; the gate record keeps that list."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured and found blocked before it can be built, by the same ceiling as REQ-22. `POST /api/lessons {\"gate\":5}` -> 400 `A gate is 1, 2, 3 or 4`; same at 6; gate 4 succeeds (server/src/routes/portfolio.js:2163,2209; server/migrations/024_lessons.sql:40 `CHECK (gate_n BETWEEN 1 AND 4)`). The lesson relevance index 024 builds (`lesson(status, programme_id, site_id)`) is exactly the query this request needs, so the schema was designed for the use and the use was never built.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Unchanged request, with a measured dependency: REQ-34 must land first.",
-    "statusChangedByUs": false,
-    "dependsOn": [
-     "REQ-34"
-    ]
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Unchanged request, with a measured dependency: REQ-34 must land first."
-    }
-   ]
-  },
-  {
-   "id": "REQ-27",
-   "origin": [
-    "V-8"
-   ],
-   "title": "One ladder per project: a project under a programme with a declared ladder carries exactly that ladder, and an existing book migrates onto it without duplicates",
-   "status": "partial",
-   "priority": "medium",
-   "effort": "S",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [
-    "server/src/wbs.js#scaffoldProject reads the programme's ladder only"
-   ],
-   "measure": "Measured on 5.10.0: a programme declared with a six-gate ladder, then a project created under it, carries exactly six gate milestones (Gate A..F, gates 1..6) and no default four.",
-   "remaining": [
-    "An existing project created before its programme declared a ladder can be moved onto that ladder by an explicit, audited act that adopts the milestones already matching and refuses to duplicate the rest. UNTESTED BY RT365: this book was created after the ladder was declared, so the requester has no measurement of this clause either way."
-   ],
-   "answerToSource": "Half of V-8 is already true and was measured again on this round: a project created under a programme that carries a ladder gets exactly that ladder's gates, never both. What you saw is the other half: your sixteen projects were scaffolded BEFORE RBT carried a gate model, and a declared ladder deliberately does not rewrite projects that already exist (D-33.2 — dated gates and filed evidence would move under people's feet). So the gap is the MIGRATION, and it is accepted as such: an explicit act that moves an existing project onto its programme's ladder, adopting the milestones that already match and refusing to duplicate. Until it ships, `adopt` on PUT /api/v1/milestones binds your Gate A..F rows to the scaffolded ones by their predictable ids rather than adding to them.",
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "RESTATED BY THE REQUESTER, and the half RT365 filed as a defect is withdrawn. Round 2 declared the A-F ladder on programme RBT and created sixteen projects into an empty book. Meridian scaffolded exactly one ladder: 96 milestones, six per project, named `Gate A - Discovery` .. `Gate F - Market release`, positions 1..6, with 517 gate criteria and 96 evidence documents derived from the ladder's own evidence strings; `POST /api/criteria {\"gate\":7}` -> 400 `A criterion belongs to a gate 1..6 of this project's programme`. The delivered half of REQ-27 is therefore confirmed by measurement, not by reading. RBT-GOV nonetheless carries TWELVE milestones, and the cause is entirely RT365's: its loader declares the ladder as `Gate A - Discovery` and then calls `ensure_milestone(gov, f\"Gate {g}\", ...)`, so the names never match and six plain milestones are added on top of the six scaffolded (scripts/meridian_sync.py:36-43 against :311). Round 1 published this as a Meridian defect; round 2 confirms it is not, and that it got worse - ten milestones in round 1, twelve in round 2, on two different date lines. The genuine remaining request is the migration of a book created before its ladder was declared, and RT365 CANNOT TEST IT: this book was created after. Their own answerToSource already offers `adopt` on `PUT /api/v1/milestones` as the interim (server/src/v1write.js:161-213, 307-310), which RT365 has not adopted.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Restated. The duplication claim is withdrawn as the requester's own defect. Only the migration clause is proposed as remaining, and it is untested by us.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Restated. The duplication claim is withdrawn as the requester's own defect. Only the migration clause is proposed as remaining, and it is untested by us."
-    }
-   ]
-  },
-  {
-   "id": "REQ-28",
-   "origin": [
-    "V-9"
-   ],
-   "title": "Governance quality signals on the portfolio page: decision latency, action ageing, gate cycle time, RAID review compliance, exception age",
-   "status": "open",
-   "priority": "medium",
-   "effort": "S",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "Each metric computed from existing timestamps, shown per programme with its trend and available on /api/v1; no new data entry required."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Not measured; no metric of this kind exists to measure. One observation that strengthens the case: on this book Meridian computed, unprompted, `DECISIONS OWED 130, 113 urgent`, escalation bands of 113 at steering level and 54 at PMO level, a response mix of Mitigate 40 / Monitor 33 / Fix 94 and a highest exposure of 25 - all from timestamps and fields it already holds. The five signals this request asks for are the same kind of arithmetic on rows that already exist.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Unchanged request.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Unchanged request."
-    }
-   ]
-  },
-  {
-   "id": "REQ-29",
-   "origin": [
-    "V-10"
-   ],
-   "title": "Evidence provenance for gate criteria: a typed external reference (repository, commit, artefact, checksum) the reviewer confirms, instead of a document link",
-   "status": "open",
-   "priority": "medium",
-   "effort": "M",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "A criterion can carry a typed external reference with a commit or checksum; the gate record shows what was cited and by whom; changing the reference after the gate is a new version, never an edit."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured twice, from both ends. `PATCH /api/criteria/{id} {\"externalRef\":{\"repo\":\"RT365\",\"commit\":\"b912249\",\"artefact\":\"docs/THREAT_MODEL.md\"}}` -> 400 `Nothing recognisable to change - check the field names`. `POST /api/decisions {\"evidenceUri\":\"docs/PRODUCT_OWNER.md v2.0; GOAL.md ...\"}` -> 400 `The evidence link is an http(s) address`. Consequence: nineteen decision records were written to this book with an empty evidenceUri, because the true evidence is a repository path and a commit hash in the repository beside the tool. Fifty-four gate criteria carry a document row and none can cite the commit that proves it.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Unchanged request, now measured rather than inferred.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Unchanged request, now measured rather than inferred."
-    }
-   ]
-  },
-  {
-   "id": "REQ-30",
-   "origin": [
-    "V-11"
-   ],
-   "title": "A value dashboard for the executive: spend against case, benefits by status, overdue reviews, top risks by exposure, gates due, exceptions open",
-   "status": "open",
-   "priority": "medium",
-   "effort": "M",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "One printable page generated from the objects above with no manual entry, and a snapshot stored per reporting period so a claim made in March can be re-read in December."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Not measured as a dashboard. The status reporting page was measured and is credited for saying, in its own words, `No period has been closed yet... it will read differently tomorrow` - which is the discipline this request would make permanent. The same page is the one that prints `SCHEDULE Green Portfolio SPI 1.00 / COST Green CPI 1.00` and a per-project column of `SPI 1.00 / CPI 1.00` for sixteen projects that have measured nothing, so REQ-33 must land before this dashboard is worth snapshotting.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Unchanged request, with a new dependency on REQ-33.",
-    "statusChangedByUs": false,
-    "dependsOn": [
-     "REQ-33"
-    ]
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Unchanged request, with a new dependency on REQ-33."
-    }
-   ]
-  },
-  {
-   "id": "REQ-31",
-   "origin": [
-    "V-12"
-   ],
-   "title": "A public reference implementation of the loop: package scripts/rt365-review.mjs and the request register as a documented pattern any field repository can adopt",
-   "status": "open",
-   "priority": "highest",
-   "effort": "S",
-   "version": null,
-   "decidedOn": "2026-09-08",
-   "delivered": [],
-   "measure": null,
-   "remaining": [
-    "A documented schema and command let a second repository file its register and see its requests tracked, without Meridian-specific code in that repository."
-   ],
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Raised in RT365's recommended priority by what round 2 found. The register mechanism worked exactly as designed - RT365's V-1..V-12 were read in verbatim as REQ-20..REQ-31 with the requester's own acceptance criteria carried into `remaining`, and REQ-14 was raised from an RT365 decision (D-057) that carried no request id at all. That is the strongest capability in the product. It is also, today, one script with a hard-coded register path (scripts/rt365-review.mjs) and no published JSON Schema for `meridian-request-register/1` anywhere in the repository - and none of it is on the default branch, where `docs/requests/` does not exist. A capability an adopter cannot clone reads as an anecdote.",
-   "rt365": {
-    "round": 2,
-    "action": "reference",
-    "note": "Unchanged request; RT365 raises its own recommended priority from high to highest on this evidence, which is a recommendation and not a status change.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 6,
-     "status": "open",
-     "note": "Filed by RT365 in docs/PMO_MERIDIAN_ASSESSMENT.md §8 after re-testing 5.10.0, and read into this register by the standing review duty."
-    },
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Unchanged request; RT365 raises its own recommended priority from high to highest on this evidence, which is a recommendation and not a status change."
-    }
-   ]
-  },
-  {
-   "id": "REQ-32",
-   "origin": [
-    "R2-D-7",
-    "REQ-09"
-   ],
-   "title": "The default branch carries what the register calls done, and an adopter can clone a tag that holds it",
-   "status": "proposed",
-   "priority": "highest",
-   "effort": "S",
-   "version": null,
-   "decidedOn": null,
-   "delivered": [],
-   "measure": "A clone of the default branch with no flags reports the version the register names, contains docs/requests/rt365.json, completes the README quick start unaided (the seed persists to disk, `/` answers 200, the documented first login succeeds), states its own test count correctly, and carries a tag naming that version; and a CI check fails when any request marked `done` names files the default branch does not contain.",
-   "remaining": [
-    "Merge the work to the default branch, or make the default branch the one the register describes.",
-    "Push the tag the register's channel.release already names as tagged locally on 985d6af.",
-    "Make README.md's quick start and test count true on whatever branch an adopter clones.",
-    "A CI check that fails when a request is `done` on a ref the default branch does not contain."
-   ],
-   "answerToSource": null,
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured on 2026-09-08. A fresh clone of https://github.com/mliad313sn/Meridian gives `main` at 77c4b49aecacf3e3b4e3792c52939b2e51d38d76, last moved 2026-09-01, `package.json` 5.9.0, 33 migrations, and no `docs/requests/` directory. The remote carries one other head, claude/meridian-rt365-feedback-d6vo3i at cbe99ef - seven commits, all dated 2026-09-08, unmerged and untagged; the newest tag is v5.9.0. On main the documented quick start fails as it did in round 1: `npm run seed` reports `seeded 12 projects / 10 users / 7 meeting series` and writes nothing to disk (server/src/db.js:152 `const pglite = dataDir ? new PGlite(dataDir) : new PGlite();` and :226 `openPglite(opts.dataDir ?? process.env.PGLITE_DIR ?? null)`; nothing in server/src loads a .env, and .env.example:4 is the only place PGLITE_DIR is set), `GET /` answers `404 Cannot GET /`, and the published admin password answers 401 because the seeded account no longer exists. So M-01 and M-03, reported and fixed on 2026-09-08, reproduce verbatim on the branch a new adopter gets. `README.md:89` on main says `npm test  # 413 tests`; measured 449 pass in 80 suites, exit 0, 111 s. On the working branch: 520 pass in 102 suites, exit 0, 134 s, zero `not ok` lines. `npm install` reports 1 moderate severity vulnerability on both.",
-   "rt365": {
-    "round": 2,
-    "action": "new",
-    "note": "The frame for every other line in this file. Nothing else RT365 asks for is reachable by an adopter until this is done.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "The frame for every other line in this file. Nothing else RT365 asks for is reachable by an adopter until this is done."
-    }
-   ]
-  },
-  {
-   "id": "REQ-33",
-   "origin": [
-    "R2-D-6"
-   ],
-   "title": "Unmeasured is not green: a health state, and honest indices, for a project with nothing to measure",
-   "status": "proposed",
-   "priority": "highest",
-   "effort": "S",
-   "version": null,
-   "decidedOn": null,
-   "delivered": [],
-   "measure": "On a book of N budget-less projects with no reported progress, the portfolio tile reads `0 green / 0 amber / 0 red / N not measured`, the health cell reads not measured with its reason, and no schedule or cost index of 1.00 is asserted for those projects on any page, print, export or /api/v1 resource; a project with a budget and reported progress is unchanged; a project whose spend is below the 2 % threshold reads `too early to measure` rather than green.",
-   "remaining": [
-    "A `measurable` guard that treats bac === 0, or no reported progress, as not measurable rather than trivially measurable.",
-    "A fourth health state - not measured - counted separately in the ON TRACK tile.",
-    "SPI and CPI printed as `-` wherever they are not measured, on every page, export, evidence pack and /api/v1 resource, as the project register row already does correctly."
-   ],
-   "answerToSource": null,
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured on an EMPTY book carrying only this programme, in the week two of this programme's Gate B exit documents were refused by their own boards and the gate was not convened. The executive portfolio view reads `PORTFOLIO VALUE $0.00M / 0 funded projects / 16 strategy (no budget) / ON TRACK 100% / 16 green / 0 amber / 0 red / SCHEDULE INDEX 1.00 \"at or ahead of plan\" / COST INDEX 1.00 \"inside the envelope\" / FORECAST VARIANCE $0`, and every project row reads `Initiation / GREEN / 0% reported / SPI - / CPI -`. The exported status report goes further and prints a per-project column of `SPI 1.00 / CPI 1.00 / EAC $0.00M`, and the evidence pack for RBT-GOV prints `Health | G - SPI 1.00 and CPI 1.00 both inside tolerance`. The database holds `health: null, pct: null, spi: null, cpi: null, budget: 0` on all sixteen: the colour and the indices are manufactured at read time. The mechanism, in Meridian's own code: shared/engine.js:166-168 `const measurable = pv >= bac * 0.02 && ac >= bac * 0.005;` - with bac = 0 both comparisons are `0 >= 0`, so a zero-budget project is classified measurable, and `const spi = !measurable ? 1 : pv > 0.0001 ? ev / pv : 1;` (same for cpi) yields exactly 1.00; shared/engine.js:190-201 `health()` then returns `{rag:\"G\", derived:true, why:\"SPI 1.00 and CPI 1.00 both inside tolerance\"}`. The honest branch exists, is never reached, and is also green: `if (m.measurable === false) return {rag:\"G\", derived:true, why:\"Too early to measure - less than 2% of the plan has been spent\"}`. `Engine.roll()` counts these in `green`, which is where ON TRACK 100% comes from, and portfolio.js:333 allows only G|A|R. The same three lines are on the default branch at 5.9.0 (shared/engine.js:128-130), so this is not a branch-only fault. Round 1 saw the same thing diluted to 82% by demonstration data; on an empty book it is 100%.",
-   "rt365": {
-    "round": 2,
-    "action": "new",
-    "note": "RT365 rates this the most important finding of both rounds. It is the only one that would make a sponsor believe something positive that is not true, on the page a sponsor reads.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "RT365 rates this the most important finding of both rounds. It is the only one that would make a sponsor believe something positive that is not true, on the page a sponsor reads."
-    }
-   ]
-  },
-  {
-   "id": "REQ-34",
-   "origin": [
-    "V-13",
-    "R2-D-1",
-    "R2-D-2"
-   ],
-   "title": "The value and learning objects follow the programme's configurable ladder, as gate criteria already do",
-   "status": "proposed",
-   "priority": "highest",
-   "effort": "S",
-   "version": null,
-   "decidedOn": null,
-   "delivered": [],
-   "measure": "On a programme with a six-gate ladder, a business case is reconfirmed at gate 6 and a lesson is tagged to gate 5; a gate number outside the programme's declared ladder is refused with a named reason; existing four-gate books are unaffected and the migration alters no stored value.",
-   "remaining": [
-    "Replace the 1..4 ceilings on business_case.reconfirmed_gate and lesson.gate_n, and the reconfirm route's validation, with the range the programme's declared ladder actually carries, as gate_criterion already does."
-   ],
-   "answerToSource": null,
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured on a six-gate ladder. `POST /api/lessons {\"gate\":5}` -> 400 `A gate is 1, 2, 3 or 4`; same at 6; gate 4 succeeds. `POST /api/projects/{id}/case/reconfirm {\"gate\":6}` -> 400 `Reconfirmation happens at a gate - 1 to 4`; gate 1 succeeds. Source: server/migrations/024_lessons.sql:40 `gate_n integer CHECK (gate_n BETWEEN 1 AND 4)`; server/migrations/028_business_case.sql:52 `reconfirmed_gate integer CHECK (reconfirmed_gate BETWEEN 1 AND 4)`; server/src/routes/portfolio.js:2119, 2163, 2209. Against them, server/migrations/037_gate_criteria.sql:29 is `gate integer NOT NULL CHECK (gate BETWEEN 1 AND 12)` and POST /api/criteria refuses gate 7 with `A criterion belongs to a gate 1..6 of this project's programme` - the ladder is honoured exactly there. Migration 036 freed the ladder; the value and learning objects did not travel with it, and the failure is invisible until a six-gate programme reaches gate 5.",
-   "rt365": {
-    "round": 2,
-    "action": "new",
-    "note": "Was V-13 in RT365's own numbering and was never filed upstream. It is the cheapest line in this file and it blocks two of the three highest-value requests already open in your register.",
-    "statusChangedByUs": false,
-    "blocks": [
-     "REQ-22",
-     "REQ-26"
-    ]
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Was V-13 in RT365's own numbering and was never filed upstream. It is the cheapest line in this file and it blocks two of the three highest-value requests already open in your register."
-    }
-   ]
-  },
-  {
-   "id": "REQ-35",
-   "origin": [
-    "V-14"
-   ],
-   "title": "Not measured is not within tolerance: a third state in the benefit dimension, and an exception for silence",
-   "status": "proposed",
-   "priority": "high",
-   "effort": "S",
-   "version": null,
-   "decidedOn": null,
-   "delivered": [],
-   "measure": "A project whose benefits are all unmeasured and whose realisation dates have passed raises an exception naming how many benefits are unmeasured and since when; the exception carries its two numbers like every other and closes only by an answer; the benefit tolerance display distinguishes no margin set, nothing measured and within margin as three different statements; a project with no benefits at all is reported by the existing uncased count and raises no duplicate.",
-   "remaining": [
-    "Distinguish within margin, breached and nothing measured in the benefit tolerance and in the sweep.",
-    "A benefit past its realise_on with no actual raises its own exception kind, independently of whether a benefit tolerance is set on the project."
-   ],
-   "answerToSource": null,
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Not measured this round - RT365 has no benefit past its realisation date on this book, and no exception could be observed at all: `sweepExceptions()` runs on an hourly setInterval (server/src/index.js:428) with no immediate first pass and no route to trigger it, so a one-day tolerance breached by a four-month slip produced `exceptions: []` inside the session. [Open on RT365's side: leaving an instance running past a sweep tick would settle whether the sweep fires at all on this book.] The code path is unchanged and is cited as read: shared/engine.js:611-627 sets `out.benefit` only when some benefit on the project has an attainment, and attainment (shared/engine.js:646-651) is null unless baseline, target and actual are all present, so `breaches()` returns nothing on that dimension; server/src/exceptions.js returns early for any project with no active tolerance. Measured in passing, and a real constraint on a programme like this one: `Engine.tolerance` needs `bac > 0` for a cost breach (shared/engine.js:585-615), so on a budget-less programme the cost dimension is inert by construction.",
-   "rt365": {
-    "round": 2,
-    "action": "new",
-    "note": "Was V-14 in RT365's own numbering and was never filed upstream. The same principle as REQ-33, one object further down: Meridian's own comment says an unmeasured benefit is not a zero, and it is not compliance either.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Was V-14 in RT365's own numbering and was never filed upstream. The same principle as REQ-33, one object further down: Meridian's own comment says an unmeasured benefit is not a zero, and it is not compliance either."
-    }
-   ]
-  },
-  {
-   "id": "REQ-36",
-   "origin": [
-    "V-15"
-   ],
-   "title": "Carry the promise across the conversion: an approved demand becomes a project with the case it was justified by",
-   "status": "proposed",
-   "priority": "medium",
-   "effort": "S",
-   "version": null,
-   "decidedOn": null,
-   "delivered": [],
-   "measure": "Converting an approved demand creates a business case carrying its benefit_note and est_cost and citing the demand id; the case appears on the new project immediately; conversion is refused without a case where the programme requires one, with a named reason; converting a demand with no benefit_note still succeeds and the case is visibly a draft, never a fabricated justification.",
-   "remaining": [
-    "Seed the business case from the demand on conversion (benefit_note into summary or basis, est_cost into expected_cost, the demand id recorded), and let a programme require at least a draft case before converting."
-   ],
-   "answerToSource": null,
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Not measured - RT365 loads projects directly and has never used the demand pipeline. Read in the code at cbe99ef and offered as such: `POST /demand/:id/convert` (server/src/routes/portfolio.js:1542-1582) copies the four scores, est_cost into budget and detail into description, and does not copy `demand.benefit_note`, whose own schema comment (server/migrations/011_demand_and_priority.sql:27) is \"what it is FOR, in the sponsor's words\"; no business_case is created. Migration 028's header describes the intended chain demand -> case -> benefit -> review, and the conversion route is where that chain breaks, at the moment the money is committed and the justification is freshest.",
-   "rt365": {
-    "round": 2,
-    "action": "new",
-    "note": "Was V-15 in RT365's own numbering and was never filed upstream. Read, not measured: RT365 has not used the pipeline and says so rather than implying otherwise.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Was V-15 in RT365's own numbering and was never filed upstream. Read, not measured: RT365 has not used the pipeline and says so rather than implying otherwise."
-    }
-   ]
-  },
-  {
-   "id": "REQ-37",
-   "origin": [
-    "R2-D-3"
-   ],
-   "title": "rollout_wave has a sequence number it forbids you to use",
-   "status": "proposed",
-   "priority": "medium",
-   "effort": "S",
-   "version": null,
-   "decidedOn": null,
-   "delivered": [],
-   "measure": "Three waves with different seq values can be recorded against the same project and site and read back in order; existing books with one wave per site are unaffected; if the one-per-site rule is the intended design, the seq column is removed and the 409 message says so.",
-   "remaining": [
-    "Either key the wave by (project_id, site_id, seq), or state in the schema that a wave is one per site and remove the seq column."
-   ],
-   "answerToSource": null,
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured. Three waves posted to one project and one site with seq 1, 2 and 3 gave 201, then `409 That record already exists`, then 409. Source: server/migrations/010_plant_and_sites.sql:64-76 `CREATE TABLE rollout_wave (... seq integer NOT NULL DEFAULT 1, ... UNIQUE (project_id, site_id))`. A project may hold at most one wave per site, so seq can only ever be 1 for that site and the column cannot express what it names. RT365's own rollout is three waves at one site - supervised pilot, then capped autonomous pilot, then controlled market release - and cannot be recorded. One of three intended waves went in.",
-   "rt365": {
-    "round": 2,
-    "action": "new",
-    "note": "A prerequisite RT365 did not know about when it filed REQ-25 (adoption per wave) in round 1.",
-    "statusChangedByUs": false,
-    "blocks": [
-     "REQ-25"
-    ]
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "A prerequisite RT365 did not know about when it filed REQ-25 (adoption per wave) in round 1."
-    }
-   ]
-  },
-  {
-   "id": "REQ-38",
-   "origin": [
-    "R2-D-9"
-   ],
-   "title": "A milestone marked done, with a named accepter and a date, reads as accepted on the page",
-   "status": "proposed",
-   "priority": "low",
-   "effort": "S",
-   "version": null,
-   "decidedOn": null,
-   "delivered": [],
-   "measure": "A milestone patched done with a named accepter renders as accepted, with the accepter's name and the acceptance date, on the project page and in the evidence pack; a milestone marked done without an accepter is still refused at the write path as it is today.",
-   "remaining": [
-    "Derive a non-gate milestone's state from `done` and `acceptedBy` where they are set, and show the accepter and the acceptance date."
-   ],
-   "answerToSource": null,
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured, settling a question round 1 left open. The row holds `done: true, acceptedBy: \"PE-29\", acceptedOn: \"2026-09-08\"`; the project page renders it `PLANNED`. Source: web/src/views/index.js:1108 `const state = g ? g.state : ms.dateBasis === \"placeholder\" ? \"Unscheduled\" : (late ? \"Cleared\" : \"Planned\");` - for a milestone that is not a ladder gate the state is derived from the date alone, and `done` and `acceptedBy` are never consulted. server/src/routes/portfolio.js:486-523 goes to real trouble to refuse `done` without a named accepter, and the page does not show the result. Low severity, and exactly the shape of fault this programme cares about: the control exists in the table and not in the room.",
-   "rt365": {
-    "round": 2,
-    "action": "new",
-    "note": "New in RT365 field round 2. `proposed` is ours; opening it is yours.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Filed by RT365 field round 2."
-    }
-   ]
-  },
-  {
-   "id": "REQ-39",
-   "origin": [
-    "R2-4.6"
-   ],
-   "title": "An action can be owned by a body, not only by a person",
-   "status": "proposed",
-   "priority": "medium",
-   "effort": "M",
-   "version": null,
-   "decidedOn": null,
-   "delivered": [],
-   "measure": "An action can be created with a body as its owner and appears on that body's agenda; closing it still records a named person; existing person-owned actions are unchanged; a body with no scheduled meeting is reported as such rather than silently unowned.",
-   "remaining": [
-    "An action owner may be a person or a named body; a body-owned action still requires a person to answer it before it can be closed."
-   ],
-   "answerToSource": null,
-   "issue": null,
-   "accepted": false,
-   "released": false,
-   "observed": "Measured. Of 29 open human acts loaded from this programme's ledger, 15 could be given the ledger's own owner and 14 could not, because their stated owner is a body and not a person: Executive Steering, Trading Risk Committee, Compliance & Legal Committee, Finance + Privacy, Finance + Legal, Finance + Broker-Connector, Support & Training Lead, Trading Risk Committee + Exec Steering. `meeting_action.owner_id` is a foreign key to `person` and there is no committee owner. Half of this is RT365's - its ledger names bodies where a tool needs people, and 28 of its 29 open acts carry no due date at all, which is its own finding against itself. The half that is Meridian's is that a governance product which already models a council on a decision record (migrations 034/039) does not let a council own an action.",
-   "rt365": {
-    "round": 2,
-    "action": "new",
-    "note": "Filed with RT365's own half of the fault stated first. If this is a shape peculiar to committee-governed programmes, RT365 would rather see it declined with a reason than carried as debt.",
-    "statusChangedByUs": false
-   },
-   "history": [
-    {
-     "at": "2026-09-08",
-     "registerVersion": 7,
-     "note": "Filed with RT365's own half of the fault stated first. If this is a shape peculiar to committee-governed programmes, RT365 would rather see it declined with a reason than carried as debt."
-    }
-   ]
-  }
- ],
- "registerVersion": 7,
- "rt365Note": {
-  "read": "Merged against your registerVersion 6 as read at cbe99ef on 2026-09-08.",
-  "existingIds": "REQ-06, REQ-09, REQ-16, REQ-17, REQ-19 and REQ-20..REQ-31 are YOUR ids. Their id, status, delivered, issue, accepted and released are copied from your registerVersion 6 UNCHANGED. RT365 adds only `observed`, a reduced `remaining` on REQ-27 alone, a recommended priority and effort, and one history row at registerVersion 7. No status on any of your lines is changed by this file.",
-  "newIds": "REQ-32..REQ-39 are new and carry status `proposed`, not `open`, because opening a line in your register is yours to do.",
-  "withdrawn": "REQ-27 (RT365's V-8): the duplicated gate ladder was RT365's own loader, confirmed by measurement in round 2 and worse than round 1 reported - twelve milestones, not ten. The defect claim is withdrawn. Only the migration clause remains, and RT365 cannot test it.",
-  "corrected": "Round 1 of RT365's assessment reported the twelve improvements as delivered upstream. Round 2, on a fresh clone, found the default branch at 5.9.0 with none of them. Round 2 supersedes round 1 wherever the two disagree.",
-  "additiveFields": "priority (which your REQ-20..REQ-27 already carry), effort (S = days, M = weeks, L = a release) and rt365 are RT365's recommendations and estimates, not commitments on your side. A reader that drops those three keys loses nothing.",
-  "notFiled": "Nothing in this file has been filed upstream. Filing is a human act on RT365's owner's account (H-31, open). `issue` is null on every new request and `accepted` is false everywhere, including on lines RT365 has now measured working (REQ-06), because no agent may record an acceptance on the human owner's behalf.",
-  "notRequested": [
-   "An OKR object - business_case and benefit already carry objective, measure, unit, baseline, target and actual; a second vocabulary splits the truth.",
-   "A money-normalised portfolio value or any currency conversion of a non-money benefit - migration 008 is right, and RT365 would rather read four benefits in four units than one invented total.",
-   "Any AI or model-driven feature. The worth of this record is that it is not probabilistic.",
-   "Requirements, tests, traceability or work tracking inside Meridian. RT365's engineering truth stays in its repository under CI (ADR-017); REQ-29 asks only that a criterion be able to cite it."
-  ]
- }
 }

@@ -8,9 +8,9 @@ Global AI-MCP RoboTrader (RT365), the first real programme Meridian has carried.
 | Owner | RT365 Product Owner (delegate agent, under D-039 / D-040 / D-065) |
 | Reviewer (different line) | **not assigned — this document has no second line, and §10.9 says so** |
 | Supersedes | `docs/REPORTS/PMO_MERIDIAN_REPORT_VALUE.md` and `docs/REPORTS/PMO_MERIDIAN_REPORT_EVIDENCE.md` (the two halves), and `docs/PMO_MERIDIAN_ASSESSMENT.md` §§1–8 wherever they disagree with it |
-| Machine-readable half | `docs/REPORTS/meridian_requests_v3.json` — `meridian-request-register/1`, registerVersion 7. It **replaces** `docs/PMO/meridian_requests_v2.json`, which must not be filed (§7.1) |
+| Machine-readable half | `docs/REPORTS/meridian_requests_v3.json` — `meridian-request-register/1`, **registerVersion 8** (round three; version 7 declared that schema and did not validate against it — §12.5). It **replaces** `docs/PMO/meridian_requests_v2.json`, which must not be filed (§7.1) |
 | Subjects tested | **`main` @ `77c4b49`, version 5.9.0, 33 migrations** — what an adopter clones; and **`claude/meridian-rt365-feedback-d6vo3i` @ `cbe99ef`, version 5.10.0, 41 migrations** — where the work is |
-| Status | v1.0 — 2026-09-08. **Prepared, not filed.** Filing upstream is a human act on RT365's owner's account (H-31, open). This report recommends; it instructs nobody, decides nothing on Meridian's behalf and records no approval |
+| Status | v1.1 — 2026-09-09, §12 added (round three: building an installable Meridian). Body §§1–11 unchanged and still read at the commits they name. **Prepared, not filed.** Filing upstream is a human act on RT365's owner's account (H-31, open). This report recommends; it instructs nobody, decides nothing on Meridian's behalf and records no approval |
 
 **Path note.** This was commissioned for `docs/PMO*`. RT365's write-scope guard
 (`scripts/agent_guard.py`, roster `.claude/agents/roster.json`) refuses every `docs/PMO*` path to
@@ -888,3 +888,92 @@ register items were the state at 16:00.
 **What this document is not.** It certifies no evidence as complete. It convenes no gate. It promotes
 no environment. It states no return, no forecast, no price and no market claim. It has not been filed
 upstream. It records no approval, on our behalf or on Meridian's.
+
+
+---
+
+## 12. Round three, 2026-09-09 — what happened when we tried to install it
+
+Rounds one and two read Meridian and ran it from a clone. Round three tried
+to do the ordinary thing an adopting organisation does: **obtain an
+installable Meridian and install it.** The full record, with commands and
+hashes, is `docs/REPORTS/PMO/round3/PACKAGING_EVIDENCE.md`.
+
+### 12.1 First, the good news, and it is substantial
+
+Read on their `claude/meridian-rt365-feedback-d6vo3i` branch at `453d331`
+(version **5.14.0**, register **v12**, 47 migrations): of the eight requests
+RT365 proposed in registerVersion 7, **seven are marked done** — REQ-32,
+REQ-33, REQ-34, REQ-35, REQ-36, REQ-37, REQ-38. Only **REQ-39** remains open.
+Their register also carries nine further lines of their own (REQ-40..REQ-48)
+that we did not ask for and have not measured. [Source: their
+`docs/requests/rt365.json`, registerVersion 12, read at `453d331`]
+
+That is a fast, complete answer to a field report, and it is the strongest
+single piece of evidence in this document that Meridian's team can absorb
+external findings. §1 said the loop was the product's best feature; this
+round is the loop working.
+
+### 12.2 REQ-39 is no longer a prediction
+
+REQ-39 — the default branch carries what the register calls done, and there
+is something to download — is the one line still open, and this round paid
+its cost instead of estimating it. There is **no GitHub release at all** on
+`mliad313sn/Meridian`; the newest tag is `v5.9.0`, which is the default
+branch. Everything in §12.1 is invisible to anyone who has not cloned a
+feature branch.
+
+So the package this programme now runs on had to be **built from source**.
+That is the finding: not that building is hard, but that in 2026 an adopter's
+first act cannot be a download.
+
+### 12.3 Three defects in the packaging path, one in the portfolio
+
+| Id | What | Why it matters |
+|---|---|---|
+| REQ-49 | `build-exe.mjs` copies `process.execPath` as the SEA injection target, so a Windows package needs a Windows host | One environment variable removes it — and with it the last obstacle to the release REQ-39 asks for. We built a working Windows package on Linux to prove it |
+| REQ-50 | The offline install promises the embedded engine; the packaged binary exits 2 without `DATABASE_URL` and never reads `PGLITE_DIR` | An air-gapped install **completes, reports success, and leaves a service that will never start**. The document and the binary disagree, and the document is the one people follow |
+| REQ-51 | The executable is unsigned — injection invalidates node.exe's Authenticode signature — and no hash is published | Nothing lets a user tell a real artefact from a substituted one. RT365 carries the same defect (H-30); this is a shared problem, not a lecture |
+| REQ-52 | `caseReconfirmations` is assigned twice in the same object literal in `server/src/portfolio.js`; the second wins silently | It is REQ-22's re-confirmation data — a value object, not a cosmetic field |
+
+None is architectural. All four are a release workflow away.
+
+### 12.4 What was verified, and what was not
+
+The Windows executable was cross-built by injecting the SEA blob into the
+official `node-v22.22.2-win-x64` binary, whose SHA-256 was checked against
+`nodejs.org` before use; the artefact carries one `NODE_SEA_BLOB` resource
+and a flipped fuse. Because a PE cannot run on the build host, the **same**
+blob was injected into the host's own Node and booted: 47 migrations applied
+against PostgreSQL, `/api/health` answering
+`{"ok":true,"version":"5.14.0","build":"packaged","engine":"postgres"}`, the
+client served, an unauthenticated API read refused. **[Measured]**
+
+**[Open]** and stated wherever the package is handed over: the Windows
+service registration, `prepare-db.ps1`, and SmartScreen behaviour. Those need
+a Windows host, and this report claims nothing about them.
+
+### 12.5 A third correction of ourselves
+
+The register we handed over with v1.0 of this report declared
+`"$schema": "meridian-request-register/1"` and **failed that schema in 55
+places**: `proposed` is not one of its four statuses; `accepted: false` is
+forbidden on an open line by an explicit rule — and was wrong in our own
+words, since no agent here may record an acceptance at all (H-31); and every
+history row we wrote omitted the required `status`. `registerVersion 8` is
+the first version that validates clean, and nothing was re-stated to get
+there.
+
+The defect was ours. The reason it reached them is not: Meridian validates
+the copy **it** holds, and the side that writes the register has no published
+way to check the file first. Filed as **REQ-53**, and it belongs in §9's list
+of what "flagship" requires — a contract with a validator on only one end is
+a contract that bounces late.
+
+### 12.6 What this changes in the recommendation
+
+Nothing, except its urgency. §1 said: if only one thing gets done, merge to
+the default branch and publish the tag. Round three found that the cheapest
+path to that release is one environment variable (REQ-49), and that the first
+thing an adopter without a network would hit afterwards is a service that
+never starts (REQ-50). Those two, then the tag, is the whole of it.
