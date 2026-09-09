@@ -2,7 +2,7 @@
 
 Control: Human approval, maker != checker — Requirement: FR-12 — RTM row: FR-12 — Owner: Backend Lead — Reviewer (≠ owner): Chief Risk Agent — **signature pending** (generated evidence is never self-certified [Source: 00, 11])
 
-Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-09T08:51:31.910282+00:00 at `fe2ee029af1486d3f24a20e40886be2a01d93791` (tree dirty, tested tree `95d37878edf3`)
+Environment tag: dev/sim — Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0` — Generated 2026-09-09T09:43:42.983877+00:00 at `c8c97a94750e86aaf26543f6998f4c91e8e9ffda` (tree dirty, tested tree `4c0d9096ec3a`)
 
 | Quartet | Test ID | Given/When/Then (docstring) | Expected | Actual | Evidence link |
 |---|---|---|---|---|---|

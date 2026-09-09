@@ -1,6 +1,6 @@
 # TEST_CASES — Evidence report (generated)
 
-Generated 2026-09-09T08:51:31.910282+00:00 at base commit `fe2ee029af1486d3f24a20e40886be2a01d93791`, working tree DIRTY, tested tree `95d37878edf3831c215019a61ca759c48e0454db` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
+Generated 2026-09-09T09:43:42.983877+00:00 at base commit `c8c97a94750e86aaf26543f6998f4c91e8e9ffda`, working tree DIRTY, tested tree `4c0d9096ec3a5cffeb8098ef8f3eab447dbf4dd5` (CI regenerates this report at the pushed commit); pytest exit status 0. Environment tag: dev/sim. Data version: `sim-policy-v0.1 | sim-feed seed=7 | tool_registry 0.1.0`.
 
 Reviewer column is **pending** by construction: the author never certifies their own evidence [Source: 00, 11]. The QA Lead and the 2nd-line owner sign rows in docs/AUDIT_EVIDENCE_INDEX.md.
 
