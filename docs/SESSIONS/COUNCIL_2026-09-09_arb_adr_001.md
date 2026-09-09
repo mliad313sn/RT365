@@ -306,3 +306,146 @@ Quoted here and **deliberately not written into `docs/ADRs/ADR-001.md` in this p
 > Conditions attached by the ARB and the Security & Privacy Board to any decision on this ADR: C-001-1..C-001-10 of `docs/SESSIONS/COUNCIL_2026-09-09_arb_adr_001.md` §8.
 
 ---
+
+## 8. Conditions attached to any decision
+
+If the Product Owner (or the delegate under D-040) decides ADR-001 as amended, the recommendation is conditional on all ten. **None of these is an approval; each is a condition on a decision only the Product Owner can make** [Source: 13].
+
+| # | Condition | Owner | Closes / opens |
+|---|---|---|---|
+| **C-001-1** | The sentence "**No cluster has ever applied these manifests; there is no network on which any of these rules has ever run**" appears in the **Decision** section (item 8), not in a footnote or a consequence — the analogue of C-007-2, and the Cloud Architect's stated condition for supporting a decision at all | Enterprise Architect | O-177; keeps H-05, O-42 visible |
+| **C-001-2** | The route set is the **closed, directional ten-row table** of item 2. A row is added only by a new ADR, the ARB **and** the Security & Privacy Board; no latency, capacity, cost, convenience or delivery-date argument may add one | Enterprise Architect; enforced at review by the Integration Architect | O-177 |
+| **C-001-3** | **The ADR's table and `rtcore.planes.ALLOWED_ROUTES` are proved identical by a test that fails on divergence** (proposed **TC-NET-005**, quartet: positive = tables agree; negative = a row removed from the ADR fails; abuse = a row added to the code fails; recovery = restoring the row passes). Written by the Backend Lead, reviewed by the Security Architect. **This pack does not write tests** | Backend Lead; Security Architect; QA Lead | new register row proposed (§10) |
+| **C-001-4** | **Both-sided selectors.** The control-plane ingress rule that admits Analytics, and the execution-plane ingress rule that admits Edge, name the pods they claim to admit; `scripts/check_network_policies.py` gains ingress invariants for both. Protected path — needs the 2nd-line CODEOWNER | Cloud Architect (owner of `infra/`), Security Architect (CODEOWNER) | F-8; new register row proposed |
+| **C-001-5** | **Default-deny in all five plane namespaces**, including `edge` and `security`, with the checker's namespace loop extended to match. If either is instead accepted as a residual risk, the **Security Architect** records that acceptance — not the ARB, not the Enterprise Architect, not this pack | Cloud Architect; Security Architect | F-7; new register row proposed |
+| **C-001-6** | **IVA-10 gets a register row and a disposition before Gate B** — `ExecutionGateway.cancel` and `cancel_all` carry no plane check. Either the check is added, or the residual risk is accepted and recorded by the Security Architect with the fencing-token mitigation stated | Backend Lead; Security Architect; Program Orchestrator (register) | IVA-10 (unregistered today, F-9) |
+| **C-001-7** | **NFR-SEC-01 is split in the same working session as the ADR** (text at §9), because a decided ADR-001 and an NFR-SEC-01 whose target column reads "Enforced by policy, tested" contradict each other inside one evidence pack. The RTM is re-keyed at the same time and TC-NET-001, -002 and -004 acquire rows | Enterprise Architect (`docs/NFR.md`); Program Orchestrator (RTM); SRE Lead and Security Architect review | O-163 precedent (C-007-7); F-13, F-14 |
+| **C-001-8** | **The blast-radius claim is withdrawn and the owed threat-model delta is named.** ADR-001 is not cited as confining injection blast radius while ADR-010 and ADR-013 hold; the ADR-008-vs-ADR-001 delta asked for in REVIEW_C3 is written by the Security Architect or the request is closed with a stated reason | Security Architect (owner of `docs/THREAT_MODEL.md`); Enterprise Architect | F-15; REVIEW_C3 item 4 |
+| **C-001-9** | **The broken register pointer is repaired in all sixteen ADR files**: `[Open: O-169 proposed]` → `[Open: O-177]`. It is a documentary edit and it is the Enterprise Architect's | Enterprise Architect | F-16 |
+| **C-001-10** | **Author ≠ reviewer ≠ approver.** The Enterprise Architect applies §7 and §9; the Security Architect reviews the invariant and the Cloud Architect the manifest conditions (both CODEOWNERS); the ARB and the Security & Privacy Board recommend; the **Product Owner or the delegate decides**. The author's declared interest (§1) is recorded in the decision row. The author approves nothing and writes no ledger row | Enterprise Architect; Security Architect; Cloud Architect; delegate | D-039, D-040 |
+
+### 8.1 Control quartet for the critical control (plane route denial)
+
+| Quartet cell | Test that exists | State |
+|---|---|---|
+| **positive** — Analytics reaches Control through the intent queue and the pipeline proceeds | TC-NET-001 | exists, passes (dev/sim, one process) |
+| **negative** — Analytics, and an unattributed caller, are refused at `ExecutionGateway.submit`, with an S1 `plane.deny` and a recorded deny | TC-NET-002 | exists, passes; **covers `submit` only** [Open: IVA-10] |
+| **abuse** — no route exists from Analytics to vault, broker or execution in the route table, and the manifests satisfy the invariants | TC-NET-003; TC-AI-005 (import scan) | exists, passes |
+| **recovery** — a policy edit that opens Analytics→Execution fails the check, and restoring the file passes again; a denied crossing leaves no sticky state | TC-NET-004 | exists, passes |
+| **missing quartets, named so they are not mistaken for gaps nobody noticed** | default-deny in `edge`/`security`; both-sided ingress selectors; ADR-table ↔ code-table agreement (TC-NET-005); plane membership of a deployed workload | **none of these has a test** [Open: C-001-3, C-001-4, C-001-5, H-05] |
+
+---
+
+## 9. Exact amended text for `docs/NFR.md`, for the Enterprise Architect to apply without interpretation (C-001-7)
+
+**Owner: Enterprise Architect** (the file header names him owner, the SRE Lead reviewer, ARB the approving body). The security half is reviewed by the **Security Architect**. **No target, threshold or figure is added** [Committee] [Source: 13].
+
+**9.1 Replace the single NFR-SEC-01 row with these two.** (Column order is the existing one: ID | Category | Requirement | Source | Target.)
+
+> | NFR-SEC-01a | Security | **No route from the Analytics plane to the Execution plane, to a broker or to the vault; Analytics reaches Control only at the trade-intent queue; only the Execution plane holds a broker route** (ADR-001 as amended). The permitted inter-plane route set is the closed, directional table of ADR-001 item 2 and `rtcore.planes.ALLOWED_ROUTES`; anything absent is denied. **No secret is reachable from an agent context**: `mcp_servers` cannot import execution, broker, vault, kill-switch, identity, policy-mutation, signing or network modules | 04, 06 | **Static invariants over nine manifest objects (`scripts/check_network_policies.py`, CI) and in-process denial at two call sites — TC-NET-001..004, TC-AI-005. The manifests have never been applied to a cluster** [Open: H-05]; **the CNI's additive semantics are verified by reading only** [Open: O-42]; **in-process the guard is a defect detector, not a boundary — the caller's plane is self-declared** [Open: IVA-11]; `cancel`/`cancel_all` carry no plane check [Open: IVA-10]; `edge` and `security` carry no default-deny [Open: C-001-5] |
+> | NFR-SEC-01b | Security | Asymmetric signing: `rtcore.trust` (verify-only Ed25519 and the public TrustSet) and `rtcore.signing` (signer only, banned from `mcp_servers`); `PublicKeyCommandVerifier` in the execution gateway; trust set in the tool-registry loader (ADR-019); engines free of the web framework (ADR-009) | 06 | TC-SIG-001..004, TC-ARC-001..004, TC-AI-005 — the existing RTM row 31 content, re-keyed so that one requirement id no longer carries two requirements |
+
+**9.2 A note the Enterprise Architect should add under the NFR table** [Committee]:
+
+> "Plane" in NFR-SEC-01a, NFR-AVL-01 and NFR-TEN-01 means one of the **five plane namespaces** of ADR-001 (`analytics`, `control`, `execution`, `security`, `edge`); the code models six plane identities, adding `broker` and `vault`. "Three planes", where it appears in this repository, names the **pipeline** Analytics → Control → Execution and not the deployed namespace set. No statement in this table asserts that a network policy is running: none is.
+
+**9.3 RTM changes owed at the same time (Program Orchestrator, reviewer IVA)** [Committee]: re-key row 31 to **NFR-SEC-01b**; add a row for **NFR-SEC-01a** with architecture `rtcore.planes` + `infra/kubernetes/network-policies` + `scripts/check_network_policies.py`, owner Security Architect, control "closed route set, default-deny, no analytics→execution/broker/vault", tests **TC-NET-001..004, TC-AI-005**, evidence `docs/TEST_CASES/TC-NET.md`, gate **B**, status "dev/sim; manifests never applied [Open: H-05, O-42, IVA-10, IVA-11]"; keep the FR-07 row and correct its test list.
+
+---
+
+## 10. Documents that must change, in order, with owners
+
+| # | Document | Change | Owner (writes) | Reviewer (different line) | Blocks Gate B? |
+|---|---|---|---|---|---|
+| 1 | **`docs/ADRs/ADR-001.md`** | Apply §7 verbatim. **Status stays `Proposed` until the decision entry exists** | Enterprise Architect | Security Architect; Cloud Architect | **Yes** |
+| 2 | **`docs/DECISION_LOG.md`** | The first entry ADR-001 has ever had (proposed row below) | delegate, on the Product Owner's decision | Independent Validation Agent | **Yes** |
+| 3 | **`docs/NFR.md`** | Apply §9.1–§9.2 (NFR-SEC-01 split; the plane note) | Enterprise Architect | SRE Lead; Security Architect | **Yes** (C-001-7) |
+| 4 | **`docs/REQUIREMENTS_TRACEABILITY.md`** | Apply §9.3; TC-NET-001, -002, -004 acquire rows | Program Orchestrator | Independent Validation Agent | Yes — an RTM row per requirement is a house rule |
+| 5 | **`infra/kubernetes/network-policies/`** | C-001-4 (both-sided selectors) and C-001-5 (default-deny in `edge` and `security`), or a recorded residual-risk acceptance by the Security Architect | Cloud Architect | Security Architect (CODEOWNER, protected path) | Yes |
+| 6 | **`scripts/check_network_policies.py`** | Ingress invariants; namespace loop extended to five | Cloud Architect | Security Architect | Yes |
+| 7 | **`test/quartets/`** | TC-NET-005 (ADR table ↔ code table) | Backend Lead | QA Lead; Security Architect | Yes (C-001-3) |
+| 8 | **`docs/CONTAINER_DIAGRAM.md`** → v1.2 | The single place the twenty contexts are grouped into planes: every context named, including Notification, Billing, Support, the **Kill Switch service**, and the Edge contexts; the "three planes" line corrected to five namespaces / pipeline. Also clears the outstanding Cloud Architect review of v1.1 | Enterprise Architect | Cloud Architect | Yes |
+| 9 | **`docs/COMPONENT_DIAGRAMS.md`, `docs/SEQUENCE_DIAGRAMS.md`** | State the plane of every component and of every participant; today neither file contains the word | Enterprise Architect | Backend Lead | Yes — they are cited as Gate B architecture evidence |
+| 10 | **`docs/THREAT_MODEL.md`** | C-001-8: the ADR-008-vs-ADR-001 delta, plus rows for the two unpoliced namespaces and the comment-only ingress restrictions (proposed text below) | Security Architect | Red-Team & Pen-Test Lead | Yes |
+| 11 | **The other fifteen `Proposed` ADRs** | C-001-9 pointer repair in all sixteen files; the remaining status questions stay owed to their councils (`REVIEW_2026-09-08_adr_007_and_status.md` §4.1) | Enterprise Architect | Program Orchestrator | Pointer repair: yes. The rest: see §12 |
+
+**Proposed threat-model delta (text only; this pack writes no threat model) [Committee]:**
+
+| Proposed row | Threat | Boundary | Control today | Test |
+|---|---|---|---|---|
+| **T-8x-a** | A workload in a plane namespace with **no default-deny** (`edge`, `security`) reaches any destination, including a broker CIDR, because no policy selects it | B1, B4, B5 | **none**; the checker requires default-deny in three namespaces only | none [Open: C-001-5] |
+| **T-8x-b** | A rule that admits a plane "to the intent queue only" or "for read-only queries only" admits it to **every pod in the namespace**, because the restriction is a comment and the selector is `{}` | B3, B4 | **none on the ingress side**; the egress side names the pod | none [Open: C-001-4] |
+| **T-8x-c** | Execution-plane code loaded in the analytics process (ADR-008 single code path, ADR-013 per-platform guard) is reachable without crossing any network boundary | B3, B6 | private per-platform `PlaneGuard` (ADR-013, T-28); the `mcp_servers` import scan (TC-AI-005) | TC-AI-006, TC-AI-005; the delta REVIEW_C3 asked for is owed [Open] |
+
+**Proposed DECISION_LOG row (text only; this pack writes no ledger) [Committee]:**
+
+> | D-0xx | 2026-09-09 | O-177: ADR-001 **plane topology decided as amended** — five plane namespaces (`analytics`, `control`, `execution`, `security`, `edge`), not three; the permitted inter-plane route set is **closed, explicit and directional** with exactly ten rows, identical to `rtcore.planes.ALLOWED_ROUTES`, and a row is added only by a new ADR with the ARB and the Security & Privacy Board; Analytics reaches Control only at the trade-intent queue and has no route to Execution, a broker or the vault; only Execution holds a broker route, as explicit CIDRs per certified adapter, never `0.0.0.0/0`; every permitted route is restricted by a **selector on both sides, never by a comment**; every plane namespace carries default-deny. **No cluster has ever applied these manifests; nothing here authorises an environment; no latency, capacity or cost figure is stated or derivable; the previous claim that injection blast radius is confined to Analytics is withdrawn, because every plane runs in one process in dev/sim (ADR-010, ADR-013).** Conditions C-001-1..C-001-10. This decision supplies **no reviewer signature**: the Security Architect's and Cloud Architect's reviews of the amended text, the SRE Lead's review of `docs/NFR.md`, the Cloud Architect's review of CONTAINER_DIAGRAM and the IVA finding all remain pending | Product Owner (D-039) / delegate (D-040) · Council: **ARB with the Security & Privacy Board — recommendation DECIDE WITH AMENDMENTS** (`docs/SESSIONS/COUNCIL_2026-09-09_arb_adr_001.md`); the pack's author declared a non-independence of reliance (§1) | Decide as proposed (rejected: three-plane naming, ungrouped contexts, seven unstated permitted routes, comment-only ingress restriction, withdrawn blast-radius claim, broken register pointer); replace (rejected: the invariant is sound and is relied on by nine manifests, four tests, a CI gate and two ADRs); do not decide yet (held as the fallback if the amendment is declined) | [Source: 00, 03, 04] / [Committee] / [Open: H-05, O-42, IVA-10, IVA-11, O-180, O-03] | ADR-001 rev.1; NFR-SEC-01a/01b; RTM rows; CONTAINER_DIAGRAM v1.2; network policies; `scripts/check_network_policies.py`; RAID O-177, O-180 |
+
+**Proposed RAID rows (text only; this pack writes no ledger) [Committee]:**
+
+| Proposed id | Type | Text | Owner | Gate |
+|---|---|---|---|---|
+| **O-177** (update) | Issue | Append: "ARB pack prepared 2026-09-09 (`COUNCIL_2026-09-09_arb_adr_001.md`): recommendation **DECIDE WITH AMENDMENTS**, amended ADR text and amended NFR text supplied, conditions C-001-1..C-001-10. The ARB and the Security & Privacy Board have **not** met on it; the pack's positions are drafted in role and unconfirmed. Fallback if the amendment is declined: **DO NOT DECIDE YET** and do not convene Gate B on ADR-001. Closes on the decision **and** steps 1–11 of §10" | ARB chair, Security & Privacy Board chair, Enterprise Architect | B |
+| **O-18x-a** (new) | Gap | "**Two of the five plane namespaces have no default-deny policy.** `infra/kubernetes/network-policies/` contains no file for `edge`, and `security` carries only a vault-pod ingress rule; `scripts/check_network_policies.py:101` requires default-deny in `analytics`, `control` and `execution` only. Under the additive semantics assumed in O-42, a pod no policy selects is unrestricted, and the `edge` namespace holds the BFF, which in the code's route table may reach Control, Analytics and Execution. No cluster exists, so this is a manifest defect and not a live exposure [Open: H-05]. Remedy C-001-5" | Cloud Architect, Security Architect | B |
+| **O-18x-b** (new) | Gap | "**Two ingress rules assert in a comment what their selector does not express.** `control.yaml:20-22` admits the Analytics plane on 8443 under the comment 'intent-queue only' with `podSelector: {}`; `execution.yaml:19-21` admits Edge on 8444 under 'read-only order/position queries' with `podSelector: {}`. The checker reads egress only. The 'analytics reaches Control only via the queue' invariant is therefore single-sided. Remedy C-001-4" | Security Architect, Cloud Architect | B |
+| **O-18x-c** (new) | Gap | "**`rtcore.planes.ALLOWED_ROUTES` declares ten routes and is consulted at two call sites** (`intent_queue.py:47`, `gateway.py:286`); `cancel_command` is declared and checked nowhere. A declared table that no code consults is the defect the Red-Team found in the egress allowlist three days earlier (THREAT_MODEL v1.2, RT-F1). Remedy: TC-NET-005 (C-001-3) plus a disposition on IVA-10 (C-001-6)" | Backend Lead, Security Architect | B |
+| **O-18x-d** (new) | Issue | "**IVA-10 has never had a register row.** `ExecutionGateway.cancel` and `cancel_all` carry no plane check; recorded in `docs/GATE_REPORTS/GATE_B_2026-09-07.md:104` on 2026-09-07 and still true at `42f19c6`. A finding that lives only in a gate report is not tracked" | Program Orchestrator, Security Architect | B |
+| **O-18x-e** (new) | Gap | "**Sixteen ADR files point at the wrong register row.** Their undecided note reads '[Open: O-169 proposed]'; O-169 in `docs/RAID_LOG.md:230` is an unrelated, **closed** trust-anchor issue. The row that carries the ADR status work is O-177. An `[Open]` tag whose id resolves to a closed, unrelated row is worse than no tag. Remedy C-001-9" | Enterprise Architect | B |
+
+---
+
+## 11. Independent Validation
+
+The Independent Validation Agent was **not** convened for this session, and no finding of its is quoted or implied here [Open].
+
+Because of the author's declared interest (§1), the Product Owner is asked to require an IVA finding on four points **before** deciding:
+
+1. **Answer O-180 first.** Whether D-042's ratification of D-004 reaches ADR-001..008 changes how eight ADR rows are worded. §4.5 argues that it does not change this one; that argument should be tested by a line that did not write it.
+2. **Reproduce F-3, F-4, F-5, F-7, F-8, F-9, F-13, F-14 and F-16 independently** — the namespace/plane counts, the absent grouping, the `infra/` inventory, the two namespaces without default-deny, the comment-only ingress restrictions, the two guard call sites, the untraced tests, the doubled requirement id and the broken register pointer.
+3. **Test the "declared but not consulted" argument (F-9, F-17)** against the Red-Team's own RT-F1 finding, since it is the finding that turns this amendment from tidy-up into necessity, and it was produced by the author of the document being amended.
+4. **Confirm that no capacity, latency, cost, provider, broker or venue figure appears anywhere in this packet or in the amended ADR and NFR text**, and that the amended text authorises no environment and advances no gate.
+
+---
+
+## 12. A larger finding this pack did not go looking for [Committee]
+
+The defect that makes ADR-001 weaker than it reads is not "an undecided ADR". It is a class that has now been found three times in this repository by three different lines in eight days:
+
+- **The Red-Team, 2026-09-08:** an egress allowlist named as a delivered control while `EgressPolicy.check()` was consulted by no product code (F-17) — blocking, and fixed.
+- **This pack, 2026-09-09:** a ten-row route table named as the topology while it is consulted at two call sites, and two ingress restrictions that live in YAML comments (F-8, F-9).
+- **The Cloud Architect, 2026-09-08:** a cost sheet cell reading "0 by design" in a sheet whose own rule forbids an unmeasured figure [Source: docs/SESSIONS/COUNCIL_2026-09-08_arb_adr_007.md §1].
+
+**The pattern is the same in all three: an artefact that *declares* a control is cited as though it *enforced* one.** A test suite cannot catch it, because the declaration is usually true — the table really does say that, the allowlist really does list those hosts. Only a reader who asks "what calls this?" catches it.
+
+**A rule the ARB could adopt, for the Product Owner and not for this pack to settle [Committee]:** any artefact cited in a gate pack as a control must name, in the pack, **the call site or the check that consults it**; where there is none, the artefact is a specification and is cited as one. This is cheap — it is one column in the evidence index — and it would have caught all three findings above at the point of citation rather than at the point of review.
+
+---
+
+## 13. Concerns for the Product Owner
+
+- **PO-1 The ARB pack recommends deciding ADR-001, but not the sentence you have.** The invariant — analytics has no route to execution or a broker, and reaches control only at the trade-intent queue — is right, is what the blueprint requires, and is what nine manifests, four tests, a CI gate and two other ADRs already assume. What is wrong is everything around it: the title says three planes and the tree deploys **five namespaces** and models **six plane identities**; the Decision assigns "the 20 bounded contexts" to planes and **no artefact lists that assignment** — my own component and sequence diagrams do not contain the word "plane"; and the Consequences claims injection blast radius is confined to Analytics, which is not true in dev/sim, where every plane runs in one process. I am asking you to decide the route set and to refuse the claims about enforcement.
+
+- **PO-2 The most useful sentence in this packet is the one that says what runs.** Today, ADR-001 is enforced by a Python script that reads nine YAML files in CI, by two `check_caller` lines in the product code, and by an import scan that makes the dangerous modules unreachable to MCP servers. That is a genuine and unusually good set of controls for this stage, and I want it recorded as such. It is **not** a network boundary: the manifests have never been applied to a cluster, and in-process the guard's caller declares its own plane, so the guard catches a component wired wrongly — not an adversary. Every packet this week that said "plane topology enforced" was leaning on a static file check.
+
+- **PO-3 Two of the five namespaces have no default-deny, and one of them is the front door.** There is no policy file at all for the `edge` namespace, and `security` has only a vault ingress rule. Under the semantics this repository assumes, a pod that no policy selects is unrestricted — and `edge` is where the BFF and human sessions live, and in the code's own route table Edge may reach Control, Analytics **and** Execution. Nothing is deployed, so this is a defect in a manifest set and not a live exposure; but it is exactly the kind of thing that ships the day a cluster is created, and it exists because ADR-001's title names three planes and nobody writes a policy for a namespace the architecture decision never mentions.
+
+- **PO-4 Two restrictions that this platform relies on are written in comments.** The rule "Analytics may reach Control **only at the intent queue**" is expressed as a pod selector on the way out of Analytics — and, on the way into Control, as a `#` comment beside a rule that admits every pod in the namespace. The same is true of "read-only order/position queries" on the Execution side. The checker reads egress and not ingress, so nothing notices. A control with one side missing is a control that works until someone edits the other file.
+
+- **PO-5 The four tests everyone quotes are not traced to a requirement.** The RTM contains one row citing a TC-NET id, and it cites TC-NET-003 alone; TC-NET-001, -002 and -004 appear in no row. Meanwhile `NFR-SEC-01` means the **plane** requirement in `docs/NFR.md` and the **asymmetric-signing** requirement in the RTM — one id, two requirements, and the plane tests mark themselves against it. That is my file and my defect, and §9 contains the split that fixes it.
+
+- **PO-6 Deciding this creates nothing, and I would rather you hear it from me.** `infra/` holds five namespaces, nine network policies, a dev/sim compose file and **no workload object of any kind** — so nothing places a service in a plane, and no test can check plane membership until a workload manifest exists. If you decide ADR-001, you have decided a **constraint on future work**. No environment is authorised and no gate advances.
+
+- **PO-7 On whether you already decided this in D-004.** D-004 says "ADR-001..008 proposed to ARB" and D-042 ratified D-004; O-180 asks whether that reaches the ADRs. My reading is that it ratifies the act of proposing, and I flagged my own reading as the thing an independent line should check first. It matters less than it looks: **even on the wider reading, D-004 records no scope, no conditions and no alternatives, and D-042's own words call the object "proposed"**. A status line written from it would say "Accepted" while the ledger it cites says "proposed" — the ADR-017 ambiguity the reconciliation was run to remove. Either way you need a fresh entry.
+
+- **PO-8 What I could not verify, plainly.** Whether the target CNI implements NetworkPolicy the way the effective-union checker assumes — that is O-42 and it is "verified by reading only". Whether any broker endpoint resembles the CIDR in `execution.yaml`; it is an RFC 5737 documentation range used as a sim placeholder and I assert no broker capability. What any of this costs in latency: no baseline exists in this repository and the amended ADR states none.
+
+- **PO-9 I must tell you where I am not independent.** I did not write ADR-001 — it came in the bootstrap commit — but I own `docs/ADRs/`, I own `docs/NFR.md` whose NFR-SEC-01 target column ("Enforced by policy, tested") this packet says is wrong, I own the two C4 diagrams that never mention planes, and I applied the ADR-007 amendment that cites ADR-001 as delivering route isolation. That is a reliance, and it is why this is a **recommendation and not an approval**, why the Security Architect and the Cloud Architect — not I — must review the amended text, why the ARB and the Security & Privacy Board must actually meet on it rather than accept positions I drafted for their seats, and why I am asking for an IVA finding first. **I have approved nothing, decided nothing and written no ledger row, and no agent may record one on your behalf** (D-039).
+
+---
+
+## 14. Assumptions, confidence, provenance
+
+- **Assumptions.** The tree at `442cebd` (files quoted) and at `42f19c6` (the five documents committed mid-session by other owners) is the repository of record for this session; D-039, D-040, D-042, D-069 stand as recorded; `.claude/agents/roster.json` at this commit is the write scope of record; Kubernetes NetworkPolicy semantics are additive, which this repository records as an assumption verified by reading only [Open: O-42] [Committee].
+- **Confidence.** **High** that ADR-001 is undecided and that F-1..F-6, F-9..F-11, F-13..F-16, F-18 are established by reading and by the commands in §3.3. **High** that the invariant is sound and correctly relied upon. **Medium-high** that the ten-row route table of §7 item 2 is complete — it is transcribed from `planes.py` and the five manifests, and has never met a second implementation. **Medium** on F-7 and F-8's operational consequence, which depends on the CNI semantics of O-42. **None** on any latency, capacity, cost, provider, broker or venue figure: none is stated, implied or derivable from this packet or from the amended text.
+- **Provenance.** [Source: 00, 03, 04, 06, 13] as transmitted by the repository artefacts; [Committee] for this pack's reasoning and for the cited councils; [Verified] only for the file reads and command outputs quoted in §3; [Open] items carry their register ids.
+- **Independence and scope.** Author of ADR-001: the bootstrap commit `03e6739`. Author of the amendment text: this pack (Enterprise Architect), to be applied by the Enterprise Architect. Reviewers: Security Architect and Cloud Architect (different lines, CODEOWNERS of the artefacts). Recommending bodies: ARB and the Security & Privacy Board — **which have not met on this pack**. Approver: **the Product Owner (D-039), or the delegate (D-040)**. **No agent recorded an approval or a decision in any ledger during this session. `docs/ADRs/`, `docs/NFR.md`, `docs/RAID_LOG.md`, `docs/DECISION_LOG.md`, `docs/REQUIREMENTS_TRACEABILITY.md`, `docs/AUDIT_EVIDENCE_INDEX.md`, `infra/`, `libs/`, `services/`, `scripts/` and `test/` were read and not edited; this session wrote exactly one file** [Source: 13].
