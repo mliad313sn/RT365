@@ -85,3 +85,18 @@ def test_a_reloaded_portfolio_converges_and_no_secret_reaches_the_evidence_file(
     for name in ("meridian_sync_2026-09-08.json", "meridian_sync_2026-09-08_5.10.0.json"):
         evidence = (ROOT / "docs" / "PMO" / name).read_text(encoding="utf-8")
         assert ms.DEMO[1] not in evidence and "password" not in evidence.lower()
+
+
+@pytest.mark.tc("TC-PMO-005")
+@pytest.mark.req("NFR-GOV-01")
+@pytest.mark.quartet("negative")
+@pytest.mark.env("dev")
+def test_a_scaffolded_gate_is_the_ledger_gate_so_no_second_set_is_created() -> None:
+    """Meridian scaffolds the declared ladder as "Gate A — Discovery" … "Gate F — Market release"; the sync names its
+    milestones "Gate A" … "Gate F". Measured on Meridian 5.28.0: matching exact names only left the governance project
+    with 12 gate milestones instead of 6."""
+    for gate, letter in zip(ms.PROGRAMME["gateModel"], "ABCDEF", strict=True):
+        assert ms.same_milestone(gate["name"], f"Gate {letter}"), gate["name"]
+    assert ms.same_milestone("Gate A", "Gate A")
+    assert not ms.same_milestone("Gate AB — Other", "Gate A")
+    assert not ms.same_milestone("Gate B — Design", "Gate A")

@@ -87,6 +87,12 @@ RAID_KIND = {
 RAID_RESPONSE = {"Risk": "Mitigate", "Issue": "Fix", "Assumption": "Monitor", "Dependency": "Monitor"}
 
 
+
+def same_milestone(existing: str, name: str) -> bool:
+    """Meridian scaffolds a programme's ladder as "Gate A — Discovery"; the ledger names the gate "Gate A". Both are the
+    same milestone: matching the exact name only created a second set of six gate milestones on every fresh instance."""
+    return existing == name or existing.startswith(name + " — ")
+
 class Meridian:
     def __init__(self, url: str, dry: bool) -> None:
         self.c = httpx.Client(base_url=url, timeout=30)
@@ -160,7 +166,7 @@ class Meridian:
 
     def ensure_milestone(self, project_id: str, name: str, date: str, criteria: str, done: bool, accepted_by: str | None) -> None:
         proj = next((p for p in self.db["projects"] if p["id"] == project_id), None)
-        found = next((m for m in self.db["milestones"] if m.get("project") == project_id and m["name"] == name), None)
+        found = next((m for m in self.db["milestones"] if m.get("project") == project_id and same_milestone(m["name"], name)), None)
         if not found:
             if proj is None and not self.dry:
                 return
@@ -170,7 +176,7 @@ class Meridian:
             if self.dry:
                 return
             self.refresh()
-            found = next((m for m in self.db["milestones"] if m.get("project") == project_id and m["name"] == name), None)
+            found = next((m for m in self.db["milestones"] if m.get("project") == project_id and same_milestone(m["name"], name)), None)
         if found and (found.get("acceptanceCriteria") != criteria or (done and not found.get("done"))):
             body: dict[str, Any] = {"acceptanceCriteria": criteria, "version": found["version"]}
             if done:
